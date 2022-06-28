@@ -19,6 +19,7 @@ import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.SharedKillSwitch
 import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
@@ -33,6 +34,7 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
 import com.typesafe.scalalogging.StrictLogging
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.control.NonFatal
 
 /**
@@ -41,7 +43,12 @@ import scala.util.control.NonFatal
   */
 private[lwcapi] class WebSocketSessionManager(
   val streamMeta: StreamMetadata,
-  val registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, Unit]),
+  val ks: SharedKillSwitch,
+  val flowComplete: AtomicBoolean,
+  val registerFunc: (StreamMetadata, SharedKillSwitch, AtomicBoolean) => (
+    QueueHandler,
+    Source[JsonSupport, Unit]
+  ),
   val subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
 ) extends GraphStage[FlowShape[AnyRef, Source[JsonSupport, Unit]]]
     with StrictLogging {
@@ -51,7 +58,8 @@ private[lwcapi] class WebSocketSessionManager(
   override val shape: FlowShape[AnyRef, Source[JsonSupport, Unit]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
-    new GraphStageLogic(shape) with InHandler with OutHandler {
+    System.out.println("### Creating WSSM stage " + streamMeta)
+    val gsl = new GraphStageLogic(shape) with InHandler with OutHandler {
 
       var dataSourcePushed = false
       var queueHandler: QueueHandler = _
@@ -60,9 +68,10 @@ private[lwcapi] class WebSocketSessionManager(
       setHandlers(in, out, this)
 
       override def preStart(): Unit = {
-        val (_queueHandler, _dataSource) = registerFunc(streamMeta)
+        val (_queueHandler, _dataSource) = registerFunc(streamMeta, ks, flowComplete)
         queueHandler = _queueHandler
         dataSource = _dataSource
+        System.out.println("..... WSSM Prestart done.")
       }
 
       override def onPush(): Unit = {
@@ -77,25 +86,33 @@ private[lwcapi] class WebSocketSessionManager(
           val errors = subscribeFunc(streamMeta.streamId, metadata).map { error =>
             DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
           }
+          System.out.println("..... WSSM errors on subscription " + errors)
           queueHandler.offer(errors)
         } catch {
-          case NonFatal(t) => queueHandler.offer(Seq(DiagnosticMessage.error(t)))
+          case NonFatal(t) =>
+            System.out.println("..... WSSM Non Fatal Exception " + t.getLocalizedMessage)
+            queueHandler.offer(Seq(DiagnosticMessage.error(t)))
         } finally {
           // Push out dataSource only once
           if (!dataSourcePushed) {
+            System.out.println("..... WSSM pushed DS " + dataSource)
             push(out, dataSource)
             dataSourcePushed = true
           } else {
             // Only pull when no push happened, because push should have triggered a pull
             // from downstream
+            System.out.println("..... WSSM pull in due to no push")
             pull(in)
           }
         }
       }
 
       override def onPull(): Unit = {
+        System.out.println("..... WSSM onPull...")
         pull(in)
       }
     }
+    System.out.println("### Finished WSSM stage")
+    gsl
   }
 }

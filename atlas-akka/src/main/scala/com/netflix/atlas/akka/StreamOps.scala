@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
@@ -30,6 +29,7 @@ import akka.stream.QueueOfferResult
 import akka.stream.SourceShape
 import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
@@ -39,6 +39,10 @@ import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Timer
 import com.typesafe.scalalogging.StrictLogging
+
+import scala.concurrent.ExecutionContext
+import scala.util.Failure
+import scala.util.Success
 
 /**
   * Utility functions for commonly used operations on Akka streams. Most of these are for
@@ -86,7 +90,9 @@ object StreamOps extends StrictLogging {
     *     Source that emits values offered to the queue.
     */
   def blockingQueue[T](registry: Registry, id: String, size: Int): Source[T, SourceQueue[T]] = {
-    Source.queue(size).mapMaterializedValue(q => new SourceQueue[T](registry, id, q))
+    Source
+      .queue(size)
+      .mapMaterializedValue(q => new SourceQueue[T](registry, id, q))
   }
 
   final class SourceQueue[T] private[akka] (
@@ -122,9 +128,12 @@ object StreamOps extends StrictLogging {
       * will be dropped.
       */
     def complete(): Unit = {
+      System.out.println("********** COMPLETING QUEUEU")
       queue.complete()
       completed = true
     }
+
+    def markCompleted = completed = true
 
     /** Check if the queue is open to take more data. */
     def isOpen: Boolean = !completed

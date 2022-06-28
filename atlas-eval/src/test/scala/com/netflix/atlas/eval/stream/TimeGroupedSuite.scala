@@ -124,6 +124,25 @@ class TimeGroupedSuite extends FunSuite {
     count("buffered") -> (count("dropped-old") + count("dropped-future"))
   }
 
+  test("regexy") {
+    val json = "\"data\":{\"values\":[59.56129918100156]}}}"
+    val pattern = "\\[([0-9.\\-]+)\\]".r
+    json match {
+      case pattern(value) =>
+        System.out.println(s"******** MATCH! ${value}")
+      case _ =>
+        System.out.println(s"Foo.   ${json}")
+    }
+
+    val m = pattern.findFirstIn(json)
+    m match {
+      case Some(v) =>
+        System.out.println(s"******** MATCH! ${v}")
+      case None =>
+        System.out.println("Foo.")
+    }
+  }
+
   test("drop events for an expression that exceed the number of input datapoints limit") {
     val n = 60000
     val expr = DataExpr.Max(Query.True)

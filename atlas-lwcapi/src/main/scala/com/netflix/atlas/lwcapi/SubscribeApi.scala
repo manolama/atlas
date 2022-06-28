@@ -21,7 +21,12 @@ import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.stream.ActorAttributes
+import akka.stream.BoundedSourceQueue
+import akka.stream.KillSwitches
 import akka.stream.Materializer
+import akka.stream.SharedKillSwitch
+import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -30,6 +35,7 @@ import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
+import com.netflix.atlas.akka.StreamOps.SourceQueue
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcHeartbeat
@@ -43,6 +49,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -102,22 +109,65 @@ class SubscribeApi @Inject() (
     * Uses text messages and sends each datapoint individually.
     */
   private def createHandlerFlow(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
+    System.out.println("### Calling drop connections")
     dropSameIdConnections(streamMeta)
+    val ks = KillSwitches.shared("WSS-KS")
+    val flowComplete = new AtomicBoolean()
 
-    Flow[Message]
+    System.out.println("### Creating handler flow")
+    val flow = Flow[Message]
       .flatMapConcat {
         case TextMessage.Strict(str) =>
+          System.out.println("------- Handler Flow strict text msg " + str)
           Source.single(str)
         case msg: TextMessage =>
+          System.out.println("------- Handler Flow text msg")
           msg.textStream.fold("")(_ + _)
         case BinaryMessage.Strict(str) =>
-          Source.single(str.decodeString(StandardCharsets.UTF_8))
+          val msg = str.decodeString(StandardCharsets.UTF_8)
+          System.out.println("------- Handler Flow binary strict " + msg)
+          Source.single(msg)
         case msg: BinaryMessage =>
+          System.out.println("------- Handler Flow binary")
           msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
+        case unk =>
+          System.out.println("!!!!!!!!!! Unexpected msg type " + unk)
+          throw new IllegalStateException("Whoops")
       }
-      .via(new WebSocketSessionManager(streamMeta, register, subscribe))
-      .flatMapMerge(Int.MaxValue, s => s)
-      .map(obj => TextMessage(obj.toJson))
+      .via(new WebSocketSessionManager(streamMeta, ks, flowComplete, register, subscribe))
+      .flatMapMerge(Int.MaxValue, { s =>
+        System.out.println("------- Handler Flow flat map: " + s)
+        s
+      })
+      .map { obj =>
+        System.out.println("------- Handler Flow resp " + obj)
+        TextMessage(obj.toJson)
+      }
+      .via(ks.flow)
+      .watchTermination() { (_, f) =>
+        f.onComplete {
+          // SO if we connect with a websock then kill it before sending a request, it won't unsubscribe.
+          // Thus we can catch the disconnect here. We still need to see if the rest of the
+          // stream is shut down.
+          case Success(_) =>
+            System.out.println(s"------- Handler Flow NORMAL disconnect? ${streamMeta.streamId}")
+            sm.unregister(streamMeta.streamId)
+            if (flowComplete.compareAndSet(false, true)) {
+              System.out.println("               Completed gracefully.")
+            }
+          case Failure(t) =>
+            System.out.println(
+              s"------- Handler Flow ABNORMAL disconnect ${streamMeta.streamId} " + t.getMessage
+            )
+            t.printStackTrace()
+            sm.unregister(streamMeta.streamId)
+            if (flowComplete.compareAndSet(false, true)) {
+              System.out.println("               Completed gracefully.")
+            }
+        }
+      }
+    System.out.println("### Finished handler flow")
+    flow
   }
 
   /**
@@ -137,7 +187,7 @@ class SubscribeApi @Inject() (
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _)
       }
-      .via(new WebSocketSessionManager(streamMeta, register, subscribe))
+      .via(new WebSocketSessionManager(streamMeta, null, null, register, subscribe))
       .flatMapMerge(Int.MaxValue, msg => msg)
       .groupedWithin(batchSize, 1.second)
       .statefulMapConcat { () =>
@@ -154,52 +204,104 @@ class SubscribeApi @Inject() (
     registry.clock().wallTime() / step * step
   }
 
-  private def register(streamMeta: StreamMetadata): (QueueHandler, Source[JsonSupport, Unit]) = {
-
+  private def register(
+    streamMeta: StreamMetadata,
+    ks: SharedKillSwitch,
+    flowComplete: AtomicBoolean
+  ): (QueueHandler, Source[JsonSupport, Unit]) = {
+    System.out.println("### Registering stream " + streamMeta)
     val streamId = streamMeta.streamId
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
-    val (queue, pub) = StreamOps
-      .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)
-      .toMat(Sink.asPublisher(true))(Keep.both)
-      .run()
+    System.out.println("### Registering stream creating queue. " + streamMeta)
 
+    val (queue, pub) = StreamOps
+      .blockingQueue[Seq[JsonSupport]](
+        registry,
+        "SubscribeApi",
+        queueSize /*,
+        materializer.executionContext*/
+      )
+      .watchTermination() { (q: SourceQueue[Seq[JsonSupport]], f) =>
+        f.onComplete {
+          case Success(_) =>
+            System.out.println("********* QUEUE DONE!!!!")
+            //throw new RuntimeException("Kablooey!")
+            //sm.unregister(streamId)
+            if (flowComplete.compareAndSet(false, true)) {
+              System.out.println("*********** QUEUE Done and KS enganged")
+              ks.shutdown()
+            }
+          case Failure(ex) =>
+            System.out.println("********** QUEUE EX: " + ex.toString)
+            //sm.unregister(streamId)
+            if (flowComplete.compareAndSet(false, true)) {
+              System.out.println("*********** QUEUE Done and KS enganged")
+              ks.abort(ex)
+            }
+        }
+        //Keep.left
+        q
+      }
+      .toMat(Sink.asPublisher(true))(Keep.both)
+      .run() /*(loggingMaterializer)*/
+
+    System.out.println("### Registering finished creating queue. " + streamMeta)
     // Send initial setup messages
     queue.offer(Seq(DiagnosticMessage.info(s"setup stream $streamId on $instanceId")))
     val handler = new QueueHandler(streamMeta, queue)
-    sm.register(streamMeta, handler)
 
     // Heartbeat messages to ensure that the socket is never idle
     val heartbeatSrc = Source
       .tick(0.seconds, 5.seconds, NotUsed)
       .flatMapConcat { _ =>
+        System.out.println("------ HB flat map")
         val steps = sm
           .subscriptionsForStream(streamId)
           .map(_.metadata.frequency)
           .distinct
           .map { step =>
+            System.out.println("------ Sending HB")
             // To account for some delays for data coming from real systems, the heartbeat
             // timestamp is delayed by one interval
             LwcHeartbeat(stepAlignedTime(step) - step, step)
           }
         Source(steps)
       }
+      // USELESS
+      .watchTermination() { (_, f) =>
+        f.onComplete {
+          case Success(_) => System.out.println("********* HB DONE!!!!")
+          case Failure(ex) =>
+            System.out.println("********** HB EX: " + ex.toString)
+        }
+        Keep.right
+      }
+    System.out.println("### Registering setup HB source " + streamMeta)
 
     val source = Source
       .fromPublisher(pub)
+      .log("PUB Maybe?")
+      .named("FromQueuePub")
       .flatMapConcat(Source.apply)
       .merge(heartbeatSrc)
       .via(StreamOps.monitorFlow(registry, "StreamApi"))
       .watchTermination() { (_, f) =>
         f.onComplete {
           case Success(_) =>
+            // calling the test probe subscriber.cancel() goes here.
             logger.debug(s"lost client for $streamId")
-            sm.unregister(streamId)
+          //sm.unregister(streamId)
           case Failure(t) =>
+            // calling the test probe subscriber.cancel(EX) goes here.
             logger.debug(s"lost client for $streamId", t)
-            sm.unregister(streamId)
+          //sm.unregister(streamId)
         }
       }
+    System.out.println("### Registered finished setting up flows " + streamMeta)
+
+    sm.register(streamMeta, handler)
+    System.out.println("### Registered " + streamMeta)
 
     handler -> source
   }

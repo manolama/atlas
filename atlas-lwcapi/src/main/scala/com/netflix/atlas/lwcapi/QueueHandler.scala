@@ -19,6 +19,8 @@ import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.json.JsonSupport
 import com.typesafe.scalalogging.StrictLogging
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 /**
   * Message handler for use with the [SubscriptionManager].
   *
@@ -26,18 +28,20 @@ import com.typesafe.scalalogging.StrictLogging
   *     Stream metadata for this handler. Used to provide context in the log messages and easily
   *     be able to grep for a given id.
   * @param queue
-  *     Underlying queue that will receive the messsages.
+  *     Underlying queue that will receive the messages.
   */
 class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[JsonSupport]])
     extends StrictLogging {
 
   private val id = streamMeta.streamId
+  private val completed = new AtomicBoolean()
 
   private def toJson(msgs: Seq[JsonSupport]): String = {
     msgs.map(_.toJson).mkString("[", ",", "]")
   }
 
   def offer(msgs: Seq[JsonSupport]): Unit = {
+    System.out.println(s"enqueuing message for $id: ${toJson(msgs)}")
     logger.trace(s"enqueuing message for $id: ${toJson(msgs)}")
     if (!queue.offer(msgs)) {
       logger.debug(s"failed to enqueue message for $id: ${toJson(msgs)}")
@@ -50,7 +54,11 @@ class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[
   def complete(): Unit = {
     if (queue.isOpen) {
       logger.debug(s"queue complete for $id")
+      System.out.println("   ******* Queue was open, closing it")
       queue.complete()
+      System.out.println("   ******* Queue was open, closed!")
+    } else {
+      System.out.println("     ** Queue was already closed")
     }
   }
 

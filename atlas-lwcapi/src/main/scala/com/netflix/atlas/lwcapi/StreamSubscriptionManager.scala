@@ -34,7 +34,15 @@ class StreamSubscriptionManager @Inject() (registry: Registry)
     */
   override def unregister(streamId: String): Option[QueueHandler] = {
     val tmp = super.unregister(streamId)
-    tmp.foreach(_.complete())
+    tmp.foreach { queue =>
+      try {
+        System.out.println(s"********* SSM completing queue ${queue}")
+        queue.complete()
+      } catch {
+        case ex: Exception =>
+          System.out.println("EX trying to complete " + ex.getMessage)
+      }
+    }
     tmp
   }
 }

@@ -53,6 +53,10 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   ex.scheduleWithFixedDelay(() => regenerateQueryIndex(), 1, 1, TimeUnit.SECONDS)
   ex.scheduleAtFixedRate(() => updateGauges(), 1, 1, TimeUnit.MINUTES)
 
+  ex.scheduleAtFixedRate(() => {
+    System.out.println(registrations)
+  }, 1, 1, TimeUnit.SECONDS)
+
   /** Rebuild the query index if there have been changes since it was last created. */
   private[lwcapi] def regenerateQueryIndex(): Unit = {
     if (queryListChanged) {
