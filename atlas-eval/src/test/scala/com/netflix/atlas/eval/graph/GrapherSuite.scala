@@ -28,6 +28,9 @@ import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
+import java.io.File
+import java.io.FileOutputStream
+
 class GrapherSuite extends FunSuite {
 
   private val bless = false
@@ -143,6 +146,22 @@ class GrapherSuite extends FunSuite {
 
   imageTest("axis using legacy scale param overides o param") {
     baseAxisScaleQuery + "&scale=linear&o=1"
+  }
+
+  imageTest("axis using binary tick labels") {
+    baseAxisScaleQuery + "&tick_labels=binary"
+  }
+
+  imageTest("axis using duration tick labels") {
+    baseAxisScaleQuery + "&tick_labels=duration"
+  }
+
+  imageTest("axis using duration tick labels small values") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=1.0e-12,1.0e-9&tick_labels=duration"
+  }
+
+  imageTest("axis with offset ticks") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=1.0e9,1.0e9,1,:add"
   }
 
   private val baseStatAxisScaleQuery = "/api/v1/graph?e=2012-01-01T00:00&s=e-2d" +
@@ -415,6 +434,18 @@ class GrapherSuite extends FunSuite {
     "/api/v1/graph?e=2012-01-01T00:00" +
     "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,1w,:offset" +
     "&theme=dark"
+  }
+
+  imageTest("ambiguous-multi-y with axis per line") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,nf.cluster,nccp-p,:re,:and,(,nf.cluster,),:by" +
+    "&axis_per_line=1&hints=ambiguous-multi-y"
+  }
+
+  imageTest("ambiguous-multi-y explicit") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,:sum,:dup,2,:div,1,:axis" +
+    "&hints=ambiguous-multi-y"
   }
 
   imageTest("topk") {
