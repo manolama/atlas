@@ -7,7 +7,7 @@ object BuildSettings {
     "-deprecation",
     "-unchecked",
     "-Xlint:_,-infer-any",
-    "-Xfatal-warnings",
+    //"-Xfatal-warnings",
     "-feature",
     "-release", "8"
   )

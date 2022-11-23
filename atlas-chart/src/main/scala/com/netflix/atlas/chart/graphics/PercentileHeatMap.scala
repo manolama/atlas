@@ -1,31 +1,20 @@
-/*
- * Copyright 2014-2022 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.netflix.atlas.chart.graphics
+
+import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.LineStyle
+import com.netflix.atlas.chart.model.MessageDef
+import com.netflix.atlas.chart.model.Scale
+import com.netflix.spectator.api.histogram.PercentileBuckets
 
 import java.awt.BasicStroke
 import java.awt.Graphics2D
 
-import com.netflix.atlas.chart.GraphConstants
-import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.LineStyle
+case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
 
-/**
-  * Draws a time series graph.
-  */
-case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
+  val start: Long = graphDef.startTime.toEpochMilli
+  val end: Long = graphDef.endTime.toEpochMilli
 
   override def height: Int = {
     val max = GraphConstants.MaxHeight
@@ -56,9 +45,6 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     }
   }
 
-  val start: Long = graphDef.startTime.toEpochMilli
-  val end: Long = graphDef.endTime.toEpochMilli
-
   val timeAxes: List[TimeAxis] = graphDef.timezones.zipWithIndex.map {
     case (tz, i) =>
       TimeAxis(
@@ -70,7 +56,6 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         if (i == 0) 40 else 0xFF
       )
   }
-
   val timeAxis: TimeAxis = timeAxes.head
 
   val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
@@ -89,7 +74,6 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   }
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-
     val leftAxisW = yaxes.head.width
     val rightAxisW = yaxes.tail.foldLeft(0) { (acc, axis) =>
       acc + axis.width
@@ -109,31 +93,64 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
     val prevClip = g.getClip
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
+
+    // resort
+    val logScaler = Scales.factory(Scale.LOGARITHMIC)
+    val plot = graphDef.plots(0)
+    val minNanos = bktNanos(plot.lines.head)
+    val maxNanos = bktNanos(plot.lines.last)
+    val ypixels = y2 - y1
+    val lines = plot.lines.length
+    val dpHeight =
+      if (lines >= ypixels) 1
+      else ypixels / lines
+    
+
+    var cmin = Double.MaxValue
+    var cmax = Double.MinValue
+    plot.lines.foreach { d =>
+      if (d.isInstanceOf[MessageDef]) {
+        System.out.println(s"Whoops, msg: ${d}")
+      } else if (d.isInstanceOf[LineDef]) {
+        val lineDef = d.asInstanceOf[LineDef]
+        val x = lineDef.legendStats.max
+        if (x > cmax) {
+          cmax = x
+        }
+        val n = lineDef.legendStats.min
+        if (n < cmin) {
+          cmin = n
+        }
+      }
+    }
+
+    System.out.println(s"Max counts: ${cmax}  Min counts: ${cmin}  Y Pixels: ${ypixels}")
+
     graphDef.plots.zip(yaxes).foreach {
       case (plot, axis) =>
-        val offsets = TimeSeriesStack.Offsets(timeAxis)
+        // TODO - if we have to consolidate buckets, do that
+        System.out
+          .println(s"Plot: ${plot.lines.length}  Axis: ${axis.valueScale}  DPH: ${dpHeight}")
+
+        // val offsets = TimeSeriesStack.Offsets(timeAxis)
+        var yOff = 0
         plot.lines.foreach { line =>
+          val bktIdx = Integer.parseInt(line.data.tags("percentile").substring(1), 16)
+          val nanos = PercentileBuckets.get(bktIdx)
+
           val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
-          val lineElement = line.lineStyle match {
-            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
-            case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
-            case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
-            case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
-          }
-
+          val lineElement =
+            PTileHistoLine(style, line.data.data, timeAxis, axis, cmax - cmin, yOff, dpHeight)
+//          val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
+          //          val lineElement = line.lineStyle match {
+          //            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
+          //            case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
+          //            case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
+          //            case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
+          //          }
+          //
           lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-        }
-
-        plot.horizontalSpans.foreach { hspan =>
-          val style = Style(color = hspan.color)
-          val spanElement = ValueSpan(style, hspan.v1, hspan.v2, axis)
-          spanElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-        }
-
-        plot.verticalSpans.foreach { vspan =>
-          val style = Style(color = vspan.color)
-          val spanElement = TimeSpan(style, vspan.t1.toEpochMilli, vspan.t2.toEpochMilli, timeAxis)
-          spanElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+          yOff += dpHeight
         }
     }
     g.setClip(prevClip)
@@ -160,13 +177,10 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       }
     }
   }
-}
 
-object TimeSeriesGraph {
+  def bktNanos(line: LineDef): Long = {
+    val bktIdx = Integer.parseInt(line.data.tags("percentile").substring(1), 16)
+    PercentileBuckets.get(bktIdx)
+  }
 
-  /**
-    * Allow at least 4 small characters on the right side to prevent the final tick mark label
-    * from getting truncated.
-    */
-  private[graphics] val minRightSidePadding = ChartSettings.smallFontDims.width * 4
 }

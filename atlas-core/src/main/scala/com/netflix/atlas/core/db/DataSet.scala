@@ -19,10 +19,11 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.TimeWave
 import com.netflix.spectator.api.histogram.PercentileBuckets
+
+import scala.collection.mutable
 
 private[db] object DataSet {
 
@@ -163,6 +164,7 @@ private[db] object DataSet {
     series.foreach(_.data.foreach(start.toEpochMilli, end.toEpochMilli) { (_, d) =>
       usedBuckets += PercentileBuckets.indexOf(d.toLong)
     })
+    System.out.println(s"Used Buckets: ${usedBuckets}")
 
     val rate = 1.0d / 60
 
@@ -176,6 +178,39 @@ private[db] object DataSet {
       )
 
     usedBuckets.map(bucketSeries).toList
+  }
+
+  def timerPercentiles(
+    name: String,
+    start: Instant,
+    end: Instant,
+    series: List[TimeSeries]
+  ): List[TimeSeries] = {
+    val init = start.toEpochMilli + (3788 * 60_000)
+    val last = start.toEpochMilli + (32946 * 60_000)
+    System.out.println(s"start to end: ${init} to ${last}")
+    val numdps = (end.toEpochMilli - start.toEpochMilli) / 60_000
+    series.flatMap { s =>
+      val pdps = new mutable.HashMap[Int, Array[Double]]
+      s.data.foreach(start.toEpochMilli, end.toEpochMilli) { (ts, d) =>
+        val idx = ((ts - start.toEpochMilli) / 60_000).toInt
+        val bktIdx = PercentileBuckets.indexOf(d.toLong)
+        val a = pdps.getOrElseUpdate(bktIdx, new Array[Double](numdps.toInt))
+        a(idx) += 1
+      }
+
+      pdps.map { tuple =>
+        // System.out.println(s"NEw series: ${s.tags + (TagKey.percentile -> f"T${tuple._1}%04X")}")
+        // System.out.println("Counts: " + tuple._2.zipWithIndex.filter(_._1 > 0).mkString(", "))
+        val ts = TimeSeries(
+          s.tags + (TagKey.percentile -> f"T${tuple._1}%04X"),
+          new ArrayTimeSeq(DsType.Gauge, start.toEpochMilli, 60_000, tuple._2)
+        )
+        ts.data
+        ts
+      }
+
+    }
   }
 
   def noisyWaveSeries: TimeSeries = {
@@ -239,19 +274,22 @@ private[db] object DataSet {
 
     // size, min, max, noise
     val settings = Map(
-      "silverlight" -> ((300, 500.0, 600.0, 5.0)),
-      "xbox"        -> ((120, 400.0, 520.0, 5.0)),
-      "wii"         -> ((111, 200.0, 440.0, 8.0))
+      "silverlight" -> ((300, 43.0 * 1000 * 1000, 2.38 * 1000 * 1000 * 1000, 5.0)),
+      "xbox"        -> ((120, 965.0 * 1000 * 1000, 1.0 * 1000 * 1000 * 1000, 5.0)),
+      "wii"         -> ((111, 43.0 * 1000 * 1000, 2.38 * 1000 * 1000 * 1000, 8.0))
     )
 
     val metrics = settings.toList.map {
       case (stack, conf) =>
-        val (size, _, max, noiseFactor) = conf
+        val (size, min, max, noiseFactor) = conf
         val tags = mkTags("nccp", s"$stack-node", Some(stack), Some(42)) + name
-        noise(size, noiseFactor, constant(max)).withTags(tags)
+        // System.out.println(s"******* TAGS: ${tags}")
+        // noise(size, noiseFactor, constant(max)).withTags(tags)
+        wave(min, max, Duration.ofDays(1)).withTags(tags)
     }
+    System.out.println(metrics)
 
-    metrics ++ percentiles("requestLatency", start, end, metrics)
+    metrics ++ timerPercentiles("requestLatency", start, end, metrics)
   }
 
   def discoveryStatusUp: TimeSeries = {

@@ -22,7 +22,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-
 import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
@@ -38,6 +37,8 @@ import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
 import munit.FunSuite
 
+import java.io.File
+import java.io.FileOutputStream
 import scala.util.Failure
 import scala.util.Try
 import scala.util.Using
@@ -155,6 +156,17 @@ abstract class PngGraphEngineSuite extends FunSuite {
     assertEquals(graphDef.normalize, JsonCodec.decode(json).normalize)
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    if (
+      name.endsWith("default_multiy_n_binary.png") ||
+      name.endsWith("default_multiy_n_duration.png")
+    ) {
+      System.out.println(s"******* WRITING ${name}")
+      val file = new File(new File("/tmp"), name)
+      file.getParentFile.mkdirs()
+      val stream = new FileOutputStream(file)
+      image.write(stream)
+      stream.close()
+    }
     graphAssertions.assertEquals(image, name, bless)
   }
 
