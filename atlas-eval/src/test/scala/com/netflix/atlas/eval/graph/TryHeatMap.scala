@@ -55,7 +55,7 @@ class TryHeatMap extends FunSuite {
     new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
 
   private val db = {
-    val f = "/Users/clarsen/Downloads/ptile_data2.json"
+    val f = "/Users/clarsen/Downloads/ptile_data3.json"
     val json = Json.decode[GraphResponse](new FileInputStream(f))
     val w = 3600 * 3
     var time = System.currentTimeMillis() - (w * 1000)

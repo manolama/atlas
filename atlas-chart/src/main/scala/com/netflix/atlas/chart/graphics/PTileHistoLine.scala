@@ -26,7 +26,7 @@ case class PTileHistoLine(
 
       val v = ts(t)
       val pct = v / countRange
-      val alpha = (255 * pct).toInt
+      val alpha = 25 + (230 * pct).toInt
       Style(Color.RED).withAlpha(alpha).configure(g)
 
       g.fillRect(px1, yOffset, px2 - px1, yHeight)

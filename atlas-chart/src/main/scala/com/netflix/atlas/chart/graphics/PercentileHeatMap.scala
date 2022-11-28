@@ -10,6 +10,7 @@ import com.netflix.spectator.api.histogram.PercentileBuckets
 
 import java.awt.BasicStroke
 import java.awt.Graphics2D
+import scala.collection.mutable
 
 case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
 
@@ -95,35 +96,52 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
 
     // resort
-    val logScaler = Scales.factory(Scale.LOGARITHMIC)
     val plot = graphDef.plots(0)
     val minNanos = bktNanos(plot.lines.head)
     val maxNanos = bktNanos(plot.lines.last)
     val ypixels = y2 - y1
+    val logScaler = Scales.factory(Scale.LOGARITHMIC)(minNanos, maxNanos, 0, ypixels)
     val lines = plot.lines.length
-    val dpHeight =
-      if (lines >= ypixels) 1
-      else ypixels / lines
-    
+    val dpHeight = if (lines >= ypixels) 1 else ypixels / lines
+
+    val combinedSeries = new Array[Array[Double]](Math.min(ypixels, lines))
+    val numDps = (graphDef.endTime.toEpochMilli - graphDef.startTime.toEpochMilli) / graphDef.step
 
     var cmin = Double.MaxValue
     var cmax = Double.MinValue
-    plot.lines.foreach { d =>
-      if (d.isInstanceOf[MessageDef]) {
-        System.out.println(s"Whoops, msg: ${d}")
-      } else if (d.isInstanceOf[LineDef]) {
-        val lineDef = d.asInstanceOf[LineDef]
-        val x = lineDef.legendStats.max
-        if (x > cmax) {
-          cmax = x
-        }
-        val n = lineDef.legendStats.min
-        if (n < cmin) {
-          cmin = n
-        }
+    val temp = new mutable.TreeMap[Int, Int]()
+    plot.lines.foreach { line =>
+      val idx = ypixels - logScaler(bktNanos(line))
+      // System.out.println(s"  log idx: ${idx}")
+      val cnt = temp.getOrElseUpdate(idx, 0)
+      temp += (idx -> (cnt + 1))
+//      if (combinedSeries(idx) == null) {
+//        combinedSeries(idx) = new Array[Double](numDps.toInt)
+//      }
+//      val arr = combinedSeries(idx)
+//      var t = graphDef.startTime.toEpochMilli
+//      var di = 0
+//      while (t < graphDef.endTime.toEpochMilli) {
+//        val v = line.data.data(t)
+//        arr(di) += v
+//        if (arr(di) > cmax) cmax = arr(di)
+//        if (arr(di) < cmin) cmin = arr(di)
+//        di += 1
+//        t += line.data.data.step
+//      }
+
+      val x = line.legendStats.max
+      if (x > cmax) {
+        cmax = x
+      }
+      val n = line.legendStats.min
+      if (n < cmin) {
+        cmin = n
       }
     }
+    //temp.foreachEntry { (k, v) => System.out.println(s"${k}: ${v}") }
 
+    val step =
     System.out.println(s"Max counts: ${cmax}  Min counts: ${cmin}  Y Pixels: ${ypixels}")
 
     graphDef.plots.zip(yaxes).foreach {
