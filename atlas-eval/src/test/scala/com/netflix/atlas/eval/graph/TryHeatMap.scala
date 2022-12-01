@@ -104,7 +104,7 @@ class TryHeatMap extends FunSuite {
 
   imageTest("my histo") {
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
-    "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&tick_labels=off&no_legend=1"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
   }
 
 }
