@@ -106,13 +106,14 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
 
     // resort
     val plot = graphDef.plots(0)
+    val bktRange = bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
     val minNanos = bktNanos(plot.lines.head)
     val maxNanos = bktNanos(plot.lines.last)
     val ypixels = y2 - y1 - timeAxisH
     val lines = plot.lines.length
-    val dpHeight = ypixels / lines // if (lines >= ypixels) 1 else ypixels / lines
+    val dpHeight = ypixels / bktRange
     System.out.println(
-      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixes: ${ypixels}  DPH: ${dpHeight} Series ${plot.data.length}"
+      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixes: ${ypixels}  DPH: ${dpHeight} Series ${plot.data.length} Bkt Range: ${bktRange}"
     )
     val logScaler = Scales.factory(Scale.LOGARITHMIC)(minNanos, maxNanos, 0, ypixels / dpHeight)
 
@@ -128,43 +129,29 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
     var cmin = Long.MaxValue
     var cmax = Long.MinValue
     val temp = new mutable.TreeMap[Int, Int]()
-    var yoff = 0
-    var printed = 0
     plot.lines.foreach { line =>
-      if (printed < 10) {
-        // val idx = (ypixels / dpHeight) - logScaler(bktNanos(line))
-        val idx = yoff
-        yoff += dpHeight
-        // System.out.println(s"  IDX: ${idx} vs Log ${logScaler(bktNanos(line))} vs ${yoff}")
-        // System.out.println(s"  idx: ${idx}  Nanos: ${bktNanos(line)}")
-        val cnt = temp.getOrElseUpdate(idx, 0)
-        temp += (idx -> (cnt + 1))
-        //      if (combinedSeries(idx) == null) {
-        //        combinedSeries(idx) = new Array[Double](numDps.toInt)
-        //      }
-        val (nanos, arr) =
-          combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
-        var t = graphDef.startTime.toEpochMilli
-        var di = 0
-        while (t < graphDef.endTime.toEpochMilli) {
-          val v = (line.data.data(t) * 60).toLong
-          arr(di) += v
-          if (arr(di) > cmax) cmax = arr(di).toLong
-          if (arr(di) < cmin) cmin = arr(di).toLong
-          di += 1
-          t += line.data.data.step
-        }
-
-        //      val x = (line.legendStats.max * 60).toLong
-        //      if (x > cmax) {
-        //        cmax = x
-        //      }
-        //      val n = (line.legendStats.min * 60).toLong
-        //      if (n < cmin) {
-        //        cmin = n
-        //      }
+      // val idx = (ypixels / dpHeight) - logScaler(bktNanos(line))
+      val idx = bktIdx(line) * dpHeight
+      //yoff += dpHeight
+      // System.out.println(s"  IDX: ${idx} vs Log ${logScaler(bktNanos(line))} vs ${yoff}")
+      // System.out.println(s"  idx: ${idx}  Nanos: ${bktNanos(line)}")
+      val cnt = temp.getOrElseUpdate(idx, 0)
+      temp += (idx -> (cnt + 1))
+      //      if (combinedSeries(idx) == null) {
+      //        combinedSeries(idx) = new Array[Double](numDps.toInt)
+      //      }
+      val (nanos, arr) =
+        combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
+      var t = graphDef.startTime.toEpochMilli
+      var di = 0
+      while (t < graphDef.endTime.toEpochMilli) {
+        val v = (line.data.data(t) * 60).toLong
+        arr(di) += v
+        if (arr(di) > cmax) cmax = arr(di).toLong
+        if (arr(di) < cmin) cmin = arr(di).toLong
+        di += 1
+        t += line.data.data.step
       }
-    // printed += 1
     }
     // temp.foreachEntry { (k, v) => System.out.println(s"${k}: ${v}") }
     val colorScaler = Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, redList.size - 1)
@@ -241,8 +228,11 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
   }
 
   def bktNanos(line: LineDef): Long = {
-    val bktIdx = Integer.parseInt(line.data.tags("percentile").substring(1), 16)
-    PercentileBuckets.get(bktIdx)
+    PercentileBuckets.get(bktIdx(line))
+  }
+
+  def bktIdx(line: LineDef): Int = {
+    Integer.parseInt(line.data.tags("percentile").substring(1), 16)
   }
 
 }
