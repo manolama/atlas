@@ -55,7 +55,7 @@ class TryHeatMap extends FunSuite {
     new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
 
   private val db = {
-    val f = "/Users/clarsen/Downloads/ptile_data3.json"
+    val f = "/Users/clarsen/Downloads/ptile_data4.json"
     val json = Json.decode[GraphResponse](new FileInputStream(f))
     val w = 3600 * 3
     var time = System.currentTimeMillis() - (w * 1000)
@@ -104,7 +104,7 @@ class TryHeatMap extends FunSuite {
 
   imageTest("my histo") {
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
-    "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&scale=log"
   }
 
 }

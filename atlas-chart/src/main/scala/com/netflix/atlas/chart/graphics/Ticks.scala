@@ -495,37 +495,6 @@ object Ticks {
     }
   }
 
-  private def durationTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
-    val (major, minor, minorPerMajor) = t
-    val ticks = List.newBuilder[ValueTick]
-
-    val base = round(v1, major)
-    val end = ((v2 - base) / minor).toInt + 1
-    var pos = 0
-    while (pos <= end) {
-      val v = base + pos * minor
-      if (v >= v1 && v <= v2) {
-        val prefix = getDurationPrefix(math.abs(v), major)
-        val labelFmt = durationLabelFormat(v)
-        val label = prefix.format(v, labelFmt)
-        ticks += ValueTick(v, 0.0, pos % minorPerMajor == 0, Some(label))
-      }
-      pos += 1
-    }
-    val ts = ticks.result()
-
-    val useOffset = majorLabelDuplication(ts)
-    if (useOffset) {
-      val range = v2 - v1
-      val offsetPrefix = getDurationPrefix(range, major)
-      val newFormat = durationLabelFormat(major)
-
-      ts.map(t =>
-        t.copy(offset = base, labelOpt = Some(offsetPrefix.format(t.v - base, newFormat)))
-      )
-    } else ts
-  }
-
   /**
     * Generate value tick marks with approximately `n` major ticks for the range `[s, e]`. Tick
     * marks will be on significant time boundaries for the specified time zone.
