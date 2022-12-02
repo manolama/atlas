@@ -118,7 +118,7 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
     val maxNanos = bktNanos(plot.lines.last)
     val ypixels = chartEnd - y1
     val dpHeight = ypixels / bktRange
-    val yFudge = Math.round((bktRange * dpHeight).toDouble / (ypixels - (bktRange * dpHeight)))
+    val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
     System.out.println(
       s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixels: [Y1=${y1}, Y2=${y2}, CE=${chartEnd}, TOT=${
           ypixels
@@ -171,10 +171,9 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
         var yH = chartEnd
         for (i <- minBktIdx until maxBktIdx) {
           val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
-
           combinedSeries.get(i) match {
             case Some((nanos, line)) =>
-              //System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
+              System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
               val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
               val style = Style(color = Color.RED, stroke = new BasicStroke(1))
               val lineElement =
@@ -191,51 +190,13 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
                 )
               lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
             case None => // no-op
-              //System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+            // System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
           }
           ctr += 1
           yH -= h
         }
-//        combinedSeries.foreachEntry { (idx, tuple) =>
-//          val (nanos, line) = tuple
-//          val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
-//          val style = Style(color = Color.RED, stroke = new BasicStroke(1))
-//          // val i = (ypixels - (idx * dpHeight))
-//          // val i = ypixels - idx
-//
-//          val h = if (ctr % 4 == 0) dpHeight + 1 else dpHeight
-//          //System.out.println(s"  OFF: ${i}  nanos ${nanos} H ${h}")
-//          val lineElement =
-//            PTileHistoLine(
-//              style,
-//              ts,
-//              timeAxis,
-//              axis,
-//              cmax - cmin,
-//              yH,
-//              h,
-//              colorScaler,
-//              redList
-//            )
-//          lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-//          ctr += 1
-//          yH -= h
-//        }
+
         System.out.println(s"Final H: ${yH}")
-      // val offsets = TimeSeriesStack.Offsets(timeAxis)
-//
-//        plot.lines.foreach { line =>
-//          val idx = ypixels - logScaler(bktNanos(line))
-//          // System.out.println(s"   Log y: ${idx} vs Y: ${yOff} ")
-//          val bktIdx = Integer.parseInt(line.data.tags("percentile").substring(1), 16)
-//          val nanos = PercentileBuckets.get(bktIdx)
-//
-//          val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
-//          val lineElement =
-//            PTileHistoLine(style, line.data.data, timeAxis, axis, cmax - cmin, yOff, dpHeight)
-//          lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-//          yOff += dpHeight
-//        }
     }
     g.setClip(prevClip)
 
