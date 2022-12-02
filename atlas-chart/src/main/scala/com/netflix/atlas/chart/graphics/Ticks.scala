@@ -227,12 +227,12 @@ object Ticks {
     }
   }
 
-  private def getDurationPrefix(v: Double, major: Double): UnitPrefix = {
+  def getDurationPrefix(v: Double, major: Double): UnitPrefix = {
     val m = UnitPrefix.durationRange(major)
     if (v <= m.factor) m else UnitPrefix.durationRange(v)
   }
 
-  private def durationLabelFormat(prefix: UnitPrefix, v: Double): String = {
+  def durationLabelFormat(prefix: UnitPrefix, v: Double): String = {
     val f = if (v < 1) v / prefix.factor else v
     (f * 1000.0).toInt match {
       case _ if v >= 3.1536e10 => "%.1e%s" // 1000+ years switch to exponent

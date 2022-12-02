@@ -16,10 +16,11 @@
 package com.netflix.atlas.chart.graphics
 
 import java.awt.Graphics2D
-
+import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.core.util.UnitPrefix
+import com.netflix.spectator.api.histogram.PercentileBuckets
 
 sealed trait ValueAxis extends Element with FixedWidth {
 
@@ -121,6 +122,16 @@ case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Dou
     }
   }
 
+  // FOR PTILE HEAT
+  override def ticks(y1: Int, y2: Int): List[ValueTick] = {
+    val numTicks = (y2 - y1) / minTickLabelHeight
+    plotDef.tickLabelMode match {
+      case TickLabelMode.BINARY   => Ticks.binary(min, max, numTicks)
+      case TickLabelMode.DURATION => Ticks.duration(min, max, numTicks)
+      case _                      => Ticks.value(min, max, numTicks, plotDef.scale)
+    }
+  }
+
   private def drawNormal(
     ticks: List[ValueTick],
     g: Graphics2D,
@@ -188,6 +199,92 @@ case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Dou
         val ty = py - txtH / 2
         if (ty + txtH < otop)
           txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
+      }
+    }
+  }
+}
+
+case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
+    extends ValueAxis {
+
+  import ValueAxis._
+
+  protected def angle: Double = -Math.PI / 2.0
+
+  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    style.configure(g)
+    g.drawLine(x2, y1, x2, y2)
+
+    val majorTicks = ticks(y1, y2).filter(_.major)
+    // val majorTicks = ticks(y1, y2)
+    drawNormal(majorTicks, g, x1, y1, x2, y2)
+
+    label.foreach { t =>
+      drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
+    }
+  }
+
+  // FOR PTILE HEAT
+  override def ticks(y1: Int, y2: Int): List[ValueTick] = {
+    val numTicks = (y2 - y1) / minTickLabelHeight
+    val ticks = List.newBuilder[ValueTick]
+    val bktRange = max - min
+    val skipBuckets = (bktRange / numTicks / 4).toInt
+    System.out.println(s"Getting ticks.... R: ${bktRange}  Skip ${skipBuckets}")
+    var cnt = 0
+    for (i <- min.toInt until max.toInt by skipBuckets.toInt) {
+      // if (i % skipBuckets == 0) {
+      val sec = bktSeconds(i)
+      val prefix = Ticks.getDurationPrefix(sec, sec)
+      val fmt = Ticks.durationLabelFormat(prefix, sec)
+      val label = prefix.format(sec, fmt)
+      val t = ValueTick(i, 0.0, i % 4 == 0, Some(label))
+//      System.out.println(s"  [${i}]    ${t}")
+      ticks += t
+      cnt += 1
+      // }
+    }
+
+    val sec = bktSeconds(max.toInt)
+    val prefix = Ticks.getDurationPrefix(sec, sec)
+    val fmt = Ticks.durationLabelFormat(prefix, sec)
+    val label = prefix.format(sec, fmt)
+    val t = ValueTick(max.toInt, 0.0, true, Some(label))
+//    System.out.println(s"  [${max.toInt}]    ${t}")
+    ticks += t
+    ticks.result()
+  }
+
+  def bktSeconds(index: Int): Double = {
+    PercentileBuckets.get(index).toDouble / 1000 / 1000 / 1000
+  }
+
+  private def drawNormal(
+    ticks: List[ValueTick],
+    g: Graphics2D,
+    x1: Int,
+    y1: Int,
+    x2: Int,
+    y2: Int
+  ): Unit = {
+    // val yscale = scale(y1, y2)
+    ticks.foreach { tick =>
+      // val py = yscale(tick.v)
+      val py = y2 - (tick.v.toInt * 3)
+      if (tick.major) {
+        g.drawLine(x2, py, x2 - tickMarkLength, py)
+
+        if (plotDef.showTickLabels) {
+          val txt = Text(
+            tick.label,
+            font = ChartSettings.smallFont,
+            alignment = TextAlignment.RIGHT,
+            style = style
+          )
+          val txtH = ChartSettings.smallFontDims.height
+          val ty = py - txtH / 2
+          txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
+        }
       }
     }
   }

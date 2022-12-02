@@ -71,7 +71,12 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
         val minSecs = bktNanos(plot.lines.head).toDouble / 1000 / 1000 / 1000
         val maxSecs = bktNanos(plot.lines.last).toDouble / 1000 / 1000 / 1000
         System.out.println(s"Y Min sec ${minSecs}  Max: ${maxSecs}")
-        LeftValueAxis(plot, graphDef.theme.axis, minSecs, maxSecs)
+        HeatMapTimerValueAxis(
+          plot,
+          graphDef.theme.axis,
+          bktIdx(plot.lines.head),
+          bktIdx(plot.lines.last)
+        )
         // LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
       } else
         RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
@@ -106,14 +111,17 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
 
     // resort
     val plot = graphDef.plots(0)
+    val minBktIdx = bktIdx(plot.lines.head)
+    val maxBktIdx = bktIdx(plot.lines.last)
     val bktRange = bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
     val minNanos = bktNanos(plot.lines.head)
     val maxNanos = bktNanos(plot.lines.last)
-    val ypixels = y2 - y1 - timeAxisH
-    val lines = plot.lines.length
+    val ypixels = chartEnd - y1
     val dpHeight = ypixels / bktRange
     System.out.println(
-      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixes: ${ypixels}  DPH: ${dpHeight} Series ${plot.data.length} Bkt Range: ${bktRange}"
+      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixels: [Y1=${y1}, Y2=${y2}, CE=${
+          chartEnd
+        }, TOT=${ypixels}]  DPH: ${dpHeight} Series ${plot.data.length} Bkt Range: ${bktRange}"
     )
     val logScaler = Scales.factory(Scale.LOGARITHMIC)(minNanos, maxNanos, 0, ypixels / dpHeight)
 
@@ -130,16 +138,9 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
     var cmax = Long.MinValue
     val temp = new mutable.TreeMap[Int, Int]()
     plot.lines.foreach { line =>
-      // val idx = (ypixels / dpHeight) - logScaler(bktNanos(line))
-      val idx = bktIdx(line) * dpHeight
-      //yoff += dpHeight
-      // System.out.println(s"  IDX: ${idx} vs Log ${logScaler(bktNanos(line))} vs ${yoff}")
-      // System.out.println(s"  idx: ${idx}  Nanos: ${bktNanos(line)}")
+      val idx = bktIdx(line)
       val cnt = temp.getOrElseUpdate(idx, 0)
       temp += (idx -> (cnt + 1))
-      //      if (combinedSeries(idx) == null) {
-      //        combinedSeries(idx) = new Array[Double](numDps.toInt)
-      //      }
       val (nanos, arr) =
         combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
       var t = graphDef.startTime.toEpochMilli
@@ -165,28 +166,61 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
         System.out
           .println(s"Plot: ${plot.lines.length}  Axis: ${axis.valueScale}  DPH: ${dpHeight}")
 
-        combinedSeries.foreachEntry { (idx, tuple) =>
-          val (nanos, line) = tuple
-          val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
-          val style = Style(color = Color.RED, stroke = new BasicStroke(1))
-          // val i = (ypixels - (idx * dpHeight))
-          // val i = ypixels - idx
-          val i = ypixels - idx
-          System.out.println(s"  OFF: ${i}  nanos ${nanos}")
-          val lineElement =
-            PTileHistoLine(
-              style,
-              ts,
-              timeAxis,
-              axis,
-              cmax - cmin,
-              i,
-              dpHeight,
-              colorScaler,
-              redList
-            )
-          lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+        var ctr = 0
+        var yH = chartEnd
+        for (i <- minBktIdx until maxBktIdx) {
+          val h = if (ctr % 4 == 0) dpHeight + 1 else dpHeight
+
+          combinedSeries.get(i) match {
+            case Some((nanos, line)) =>
+              System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
+              val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
+              val style = Style(color = Color.RED, stroke = new BasicStroke(1))
+              val lineElement =
+                PTileHistoLine(
+                  style,
+                  ts,
+                  timeAxis,
+                  axis,
+                  cmax - cmin,
+                  yH - h,
+                  h,
+                  colorScaler,
+                  redList
+                )
+              lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+            case None => // no-op
+              System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+          }
+          ctr += 1
+          yH -= h
         }
+//        combinedSeries.foreachEntry { (idx, tuple) =>
+//          val (nanos, line) = tuple
+//          val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
+//          val style = Style(color = Color.RED, stroke = new BasicStroke(1))
+//          // val i = (ypixels - (idx * dpHeight))
+//          // val i = ypixels - idx
+//
+//          val h = if (ctr % 4 == 0) dpHeight + 1 else dpHeight
+//          //System.out.println(s"  OFF: ${i}  nanos ${nanos} H ${h}")
+//          val lineElement =
+//            PTileHistoLine(
+//              style,
+//              ts,
+//              timeAxis,
+//              axis,
+//              cmax - cmin,
+//              yH,
+//              h,
+//              colorScaler,
+//              redList
+//            )
+//          lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+//          ctr += 1
+//          yH -= h
+//        }
+        System.out.println(s"Final H: ${yH}")
       // val offsets = TimeSeriesStack.Offsets(timeAxis)
 //
 //        plot.lines.foreach { line =>
