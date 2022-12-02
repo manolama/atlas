@@ -118,10 +118,11 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
     val maxNanos = bktNanos(plot.lines.last)
     val ypixels = chartEnd - y1
     val dpHeight = ypixels / bktRange
+    val yFudge = Math.round((bktRange * dpHeight).toDouble / (ypixels - (bktRange * dpHeight)))
     System.out.println(
-      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixels: [Y1=${y1}, Y2=${y2}, CE=${
-          chartEnd
-        }, TOT=${ypixels}]  DPH: ${dpHeight} Series ${plot.data.length} Bkt Range: ${bktRange}"
+      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixels: [Y1=${y1}, Y2=${y2}, CE=${chartEnd}, TOT=${
+          ypixels
+        }, Fudge=${yFudge}]  DPH: ${dpHeight} Series ${plot.data.length} Bkt Range: ${bktRange}"
     )
     val logScaler = Scales.factory(Scale.LOGARITHMIC)(minNanos, maxNanos, 0, ypixels / dpHeight)
 
@@ -169,7 +170,7 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
         var ctr = 0
         var yH = chartEnd
         for (i <- minBktIdx until maxBktIdx) {
-          val h = if (ctr % 4 == 0) dpHeight + 1 else dpHeight
+          val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
 
           combinedSeries.get(i) match {
             case Some((nanos, line)) =>
