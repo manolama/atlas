@@ -215,7 +215,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     style.configure(g)
     g.drawLine(x2, y1, x2, y2)
 
-    val majorTicks = ticks(y1, y2).filter(_.major)
+    val majorTicks = ticks(y1, y2) // .filter(_.major)
     // val majorTicks = ticks(y1, y2)
     drawNormal(majorTicks, g, x1, y1, x2, y2)
 
@@ -232,13 +232,13 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     val skipBuckets = (bktRange / numTicks / 4).toInt
     System.out.println(s"Getting ticks.... R: ${bktRange}  Skip ${skipBuckets}")
     var cnt = 0
-    for (i <- min.toInt until max.toInt by skipBuckets.toInt) {
+    for (i <- min.toInt until max.toInt) {
       // if (i % skipBuckets == 0) {
       val sec = bktSeconds(i)
       val prefix = Ticks.getDurationPrefix(sec, sec)
       val fmt = Ticks.durationLabelFormat(prefix, sec)
       val label = prefix.format(sec, fmt)
-      val t = ValueTick(i, 0.0, i % 4 == 0, Some(label))
+      val t = ValueTick(i, 0.0, i % 10 == 0, Some(label))
 //      System.out.println(s"  [${i}]    ${t}")
       ticks += t
       cnt += 1
@@ -268,9 +268,17 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     y2: Int
   ): Unit = {
     // val yscale = scale(y1, y2)
+
+    // tmep
+    val dpHeight = 2
+    val yFudge = 4
+    var ctr = 0
+    var offset = y2
     ticks.foreach { tick =>
       // val py = yscale(tick.v)
-      val py = y2 - (tick.v.toInt * 3)
+      // val py = y2 - (tick.v.toInt * 3)
+      val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
+      val py = offset - h
       if (tick.major) {
         g.drawLine(x2, py, x2 - tickMarkLength, py)
 
@@ -283,9 +291,12 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
           )
           val txtH = ChartSettings.smallFontDims.height
           val ty = py - txtH / 2
+          System.out.println(s"Yfudge ${offset - h}  Exist ${ty}")
           txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
         }
       }
+      ctr += 1
+      offset -= h
     }
   }
 }

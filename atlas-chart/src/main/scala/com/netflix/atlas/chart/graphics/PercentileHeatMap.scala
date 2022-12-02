@@ -174,7 +174,7 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
 
           combinedSeries.get(i) match {
             case Some((nanos, line)) =>
-              System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
+              //System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
               val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
               val style = Style(color = Color.RED, stroke = new BasicStroke(1))
               val lineElement =
@@ -191,7 +191,7 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
                 )
               lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
             case None => // no-op
-              System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+              //System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
           }
           ctr += 1
           yH -= h
