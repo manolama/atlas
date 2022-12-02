@@ -173,7 +173,7 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
           val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
           combinedSeries.get(i) match {
             case Some((nanos, line)) =>
-              System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
+              // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
               val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
               val style = Style(color = Color.RED, stroke = new BasicStroke(1))
               val lineElement =
@@ -196,7 +196,7 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
           yH -= h
         }
 
-        System.out.println(s"Final H: ${yH}")
+      // System.out.println(s"Final H: ${yH}")
     }
     g.setClip(prevClip)
 

@@ -236,9 +236,10 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       // if (i % skipBuckets == 0) {
       val sec = bktSeconds(i)
       val prefix = Ticks.getDurationPrefix(sec, sec)
-      val fmt = Ticks.durationLabelFormat(prefix, sec)
+      // val fmt = Ticks.durationLabelFormat(prefix, sec)
+      val fmt = prefix.format(sec, "%.1f%s")
       val label = prefix.format(sec, fmt)
-      val t = ValueTick(i, 0.0, i % 10 == 0, Some(label))
+      val t = ValueTick(i, 0.0, i % numTicks == 0, Some(label))
 //      System.out.println(s"  [${i}]    ${t}")
       ticks += t
       cnt += 1
