@@ -68,9 +68,9 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
       val bounds = plot.bounds(start, end)
       if (i == 0) {
         // TODO - need log support
-        val minSecs = bktNanos(plot.lines.head).toDouble / 1000 / 1000 / 1000
-        val maxSecs = bktNanos(plot.lines.last).toDouble / 1000 / 1000 / 1000
-        System.out.println(s"Y Min sec ${minSecs}  Max: ${maxSecs}")
+//        val minSecs = bktNanos(plot.lines.head).toDouble / 1000 / 1000 / 1000
+//        val maxSecs = bktNanos(plot.lines.last).toDouble / 1000 / 1000 / 1000
+//        System.out.println(s"Y Min sec ${minSecs}  Max: ${maxSecs}")
         HeatMapTimerValueAxis(
           plot,
           graphDef.theme.axis,

@@ -269,9 +269,12 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
   ): Unit = {
     // val yscale = scale(y1, y2)
 
+    // y2 is chart end
+
     // tmep
-    val dpHeight = 2
-    val yFudge = 2
+    val bktRange = max.toInt - min.toInt
+    val dpHeight = (y2 - y1) / bktRange
+    val yFudge = Math.round(bktRange.toDouble / ((y2 - y1) - (bktRange * dpHeight)))
     var ctr = 0
     var offset = y2
     ticks.foreach { tick =>
@@ -291,7 +294,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
           )
           val txtH = ChartSettings.smallFontDims.height
           val ty = py - txtH / 2
-          //System.out.println(s"Yfudge ${offset - h}  Exist ${ty}")
+          // System.out.println(s"Yfudge ${offset - h}  Exist ${ty}")
           txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
         }
       }
