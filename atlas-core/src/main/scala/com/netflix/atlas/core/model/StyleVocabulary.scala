@@ -15,8 +15,10 @@
  */
 package com.netflix.atlas.core.model
 
-import java.awt.Color
+import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.model.Query.allKeys
 
+import java.awt.Color
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.SimpleWord
@@ -55,6 +57,7 @@ object StyleVocabulary extends Vocabulary {
     Palette,
     LineStyle,
     LineWidth,
+    PercentileHeatmap,
     Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
     Macro("line", List("line", ":ls"), List("name,sps,:eq,:sum")),
     Macro("stack", List("stack", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
@@ -522,4 +525,74 @@ object StyleVocabulary extends Vocabulary {
     ":legend"
   )
 
+  case object PercentileHeatmap extends StyleWord {
+
+    override protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case DataExprType(expr) :: _ =>
+        expr match {
+          case _: DataExpr.All => false
+          case _               => true
+        }
+    }
+
+    override protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DataExprType(expr) :: stack =>
+        System.out.println(s"MATCHED ${expr}")
+        // Percentile always needs sum aggregate type, if others are used convert to sum
+        val e = expr match {
+          case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
+          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
+          case q: Query =>
+            if (allKeys(q).contains("statistic")) {
+              // TODO - properly verify, for now we assume it is there
+              DataExpr.GroupBy(DataExpr.Sum(q), List(TagKey.percentile))
+            } else {
+              DataExpr.GroupBy(
+                DataExpr.Sum(q.and(Query.Equal("statistic", "percentile"))),
+                List(TagKey.percentile)
+              )
+            }
+          case _ =>
+            throw new IllegalArgumentException(
+              ":percentile_heatmap can only be used with :sum and :by or query."
+            )
+        }
+        // modify the stack here
+        if (e.keys.size > 1) {
+          throw new IllegalArgumentException(
+            ":percentile_heatmap can only have 'percentile' in the group by clause at this time."
+          )
+        }
+
+        StyleExpr(MathExpr.PerStep(e), Map("ls" -> "heat")) :: stack
+    }
+
+    private def toSum(af: AggregateFunction): DataExpr.Sum = {
+      if (allKeys(af.query).contains("statistic")) {
+        // TODO - properly verify, for now we assume it is there
+        DataExpr.Sum(af.query, offset = af.offset)
+      } else {
+        DataExpr.Sum(af.query.and(Query.Equal("statistic", "percentile")), offset = af.offset)
+      }
+
+    }
+
+    override def name: String = "percentile_heatmap"
+
+    /** Signature of the method showing the before and after effect on the stack. */
+    override def signature: String = "DataExpr -- Expr"
+
+    /** Short description of the word to help the user understand what it does. */
+    override def summary: String =
+      """
+        |TODO
+    """.stripMargin.trim
+
+    /**
+      * Set of examples showing the usage of the word.
+      */
+    override def examples: List[String] = List(
+      "name,requestLatency,:eq,:percentile_heatmap"
+    )
+  }
 }

@@ -109,7 +109,7 @@ case class Grapher(settings: DefaultSettings) {
     val theme = params.get("theme").getOrElse(settings.theme)
     val palette = params.get("palette").getOrElse(settings.primaryPalette(theme))
 
-    val flags = ImageFlags(
+    var flags = ImageFlags(
       title = params.get("title").filter(_ != ""),
       width = params.get("w").fold(settings.width)(_.toInt),
       height = params.get("h").fold(settings.height)(_.toInt),
@@ -140,6 +140,10 @@ case class Grapher(settings: DefaultSettings) {
         .reverse
         .flatMap {
           case ModelExtractors.PresentationType(s) =>
+            // TODO - this right?
+            if (s.settings.getOrElse("ls", "line").equals("heat")) {
+              flags = flags.copy(showLegend = false)
+            }
             s.perOffset
           case v =>
             val tpe = v.getClass.getSimpleName

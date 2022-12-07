@@ -99,4 +99,5 @@ class StyleExprSuite extends FunSuite {
     val result = eval(expr.toString)
     assert(expr.settings == result.settings)
   }
+
 }

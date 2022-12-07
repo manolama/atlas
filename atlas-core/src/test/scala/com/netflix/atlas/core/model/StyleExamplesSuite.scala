@@ -21,4 +21,9 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 class StyleExamplesSuite extends BaseExamplesSuite {
 
   override def vocabulary: Vocabulary = StyleVocabulary
+
+  test("foo") {
+    val expr = eval("name,requestLatency,:eq,:percentile_heatmap")
+    System.out.println(expr)
+  }
 }

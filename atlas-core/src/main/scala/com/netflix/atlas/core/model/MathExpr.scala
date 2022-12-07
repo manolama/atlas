@@ -972,6 +972,34 @@ object MathExpr {
     }
   }
 
+//  case class PercentileHatMap(expr: TimeSeriesExpr) extends TimeSeriesExpr {
+//
+//    override def toString: String = {
+//      // TODO - would have the other functions we injected
+//      s"$expr,:percentile_heatmap"
+//    }
+//
+//    override def dataExprs: List[DataExpr] = expr.dataExprs
+//
+//    override def isGrouped: Boolean = true
+//
+//    override def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+//
+//    override def finalGrouping: List[String] = expr.finalGrouping
+//
+//    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+//      val inner = expr.eval(context, data)
+//      if (inner.data.isEmpty) {
+//        inner
+//      } else {
+//        inner
+////        val label = expr.af.query.labelString
+////        ResultSet(this, estimatePercentiles(context, label, inner.data), context.state)
+//      }
+//      // throw new IllegalStateException("Blurg")
+//    }
+//  }
+
   /**
     * Named rewrites are used to keep track of the user intent for operations and
     * macros that are defined in terms of other basic operations. For example, `:avg`

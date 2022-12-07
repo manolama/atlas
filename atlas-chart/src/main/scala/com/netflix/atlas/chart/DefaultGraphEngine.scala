@@ -78,8 +78,8 @@ class DefaultGraphEngine extends PngGraphEngine {
 
     val hoffset =
       if (config.layout.isFixedHeight) height(aboveCanvas.result(), config.width) else 0
-    // val graph = TimeSeriesGraph(config.copy(height = config.height - hoffset))
-    val graph = PercentileHeatMap(config.copy(height = config.height - hoffset))
+    val graph = TimeSeriesGraph(config.copy(height = config.height - hoffset))
+    // val graph = PercentileHeatMap(config.copy(height = config.height - hoffset))
 
     val belowCanvas = List.newBuilder[Element]
     if (config.showLegend) {

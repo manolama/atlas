@@ -15,9 +15,7 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import com.netflix.atlas.core.model.ModelExtractors
-import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.TimeSeriesExpr
+import com.netflix.atlas.core.model.{Expr, ModelExtractors, StyleExpr, TimeSeriesExpr}
 import com.netflix.atlas.core.util.Features
 import munit.FunSuite
 
@@ -31,9 +29,10 @@ abstract class BaseExamplesSuite extends FunSuite {
     interpreter.execute(program, Map.empty[String, Any], Features.UNSTABLE)
   }
 
-  protected def eval(program: String): TimeSeriesExpr = {
+  protected def eval(program: String): Expr = {
     execute(program).stack match {
       case ModelExtractors.TimeSeriesType(t) :: Nil => t
+      case ModelExtractors.PresentationType(t) :: Nil => t
       case v                                        => throw new MatchError(v)
     }
   }

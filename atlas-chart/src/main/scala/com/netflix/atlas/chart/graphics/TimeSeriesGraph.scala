@@ -16,11 +16,21 @@
 package com.netflix.atlas.chart.graphics
 
 import java.awt.BasicStroke
+import java.awt.Color
 import java.awt.Graphics2D
-
 import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktIdx
+import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktNanos
 import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
+import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.Scale
+import com.netflix.atlas.core.model.ArrayTimeSeq
+import com.netflix.atlas.core.model.DsType
+import com.netflix.spectator.api.histogram.PercentileBuckets
+
+import scala.collection.mutable
 
 /**
   * Draws a time series graph.
@@ -76,7 +86,15 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
-      if (i == 0)
+      if (plot.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty) {
+        // TODO - assuming percentiles here
+        HeatMapTimerValueAxis(
+          plot,
+          graphDef.theme.axis,
+          bktIdx(plot.lines.head),
+          bktIdx(plot.lines.last)
+        )
+      } else if (i == 0)
         LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
       else
         RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
@@ -112,16 +130,84 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     graphDef.plots.zip(yaxes).foreach {
       case (plot, axis) =>
         val offsets = TimeSeriesStack.Offsets(timeAxis)
-        plot.lines.foreach { line =>
-          val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
-          val lineElement = line.lineStyle match {
-            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
-            case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
-            case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
-            case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
+        if (plot.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty) {
+          // assume all lines in the group will be for a heat map
+          val minBktIdx = bktIdx(plot.lines.head)
+          val maxBktIdx = bktIdx(plot.lines.last)
+          val ypixels = chartEnd - y1
+          val bktRange = bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
+          val dpHeight = ypixels / bktRange
+          val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
+          var cmin = Long.MaxValue
+          var cmax = Long.MinValue
+          val numDps =
+            (graphDef.endTime.toEpochMilli - graphDef.startTime.toEpochMilli) / graphDef.step
+          val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
+          plot.lines.foreach { line =>
+            val idx = bktIdx(line)
+            val (_, arr) =
+              combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
+            var t = graphDef.startTime.toEpochMilli
+            var di = 0
+            while (t < graphDef.endTime.toEpochMilli) {
+              val v = (line.data.data(t) * 60).toLong
+              arr(di) += v
+              if (arr(di) > cmax) cmax = arr(di).toLong
+              if (arr(di) < cmin) cmin = arr(di).toLong
+              di += 1
+              t += line.data.data.step
+            }
           }
 
-          lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+          val reds = Palette.fromResource("reds")
+          var redList = List.empty[Color]
+          for (i <- 0 until 7) {
+            redList ::= reds.colors(i)
+          }
+          val colorScaler = Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, redList.size - 1)
+
+          var ctr = 0
+          var yH = chartEnd
+          for (i <- minBktIdx until maxBktIdx) {
+            val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
+            combinedSeries.get(i) match {
+              case Some((nanos, line)) =>
+                // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
+                val ts =
+                  new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
+                val style = Style(color = Color.RED, stroke = new BasicStroke(1))
+                val lineElement =
+                  PTileHistoLine(
+                    style,
+                    ts,
+                    timeAxis,
+                    axis,
+                    cmax - cmin,
+                    yH - h,
+                    h,
+                    colorScaler,
+                    redList
+                  )
+                lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+              case None => // no-op
+              // System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+            }
+            ctr += 1
+            yH -= h
+          }
+        } else {
+          plot.lines.foreach { line =>
+            val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
+            val lineElement = line.lineStyle match {
+              case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
+              case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
+              case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
+              case LineStyle.STACK =>
+                TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
+            }
+
+            lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+          }
         }
 
         plot.horizontalSpans.foreach { hspan =>
@@ -169,4 +255,12 @@ object TimeSeriesGraph {
     * from getting truncated.
     */
   private[graphics] val minRightSidePadding = ChartSettings.smallFontDims.width * 4
+
+  private[graphics] def bktNanos(line: LineDef): Long = {
+    PercentileBuckets.get(bktIdx(line))
+  }
+
+  private[graphics] def bktIdx(line: LineDef): Int = {
+    Integer.parseInt(line.data.tags("percentile").substring(1), 16)
+  }
 }
