@@ -283,7 +283,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       // val py = y2 - (tick.v.toInt * 3)
       val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
       val py = offset - h
-      if (tick.major) {
+      if (tick.major && offset >= y1) {
         g.drawLine(x2, py, x2 - tickMarkLength, py)
 
         if (plotDef.showTickLabels) {
