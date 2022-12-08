@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.eval.graph
 
-//import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.databind.JsonNode
 import com.netflix.atlas.core.db.SimpleStaticDatabase
@@ -106,9 +105,41 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
-    "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap&w=1296&h=400"
   }
 
+  test("such great heights") {
+    val series = 165
+    val lines = series + 1
+    val height = 405
+
+    val dpHeight = height.toDouble / lines
+    System.out.println(dpHeight)
+
+//    var last = 0.0
+//    var pixels = 0
+//    for (_ <- 0 until lines) {
+//      val next = last + dpHeight
+//      val h = (Math.round(next) - Math.round(last)).toInt
+//      val off = Math.round(last).toInt
+//      pixels += h
+//      //System.out.println(s"H ${h} @ Off ${off}")
+//      last = next
+//    }
+//    System.out.println(s"Remainder: ${height - pixels} pixels")
+
+    // top down
+    var prev = height.toDouble
+    for (_ <- 0 until lines) {
+      val next = prev - dpHeight
+      val h = (Math.round(prev) - Math.round(next)).toInt
+      val offset = Math.round(prev).toInt - h
+      prev = next
+      System.out.println(s"Offset ${offset}")
+    }
+    System.out.println(s"Remainder: ${prev}")
+
+  }
 }
 
 object TryHeatMap {

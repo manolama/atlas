@@ -29,7 +29,7 @@ case class PTileHistoLine(
 
       val v = ts(t).toLong
       if (v > 0) {
-        if (true) {
+        if (yOffset != 403) {
           val c = colorList.reverse(colorScaler(v))
           Style(c).configure(g)
         } else {
@@ -38,7 +38,7 @@ case class PTileHistoLine(
           val alpha = 25 + (230 * pct).toInt
           // System.out.print("(%d, %.0f, %d), ".format(v, pct * 100, alpha))
           // System.out.print(s"${alpha}, ")
-          Style(Color.RED).withAlpha(alpha).configure(g)
+          Style(Color.BLUE).configure(g)
         }
         g.fillRect(px1, yOffset, px2 - px1, yHeight)
       }

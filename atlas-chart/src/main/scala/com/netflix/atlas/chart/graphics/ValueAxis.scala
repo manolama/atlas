@@ -209,6 +209,8 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
 
   import ValueAxis._
 
+  protected var skipBuckets = 0
+
   protected def angle: Double = -Math.PI / 2.0
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
@@ -229,30 +231,30 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     val numTicks = (y2 - y1) / minTickLabelHeight
     val ticks = List.newBuilder[ValueTick]
     val bktRange = max - min
-    val skipBuckets = (bktRange / numTicks / 4).toInt
+    skipBuckets = (bktRange / numTicks / 4).toInt
     System.out.println(s"Getting ticks.... R: ${bktRange}  Skip ${skipBuckets}")
     var cnt = 0
     for (i <- min.toInt until max.toInt) {
-      // if (i % skipBuckets == 0) {
-      val sec = bktSeconds(i)
-      val prefix = Ticks.getDurationPrefix(sec, sec)
-      // val fmt = Ticks.durationLabelFormat(prefix, sec)
-      val fmt = prefix.format(sec, "%.1f%s")
-      val label = prefix.format(sec, fmt)
-      val t = ValueTick(i, 0.0, i % numTicks == 0, Some(label))
-//      System.out.println(s"  [${i}]    ${t}")
-      ticks += t
-      cnt += 1
-      // }
+      if (i % skipBuckets == 0) {
+        val sec = bktSeconds(i)
+        val prefix = Ticks.getDurationPrefix(sec, sec)
+        // val fmt = Ticks.durationLabelFormat(prefix, sec)
+        val fmt = prefix.format(sec, "%.1f%s")
+        val label = prefix.format(sec, fmt)
+        val t = ValueTick(i, 0.0, i % numTicks == 0, Some(label))
+        //      System.out.println(s"  [${i}]    ${t}")
+        ticks += t
+        cnt += 1
+      }
     }
 
-    val sec = bktSeconds(max.toInt)
-    val prefix = Ticks.getDurationPrefix(sec, sec)
-    val fmt = Ticks.durationLabelFormat(prefix, sec)
-    val label = prefix.format(sec, fmt)
-    val t = ValueTick(max.toInt, 0.0, true, Some(label))
+//    val sec = bktSeconds(max.toInt)
+//    val prefix = Ticks.getDurationPrefix(sec, sec)
+//    val fmt = Ticks.durationLabelFormat(prefix, sec)
+//    val label = prefix.format(sec, fmt)
+//    val t = ValueTick(max.toInt, 0.0, true, Some(label))
 //    System.out.println(s"  [${max.toInt}]    ${t}")
-    ticks += t
+//    ticks += t
     ticks.result()
   }
 
@@ -295,13 +297,33 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
           )
           val txtH = ChartSettings.smallFontDims.height
           val ty = py - txtH / 2
-          // System.out.println(s"Yfudge ${offset - h}  Exist ${ty}")
           txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
         }
+        System.out.println(
+          s" ***** tick Height ${h} @ ${tick.v.toInt}  Offset ${py} -> ${tick.label}"
+        )
+      } else {
+        System.out.println(
+          s"       tick Height ${h} @ ${tick.v.toInt}  Offset ${py} -> ${tick.label}"
+        )
       }
-      ctr += 1
-      offset -= h
+
+      offset -= offsetAdjust(ctr, yFudge, dpHeight)
+      ctr += 1 + skipBuckets
+//      ctr += 1
+//      offset -= h
     }
+  }
+
+  def offsetAdjust(idx: Int, yFudge: Long, dpHeight: Int): Int = {
+    var ctr = idx
+    var offset = 0
+    for (_ <- 0 until skipBuckets) {
+      val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
+      offset += h
+      ctr += 1
+    }
+    offset
   }
 }
 

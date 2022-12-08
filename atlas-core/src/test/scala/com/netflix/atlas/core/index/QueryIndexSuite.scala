@@ -254,6 +254,26 @@ class QueryIndexSuite extends FunSuite {
     assertEquals(matchingEntries(index, tags), List(clusterQuery))
   }
 
+  test("double negative on the same tag") {
+    val q =
+      Query.And(
+        Query.And(
+          Query.And(
+            Query.Equal("a", "1"),
+            Query.Equal("b", "2")
+          ),
+          Query.Not(Query.Equal("c", "4"))
+        ),
+        Query.Not(Query.Equal("c", "3"))
+      )
+    val index = QueryIndex(List(q))
+
+    assertEquals(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "5")), List(q))
+    assertEquals(matchingEntries(index, Map("a" -> "1", "b" -> "2")), List(q))
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "4")).isEmpty)
+  }
+
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
 
   private def intern(interner: QueryInterner, query: Query): Query = {

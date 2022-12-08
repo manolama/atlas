@@ -134,10 +134,13 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           // assume all lines in the group will be for a heat map
           val minBktIdx = bktIdx(plot.lines.head)
           val maxBktIdx = bktIdx(plot.lines.last)
-          val ypixels = chartEnd - y1
-          val bktRange = bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
-          val dpHeight = ypixels / bktRange
-          val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
+          val ypixels = (chartEnd + 1) - y1
+          val bktRange =
+            (bktIdx(plot.lines.last) - bktIdx(plot.lines.head)) + 1 // need an extra cell
+          val dpHeight = ypixels.toDouble / bktRange
+          // val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
+          // System.out.println(s"dpHeight ${dpHeight}  yFudge: ${yFudge}")
+          System.out.println(s"YPixels: ${ypixels}  Bkt Range ${bktRange}")
           var cmin = Long.MaxValue
           var cmax = Long.MinValue
           val numDps =
@@ -166,10 +169,21 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           }
           val colorScaler = Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, redList.size - 1)
 
-          var ctr = 0
-          var yH = chartEnd
+          var previousOffset = chartEnd.toDouble + 1
+
           for (i <- minBktIdx until maxBktIdx) {
-            val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
+            val nextOffset = previousOffset - dpHeight
+            val h = (Math.round(previousOffset) - Math.round(nextOffset)).toInt
+            val offset = Math.round(previousOffset).toInt - h
+            previousOffset = nextOffset
+            val sec = PercentileBuckets.get(i).toDouble / 1000 / 1000 / 1000
+            val prefix = Ticks.getDurationPrefix(sec, sec)
+            val fmt = prefix.format(sec, "%.1f%s")
+            val label = prefix.format(sec, fmt)
+//            if (yH - h < 0) {
+//              throw new IllegalStateException(s"Negative Y!!! ${yH - h}")
+//            }
+            System.out.println(s"  Cell height: ${h} @ ${i}  Offset ${offset} -> ${label}")
             combinedSeries.get(i) match {
               case Some((nanos, line)) =>
                 // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
@@ -183,7 +197,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                     timeAxis,
                     axis,
                     cmax - cmin,
-                    yH - h,
+                    offset,
                     h,
                     colorScaler,
                     redList
@@ -192,9 +206,13 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               case None => // no-op
               // System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
             }
-            ctr += 1
-            yH -= h
+            // ctr += 1
+            // yH -= h
           }
+          if (previousOffset > 2) {
+            // throw new IllegalStateException(s"Too many pixels un-used!!!! ${yH}")
+          }
+          System.out.println(s" ####### Final yh: ${previousOffset - y1}")
         } else {
           plot.lines.foreach { line =>
             val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
