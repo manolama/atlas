@@ -134,9 +134,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           // assume all lines in the group will be for a heat map
           val minBktIdx = bktIdx(plot.lines.head)
           val maxBktIdx = bktIdx(plot.lines.last)
-          val ypixels = (chartEnd + 1) - y1
+          val ypixels = chartEnd - y1
           val bktRange =
-            (bktIdx(plot.lines.last) - bktIdx(plot.lines.head)) + 1 // need an extra cell
+            bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
           val dpHeight = ypixels.toDouble / bktRange
           // val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
           // System.out.println(s"dpHeight ${dpHeight}  yFudge: ${yFudge}")
