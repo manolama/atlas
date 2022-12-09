@@ -162,7 +162,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             }
           }
 
-          val reds = Palette.fromResource("reds")
+          val reds = Palette.fromResource("bluegreen")
           var redList = List.empty[Color]
           for (i <- 0 until 7) {
             redList ::= reds.colors(i)
