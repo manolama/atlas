@@ -15,19 +15,25 @@
  */
 package com.netflix.atlas.chart
 
+import java.awt.Color
 import java.awt.Font
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.awt.image.RenderedImage
 import java.time.Duration
 import java.time.ZonedDateTime
-
 import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.graphics.Element
 import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.LineStyle
+import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
 import com.netflix.iep.config.ConfigManager
+import com.netflix.spectator.api.histogram.PercentileBuckets
+
+import scala.collection.mutable
 
 class DefaultGraphEngine extends PngGraphEngine {
 
@@ -79,70 +85,116 @@ class DefaultGraphEngine extends PngGraphEngine {
     val hoffset =
       if (config.layout.isFixedHeight) height(aboveCanvas.result(), config.width) else 0
     val graph = TimeSeriesGraph(config.copy(height = config.height - hoffset))
-    // val graph = PercentileHeatMap(config.copy(height = config.height - hoffset))
 
     val belowCanvas = List.newBuilder[Element]
     if (config.showLegend) {
-      val entriesPerPlot =
-        if (config.numLines <= GraphConstants.MaxLinesInLegend) {
-          GraphConstants.MaxLinesInLegend
-        } else {
-          GraphConstants.MaxLinesInLegend / config.plots.size
+      if (config.plots.find(_.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty).nonEmpty) {
+        // Try a heat legend!
+        System.out.println("HEATMAP!")
+        // TODO - no no double comp... blech
+        var cmin = Long.MaxValue
+        var cmax = Long.MinValue
+        val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
+        val numDps =
+          (config.endTime.toEpochMilli - config.startTime.toEpochMilli) / config.step
+        config.plots(0).lines.foreach { line =>
+          val idx = bktIdx(line)
+          val (_, arr) =
+            combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
+          var t = config.startTime.toEpochMilli
+          var di = 0
+          while (t < config.endTime.toEpochMilli) {
+            val v = line.data.data(t).toLong
+            arr(di) += v
+            if (arr(di) > 0 && arr(di) > cmax) cmax = arr(di).toLong
+            if (arr(di) > 0 && arr(di) < cmin) cmin = arr(di).toLong
+            di += 1
+            t += line.data.data.step
+          }
         }
-      val showStats = config.showLegendStats && graph.width >= ChartSettings.minWidthForStats
-      belowCanvas += HorizontalPadding(5)
-      if (config.plots.size > 1) {
-        config.plots.zipWithIndex.foreach {
-          case (plot, i) =>
-            val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
-            belowCanvas += Legend(config.theme.legend, plot, Some(label), showStats, entriesPerPlot)
-        }
+
+        belowCanvas += HorizontalPadding(5)
+
+        val label = config.plots(0).ylabel.map(s => s"Axis 0: $s").getOrElse(s"Axis 0")
+        belowCanvas += HeatMapLegend(
+          config.theme.legend,
+          config.plots(0),
+          Some(label),
+          true,
+          1,
+          cmin,
+          cmax
+        )
+
+        System.out.println("END HEATMAP")
       } else {
-        config.plots.foreach { plot =>
-          belowCanvas += Legend(config.theme.legend, plot, None, showStats, entriesPerPlot)
+        val entriesPerPlot =
+          if (config.numLines <= GraphConstants.MaxLinesInLegend) {
+            GraphConstants.MaxLinesInLegend
+          } else {
+            GraphConstants.MaxLinesInLegend / config.plots.size
+          }
+        val showStats = config.showLegendStats && graph.width >= ChartSettings.minWidthForStats
+        belowCanvas += HorizontalPadding(5)
+        if (config.plots.size > 1) {
+          config.plots.zipWithIndex.foreach {
+            case (plot, i) =>
+              val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
+              belowCanvas += Legend(
+                config.theme.legend,
+                plot,
+                Some(label),
+                showStats,
+                entriesPerPlot
+              )
+          }
+        } else {
+          config.plots.foreach { plot =>
+            belowCanvas += Legend(config.theme.legend, plot, None, showStats, entriesPerPlot)
+          }
         }
-      }
 
-      val start = config.startTime.toEpochMilli
-      val end = config.endTime.toEpochMilli
-      val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
-      val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
-      val step = Strings.toString(Duration.ofMillis(config.step))
-      val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
-      belowCanvas += HorizontalPadding(15)
-      belowCanvas += Text(
-        comment,
-        font = ChartSettings.smallFont,
-        alignment = TextAlignment.LEFT,
-        style = config.theme.legend.text
-      )
-
-      if (config.loadTime > 0 && config.stats.inputLines > 0) {
-        val graphLines = config.plots.map(_.data.size).sum
-        val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
-        val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)".format(
-          config.loadTime.toString,
-          UnitPrefix.format(config.stats.inputLines.toDouble),
-          UnitPrefix.format(config.stats.outputLines.toDouble),
-          UnitPrefix.format(graphLines),
-          UnitPrefix.format(config.stats.inputDatapoints.toDouble),
-          UnitPrefix.format(config.stats.outputDatapoints.toDouble),
-          UnitPrefix.format(graphDatapoints.toDouble)
-        )
+        val start = config.startTime.toEpochMilli
+        val end = config.endTime.toEpochMilli
+        val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
+        val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
+        val step = Strings.toString(Duration.ofMillis(config.step))
+        val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
+        belowCanvas += HorizontalPadding(15)
         belowCanvas += Text(
-          stats,
+          comment,
           font = ChartSettings.smallFont,
           alignment = TextAlignment.LEFT,
           style = config.theme.legend.text
         )
-      } else if (config.loadTime > 0) {
-        val stats = "Fetch: %sms".format(config.loadTime.toString)
-        belowCanvas += Text(
-          stats,
-          font = ChartSettings.smallFont,
-          alignment = TextAlignment.LEFT,
-          style = config.theme.legend.text
-        )
+
+        if (config.loadTime > 0 && config.stats.inputLines > 0) {
+          val graphLines = config.plots.map(_.data.size).sum
+          val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
+          val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)".format(
+            config.loadTime.toString,
+            UnitPrefix.format(config.stats.inputLines.toDouble),
+            UnitPrefix.format(config.stats.outputLines.toDouble),
+            UnitPrefix.format(graphLines),
+            UnitPrefix.format(config.stats.inputDatapoints.toDouble),
+            UnitPrefix.format(config.stats.outputDatapoints.toDouble),
+            UnitPrefix.format(graphDatapoints.toDouble)
+          )
+          belowCanvas += Text(
+            stats,
+            font = ChartSettings.smallFont,
+            alignment = TextAlignment.LEFT,
+            style = config.theme.legend.text
+          )
+        } else if (config.loadTime > 0) {
+          val stats = "Fetch: %sms".format(config.loadTime.toString)
+          belowCanvas += Text(
+            stats,
+            font = ChartSettings.smallFont,
+            alignment = TextAlignment.LEFT,
+            style = config.theme.legend.text
+          )
+        }
       }
     }
 
@@ -211,5 +263,13 @@ class DefaultGraphEngine extends PngGraphEngine {
     elements.foldLeft(0) { (acc, e) =>
       acc + e.getHeight(ChartSettings.refGraphics, w)
     }
+  }
+
+  def bktNanos(line: LineDef): Long = {
+    PercentileBuckets.get(bktIdx(line))
+  }
+
+  def bktIdx(line: LineDef): Int = {
+    Integer.parseInt(line.data.tags("percentile").substring(1), 16)
   }
 }

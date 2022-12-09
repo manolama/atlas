@@ -140,9 +140,9 @@ case class Grapher(settings: DefaultSettings) {
         .reverse
         .flatMap {
           case ModelExtractors.PresentationType(s) =>
-            // TODO - this right?
+            // TODO - this right? Most definitely probably not.
             if (s.settings.getOrElse("ls", "line").equals("heat")) {
-              flags = flags.copy(showLegend = false)
+//              flags = flags.copy(showLegend = false)
             }
             s.perOffset
           case v =>

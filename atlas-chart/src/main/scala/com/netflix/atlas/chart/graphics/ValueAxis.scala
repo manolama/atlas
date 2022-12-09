@@ -305,13 +305,13 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
               val ty = offset - txtH / 2
               txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
             }
-            System.out.println(
-              s" ***** tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
-            )
+//            System.out.println(
+//              s" ***** tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
+//            )
           } else {
-            System.out.println(
-              s"       tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
-            )
+//            System.out.println(
+//              s"       tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
+//            )
           }
         case None => // no-op
       }

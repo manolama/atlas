@@ -107,7 +107,6 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   }
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-
     val leftAxisW = yaxes.head.width
     val rightAxisW = yaxes.tail.foldLeft(0) { (acc, axis) =>
       acc + axis.width
@@ -153,7 +152,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             var t = graphDef.startTime.toEpochMilli
             var di = 0
             while (t < graphDef.endTime.toEpochMilli) {
-              val v = (line.data.data(t) * 60).toLong
+              val v = line.data.data(t).toLong
               arr(di) += v
               if (arr(di) > cmax) cmax = arr(di).toLong
               if (arr(di) < cmin) cmin = arr(di).toLong
@@ -183,7 +182,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 //            if (yH - h < 0) {
 //              throw new IllegalStateException(s"Negative Y!!! ${yH - h}")
 //            }
-            System.out.println(s"  Cell height: ${h} @ ${i}  Offset ${offset} -> ${label}")
+//            System.out.println(s"  Cell height: ${h} @ ${i}  Offset ${offset} -> ${label}")
             combinedSeries.get(i) match {
               case Some((nanos, line)) =>
                 // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
