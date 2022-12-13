@@ -20,7 +20,6 @@ case class HeatMapLegend(
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val width = x2 - x1
-    val height = y2 - y1
 
     val reds = Palette.fromResource("bluegreen")
     var redList = List.empty[Color]

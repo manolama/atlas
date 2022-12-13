@@ -106,6 +106,8 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
     "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap&w=1296&h=400"
+    // woot, works with y axis!
+    // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
   }
 
   test("such great heights") {
