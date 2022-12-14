@@ -86,15 +86,16 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
-      if (plot.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty) {
-        // TODO - assuming percentiles here
-        HeatMapTimerValueAxis(
-          plot,
-          graphDef.theme.axis,
-          bktIdx(plot.lines.head),
-          bktIdx(plot.lines.last)
-        )
-      } else if (i == 0)
+//      if (plot.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty) {
+//        // TODO - assuming percentiles here
+//        HeatMapTimerValueAxis(
+//          plot,
+//          graphDef.theme.axis,
+//          bktIdx(plot.lines.head),
+//          bktIdx(plot.lines.last)
+//        )
+//      } else
+      if (i == 0)
         LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
       else
         RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
@@ -105,6 +106,8 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     g.setColor(graphDef.theme.canvas.background.color)
     g.fillRect(x1, y1, x2 - x1, y2 - y1)
   }
+
+  val GENERIC = true
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val leftAxisW = yaxes.head.width
@@ -129,89 +132,160 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     graphDef.plots.zip(yaxes).foreach {
       case (plot, axis) =>
         val offsets = TimeSeriesStack.Offsets(timeAxis)
-        if (plot.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty) {
+        if (plot.lines.find(_.lineStyle == LineStyle.HEATMAP).nonEmpty) {
           // assume all lines in the group will be for a heat map
-          val minBktIdx = bktIdx(plot.lines.head)
-          val maxBktIdx = bktIdx(plot.lines.last)
-          val ypixels = chartEnd - y1
-          val bktRange =
-            bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
-          val dpHeight = ypixels.toDouble / bktRange
-          // val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
-          // System.out.println(s"dpHeight ${dpHeight}  yFudge: ${yFudge}")
-          System.out.println(s"YPixels: ${ypixels}  Bkt Range ${bktRange}")
-          var cmin = Long.MaxValue
-          var cmax = Long.MinValue
-          val numDps =
-            (graphDef.endTime.toEpochMilli - graphDef.startTime.toEpochMilli) / graphDef.step
-          val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
-          plot.lines.foreach { line =>
-            val idx = bktIdx(line)
-            val (_, arr) =
-              combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
-            var t = graphDef.startTime.toEpochMilli
-            var di = 0
-            while (t < graphDef.endTime.toEpochMilli) {
-              val v = line.data.data(t).toLong
-              arr(di) += v
-              if (arr(di) > cmax) cmax = arr(di).toLong
-              if (arr(di) < cmin) cmin = arr(di).toLong
-              di += 1
-              t += line.data.data.step
+          if (GENERIC) {
+            val yticks = axis.ticks(y1, chartEnd)
+            val buckets = new Array[Array[Long]](yticks.size)
+            val hCells = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).size + 1
+            val yHeight = (chartEnd - y1) / yticks.size
+            val bucketScaler = axis.scale(0, buckets.length - 1)
+            val xScaler = timeAxis.scale(x1 + leftOffset, x2 - rightOffset)
+            var cmin = Long.MaxValue
+            var cmax = Long.MinValue
+
+            // TODO - not every line will be for a heatmap for a plot! Plots are grouped on
+            // the yaxis.
+            plot.lines.foreach { line =>
+              var t = graphDef.startTime.toEpochMilli
+              val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
+              var lastTick = ti.next()
+              var bi = 0
+              while (t < graphDef.endTime.toEpochMilli) {
+                val v = line.data.data(t)
+                val y = bucketScaler(v)
+                val x = if (t < lastTick.timestamp) {
+                  bi
+                } else {
+                  bi += 1
+                  if (ti.hasNext) lastTick = ti.next()
+                  bi
+                }
+                // System.out.println(s" Y: ${y}   X: ${x}")
+                if (x < hCells) {
+                  var b = buckets(y)
+                  if (b == null) {
+                    b = new Array[Long](hCells)
+                    buckets(y) = b
+                  }
+                  b(x) += 1
+                  if (b(x) > 0 && b(x) > cmax) {
+                    cmax = b(x)
+                  }
+                  if (b(x) > 0 && b(x) < cmin) {
+                    cmin = b(x)
+                  }
+                }
+                t += graphDef.step
+              }
             }
-          }
 
-          val reds = Palette.fromResource("bluegreen")
-          var redList = List.empty[Color]
-          for (i <- 0 until 7) {
-            redList ::= reds.colors(i)
-          }
-          val colorScaler = Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, redList.size - 1)
-
-          var previousOffset = chartEnd.toDouble + 1
-
-          for (i <- minBktIdx until maxBktIdx) {
-            val nextOffset = previousOffset - dpHeight
-            val h = (Math.round(previousOffset) - Math.round(nextOffset)).toInt
-            val offset = Math.round(previousOffset).toInt - h
-            previousOffset = nextOffset
-            val sec = PercentileBuckets.get(i).toDouble / 1000 / 1000 / 1000
-            val prefix = Ticks.getDurationPrefix(sec, sec)
-            val fmt = prefix.format(sec, "%.1f%s")
-            val label = prefix.format(sec, fmt)
-//            if (yH - h < 0) {
-//              throw new IllegalStateException(s"Negative Y!!! ${yH - h}")
-//            }
-//            System.out.println(s"  Cell height: ${h} @ ${i}  Offset ${offset} -> ${label}")
-            combinedSeries.get(i) match {
-              case Some((nanos, line)) =>
-                // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
-                val ts =
-                  new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
-                val style = Style(color = Color.RED, stroke = new BasicStroke(1))
-                val lineElement =
-                  PTileHistoLine(
-                    style,
-                    ts,
-                    timeAxis,
-                    axis,
-                    cmax - cmin,
-                    offset,
-                    h,
-                    colorScaler,
-                    redList
-                  )
-                lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-              case None => // no-op
-              // System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+            // TODO - move, for now, try it
+            val palette = plot.lines.head.palette.getOrElse(
+              Palette.singleColor(plot.lines.head.color)
+            )
+            val colorScaler =
+              Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+            var last = 0
+            val yScaler = axis.scale(y1, chartEnd)
+            buckets.zip(yticks).foreach { tuple =>
+              val (bucket, ytick) = tuple
+              val y = chartEnd - yScaler(ytick.v)
+              // System.out.println(s"Last ${last} new Y ${y}")
+              if (bucket != null) {
+                val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
+                lineElement.draw(g, x1 + leftOffset, y, x2 - rightOffset, Math.max(1, y - last))
+              }
+              last = y
             }
-            // ctr += 1
-            // yH -= h
+
+//            Style(Color.RED).configure(g)
+//            g.drawLine(x1, 305, x2, 305)
+
+          } else {
+            val minBktIdx = bktIdx(plot.lines.head)
+            val maxBktIdx = bktIdx(plot.lines.last)
+            val ypixels = chartEnd - y1
+            val bktRange =
+              bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
+            val dpHeight = ypixels.toDouble / bktRange
+            // val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
+            // System.out.println(s"dpHeight ${dpHeight}  yFudge: ${yFudge}")
+            System.out.println(s"YPixels: ${ypixels}  Bkt Range ${bktRange}")
+            var cmin = Long.MaxValue
+            var cmax = Long.MinValue
+            val numDps =
+              (graphDef.endTime.toEpochMilli - graphDef.startTime.toEpochMilli) / graphDef.step
+            val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
+            plot.lines.foreach { line =>
+              val idx = bktIdx(line)
+              val (_, arr) =
+                combinedSeries
+                  .getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
+              var t = graphDef.startTime.toEpochMilli
+              var di = 0
+              while (t < graphDef.endTime.toEpochMilli) {
+                val v = line.data.data(t).toLong
+                arr(di) += v
+                if (arr(di) > cmax) cmax = arr(di).toLong
+                if (arr(di) < cmin) cmin = arr(di).toLong
+                di += 1
+                t += line.data.data.step
+              }
+            }
+
+            val reds = Palette.fromResource("bluegreen")
+            var redList = List.empty[Color]
+            for (i <- 0 until 7) {
+              redList ::= reds.colors(i)
+            }
+            val colorScaler = Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, redList.size - 1)
+
+            var previousOffset = chartEnd.toDouble + 1
+
+            for (i <- minBktIdx until maxBktIdx) {
+              val nextOffset = previousOffset - dpHeight
+              val h = (Math.round(previousOffset) - Math.round(nextOffset)).toInt
+              val offset = Math.round(previousOffset).toInt - h
+              previousOffset = nextOffset
+              val sec = PercentileBuckets.get(i).toDouble / 1000 / 1000 / 1000
+              val prefix = Ticks.getDurationPrefix(sec, sec)
+              val fmt = prefix.format(sec, "%.1f%s")
+              val label = prefix.format(sec, fmt)
+              //            if (yH - h < 0) {
+              //              throw new IllegalStateException(s"Negative Y!!! ${yH - h}")
+              //            }
+              //            System.out.println(s"  Cell height: ${h} @ ${i}  Offset ${offset} -> ${label}")
+              combinedSeries.get(i) match {
+                case Some((nanos, line)) =>
+                  // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
+                  val ts =
+                    new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
+                  val style = Style(color = Color.RED, stroke = new BasicStroke(1))
+                  val lineElement =
+                    PTileHistoLine(
+                      style,
+                      ts,
+                      timeAxis,
+                      axis,
+                      cmax - cmin,
+                      offset,
+                      h,
+                      colorScaler,
+                      redList
+                    )
+                  lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+                case None => // no-op
+                // System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+              }
+              // ctr += 1
+              // yH -= h
+            }
+            if (previousOffset > 2) {
+              // throw new IllegalStateException(s"Too many pixels un-used!!!! ${yH}")
+            }
+            System.out.println(s" ####### Final yh: ${previousOffset - y1}")
           }
-          if (previousOffset > 2) {
-            // throw new IllegalStateException(s"Too many pixels un-used!!!! ${yH}")
-          }
-          System.out.println(s" ####### Final yh: ${previousOffset - y1}")
         } else {
           plot.lines.foreach { line =>
             val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))

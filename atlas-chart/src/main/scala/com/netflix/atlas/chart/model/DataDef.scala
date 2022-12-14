@@ -60,7 +60,8 @@ case class LineDef(
   color: Color = Color.RED,
   lineStyle: LineStyle = LineStyle.LINE,
   lineWidth: Float = 1.0f,
-  legendStats: SummaryStats = SummaryStats.empty
+  legendStats: SummaryStats = SummaryStats.empty,
+  palette: Option[Palette] = None
 ) extends DataDef {
 
   def label: String = data.label

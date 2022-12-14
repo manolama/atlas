@@ -46,7 +46,8 @@ case class PlotDef(
   scale: Scale = Scale.LINEAR,
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,
-  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL
+  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL,
+  palette: Option[Palette] = None
 ) {
 
   import java.lang.{Double => JDouble}

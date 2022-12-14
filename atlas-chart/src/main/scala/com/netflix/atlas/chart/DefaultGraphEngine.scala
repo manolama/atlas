@@ -88,44 +88,45 @@ class DefaultGraphEngine extends PngGraphEngine {
 
     val belowCanvas = List.newBuilder[Element]
     if (config.showLegend) {
-      if (config.plots.find(_.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty).nonEmpty) {
+      if (config.plots.find(_.lines.find(_.lineStyle == LineStyle.HEATMAP).nonEmpty).nonEmpty) {
         // Try a heat legend!
         System.out.println("HEATMAP!")
         // TODO - no no double comp... blech
-        var cmin = Long.MaxValue
-        var cmax = Long.MinValue
-        val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
-        val numDps =
-          (config.endTime.toEpochMilli - config.startTime.toEpochMilli) / config.step
-        config.plots(0).lines.foreach { line =>
-          val idx = bktIdx(line)
-          val (_, arr) =
-            combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
-          var t = config.startTime.toEpochMilli
-          var di = 0
-          while (t < config.endTime.toEpochMilli) {
-            val v = line.data.data(t).toLong
-            arr(di) += v
-            if (arr(di) > 0 && arr(di) > cmax) cmax = arr(di).toLong
-            if (arr(di) > 0 && arr(di) < cmin) cmin = arr(di).toLong
-            di += 1
-            t += line.data.data.step
+        if (false) {
+          var cmin = Long.MaxValue
+          var cmax = Long.MinValue
+          val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
+          val numDps =
+            (config.endTime.toEpochMilli - config.startTime.toEpochMilli) / config.step
+          config.plots(0).lines.foreach { line =>
+            val idx = bktIdx(line)
+            val (_, arr) =
+              combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
+            var t = config.startTime.toEpochMilli
+            var di = 0
+            while (t < config.endTime.toEpochMilli) {
+              val v = line.data.data(t).toLong
+              arr(di) += v
+              if (arr(di) > 0 && arr(di) > cmax) cmax = arr(di).toLong
+              if (arr(di) > 0 && arr(di) < cmin) cmin = arr(di).toLong
+              di += 1
+              t += line.data.data.step
+            }
           }
+
+          belowCanvas += HorizontalPadding(5)
+
+          val label = config.plots(0).ylabel.map(s => s"Axis 0: $s").getOrElse(s"Axis 0")
+          belowCanvas += HeatMapLegend(
+            config.theme.legend,
+            config.plots(0),
+            Some(label),
+            true,
+            1,
+            cmin,
+            cmax
+          )
         }
-
-        belowCanvas += HorizontalPadding(5)
-
-        val label = config.plots(0).ylabel.map(s => s"Axis 0: $s").getOrElse(s"Axis 0")
-        belowCanvas += HeatMapLegend(
-          config.theme.legend,
-          config.plots(0),
-          Some(label),
-          true,
-          1,
-          cmin,
-          cmax
-        )
-
         System.out.println("END HEATMAP")
       } else {
         val entriesPerPlot =

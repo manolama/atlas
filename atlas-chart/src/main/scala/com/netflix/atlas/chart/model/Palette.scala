@@ -24,6 +24,20 @@ import com.netflix.atlas.core.util.Strings
 
 case class Palette(name: String, colors: Int => Color) {
 
+  // TODO - think about it. Easy way to cache the built-ins.
+  lazy val uniqueColors: List[Color] = {
+    val it = iterator
+    val colors = List.newBuilder[Color]
+    val init = it.next()
+    colors += init
+    var next = it.next()
+    while (it.hasNext && !init.equals(next)) {
+      colors += next
+      next = it.next
+    }
+    colors.result()
+  }
+
   def withAlpha(alpha: Int): Palette = {
 
     def f(i: Int): Color = {

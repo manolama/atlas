@@ -356,6 +356,15 @@ case class Grapher(settings: DefaultSettings) {
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
               }
 
+              val p: Option[Palette] =
+                if (s.color.nonEmpty) {
+                  None
+                } else if (axisCfg.palette.nonEmpty) {
+                  Some(newP(axisCfg.palette.get))
+                } else {
+                  Some(newP(config.flags.palette))
+                }
+
               LineDef(
                 data = t,
                 query = Some(s.expr.toString),
@@ -363,7 +372,8 @@ case class Grapher(settings: DefaultSettings) {
                 color = color,
                 lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
                 lineWidth = s.lineWidth,
-                legendStats = stats
+                legendStats = stats,
+                p
               )
           }
 
@@ -379,7 +389,10 @@ case class Grapher(settings: DefaultSettings) {
         // local sort on an expression.
         val sortedLines = sort(warnings, axisCfg.sort, axisCfg.order.contains("desc"), lines)
 
-        axisCfg.newPlotDef(sortedLines ::: messages.map(s => MessageDef(s"... $s ...")), multiY)
+        axisCfg.newPlotDef(
+          sortedLines ::: messages.map(s => MessageDef(s"... $s ...")),
+          multiY
+        )
     }
 
     config.newGraphDef(plots, warnings.result())
@@ -404,6 +417,16 @@ case class Grapher(settings: DefaultSettings) {
     } else {
       val p = Palette.create(mode).iterator
       _ => p.next()
+    }
+  }
+
+  private def newP(mode: String): Palette = {
+    val prefix = "hash:"
+    if (mode.startsWith(prefix)) {
+      val pname = mode.substring(prefix.length)
+      Palette.create(pname)
+    } else {
+      Palette.create(mode)
     }
   }
 

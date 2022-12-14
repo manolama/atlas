@@ -138,7 +138,7 @@ case class GraphDef(
     if (layout.isFixedHeight) LegendType.OFF else legendType
   }
 
-  /** Convert the defintion from a single axis to using one per line in the chart. */
+  /** Convert the definition from a single axis to using one per line in the chart. */
   def axisPerLine: GraphDef = {
     if (plots.size > 1) {
       val msg = "axisPerLine cannot be used with explicit multi axis"
