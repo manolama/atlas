@@ -204,7 +204,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             var last = 0
             val yScaler = axis.scale(y1, chartEnd)
             val yi = yticks.iterator
-            var lastY = chartEnd
+            var lastY = chartEnd + 1
             buckets.foreach { bucket =>
               val ytick = if (yi.hasNext) yi.next() else null
               val nextY = if (ytick != null) yScaler(ytick.v) else y1

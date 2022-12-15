@@ -16,16 +16,27 @@ case class HeatmapLine(
     val ticks = xaxis.ticks(x1, x2)
     val xscale = xaxis.scale(x1, x2)
     var last = x1
-    ts.zip(ticks).foreach { tuple =>
-      val (dp, tick) = tuple
-      val px = xscale(tick.timestamp)
+    val ti = ticks.iterator
+    ts.foreach { dp =>
+      val x = if (ti.hasNext) xscale(ti.next().timestamp) else x2
       if (dp > 0) {
         val c = palette.uniqueColors(colorScaler(dp))
         Style(c).configure(g)
-        System.out.println(s" last ${last} px ${px}  Y1 ${y1} height ${y2}")
-        g.fillRect(last, y1, px - last, y2)
+        System.out.println(s" last ${last} px ${x}  Y1 ${y1} height ${y2}")
+        g.fillRect(last, y1, x - last, y2)
       }
-      last = px
+      last = x
     }
+//    ts.zip(ticks).foreach { tuple =>
+//      val (dp, tick) = tuple
+//      val px = xscale(tick.timestamp)
+//      if (dp > 0) {
+//        val c = palette.uniqueColors(colorScaler(dp))
+//        Style(c).configure(g)
+//        System.out.println(s" last ${last} px ${px}  Y1 ${y1} height ${y2}")
+//        g.fillRect(last, y1, px - last, y2)
+//      }
+//      last = px
+//    }
   }
 }
