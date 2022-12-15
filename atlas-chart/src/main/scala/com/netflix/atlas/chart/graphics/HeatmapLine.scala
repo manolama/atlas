@@ -20,7 +20,7 @@ case class HeatmapLine(
       val (dp, tick) = tuple
       val px = xscale(tick.timestamp)
       if (dp > 0) {
-        val c = palette.uniqueColors.reverse(colorScaler(dp))
+        val c = palette.uniqueColors(colorScaler(dp))
         Style(c).configure(g)
         System.out.println(s" last ${last} px ${px}")
         g.fillRect(last, y1, px - last, y2)

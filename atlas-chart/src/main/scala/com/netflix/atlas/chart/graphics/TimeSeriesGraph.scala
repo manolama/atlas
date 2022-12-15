@@ -136,14 +136,14 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           // assume all lines in the group will be for a heat map
           if (GENERIC) {
             val yticks = axis.ticks(y1, chartEnd)
-            val buckets = new Array[Array[Long]](yticks.size)
+            val buckets = new Array[Array[Long]](yticks.size + 1)
             val hCells = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).size + 1
             val yHeight = (chartEnd - y1) / yticks.size
             val bucketScaler = axis.scale(0, buckets.length - 1)
             val xScaler = timeAxis.scale(x1 + leftOffset, x2 - rightOffset)
             var cmin = Long.MaxValue
             var cmax = Long.MinValue
-
+            System.out.println(s"# Ticks ${yticks.size} vs # Buckets ${buckets.length}")
             // TODO - not every line will be for a heatmap for a plot! Plots are grouped on
             // the yaxis.
             plot.lines.foreach { line =>
@@ -153,7 +153,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               var bi = 0
               while (t < graphDef.endTime.toEpochMilli) {
                 val v = line.data.data(t)
-                //val y = bucketScaler(v)
+                // val y = bucketScaler(v)
                 var y = 0
                 val yi = yticks.iterator
                 var found = false
@@ -164,6 +164,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                   } else {
                     y += 1
                   }
+                }
+                if (!found) {
+                  y = buckets.length - 1
                 }
                 val x = if (t < lastTick.timestamp) {
                   bi
@@ -208,6 +211,12 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                 lineElement.draw(g, x1 + leftOffset, y, x2 - rightOffset, yHeight)
               }
               last = y
+            }
+            // final bucket
+            val bucket = buckets.last
+            if (bucket != null) {
+              val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
+              lineElement.draw(g, x1 + leftOffset, last - yHeight, x2 - rightOffset, yHeight)
             }
 
 //            Style(Color.RED).configure(g)
