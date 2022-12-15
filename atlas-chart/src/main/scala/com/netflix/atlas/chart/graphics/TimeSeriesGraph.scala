@@ -153,7 +153,18 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               var bi = 0
               while (t < graphDef.endTime.toEpochMilli) {
                 val v = line.data.data(t)
-                val y = bucketScaler(v)
+                //val y = bucketScaler(v)
+                var y = 0
+                val yi = yticks.iterator
+                var found = false
+                while (yi.hasNext && !found) {
+                  val ti = yi.next()
+                  if (v < ti.v) {
+                    found = true
+                  } else {
+                    y += 1
+                  }
+                }
                 val x = if (t < lastTick.timestamp) {
                   bi
                 } else {
@@ -162,7 +173,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                   bi
                 }
                 // System.out.println(s" Y: ${y}   X: ${x}")
-                if (x < hCells) {
+                if (x < hCells && y < buckets.length) {
                   var b = buckets(y)
                   if (b == null) {
                     b = new Array[Long](hCells)
@@ -190,11 +201,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             val yScaler = axis.scale(y1, chartEnd)
             buckets.zip(yticks).foreach { tuple =>
               val (bucket, ytick) = tuple
-              val y = chartEnd - yScaler(ytick.v)
+              val y = yScaler(ytick.v)
               // System.out.println(s"Last ${last} new Y ${y}")
               if (bucket != null) {
                 val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
-                lineElement.draw(g, x1 + leftOffset, y, x2 - rightOffset, Math.max(1, y - last))
+                lineElement.draw(g, x1 + leftOffset, y, x2 - rightOffset, yHeight)
               }
               last = y
             }

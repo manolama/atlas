@@ -359,6 +359,8 @@ case class Grapher(settings: DefaultSettings) {
               val p: Option[Palette] =
                 if (s.color.nonEmpty) {
                   None
+                } else if (s.palette.nonEmpty) {
+                  Some(newP(s.palette.get))
                 } else if (axisCfg.palette.nonEmpty) {
                   Some(newP(axisCfg.palette.get))
                 } else {

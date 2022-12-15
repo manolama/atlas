@@ -22,8 +22,8 @@ case class HeatmapLine(
       if (dp > 0) {
         val c = palette.uniqueColors.reverse(colorScaler(dp))
         Style(c).configure(g)
-        System.out.println(s" Y1 ${y1} Y2 ${y2}")
-        g.fillRect(last, y1, px, y2)
+        System.out.println(s" last ${last} px ${px}")
+        g.fillRect(last, y1, px - last, y2)
       }
       last = px
     }
