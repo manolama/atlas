@@ -47,8 +47,9 @@ case class TimeSeriesLine(style: Style, ts: TimeSeq, xaxis: TimeAxis, yaxis: Val
       val nv = ts(t)
       val py = yscale(pv)
       val ny = yscale(nv)
-      if (!pv.isNaN && !nv.isNaN) g.drawLine(px1, py, px1, ny)
-      if (!nv.isNaN) g.drawLine(px1, ny, px2, ny)
+      System.out.println(String.format(s"NV %.8f @ ${t} -> ${ny} ", nv))
+      if (!pv.isNaN && !nv.isNaN) g.drawLine(px1, py, px1, ny) // vertical
+      if (!nv.isNaN) g.drawLine(px1, ny, px2, ny) // horizontal
       t += step
       pv = nv
     }

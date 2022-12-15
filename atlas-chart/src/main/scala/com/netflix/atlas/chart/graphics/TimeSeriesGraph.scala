@@ -140,8 +140,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               new Array[Array[Long]](yticks.size + 1) // plus 1 for the data above the final tick
             val hCells = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).size + 1
             val yHeight = (chartEnd - y1) / yticks.size
-            val bucketScaler = axis.scale(0, buckets.length)
+            val yScaler = axis.scale(y1, chartEnd)
+            val bucketScaler = Scales.factory(Scale.LINEAR)(y1, chartEnd, 0, buckets.size - 1)
             val xScaler = timeAxis.scale(x1 + leftOffset, x2 - rightOffset)
+            val bucketXScaler =
+              Scales.factory(Scale.LINEAR)(x1 + leftOffset, x2 - rightOffset, 0, hCells - 1)
             var cmin = Long.MaxValue
             var cmax = Long.MinValue
             System.out.println(s"# Ticks ${yticks.size} vs # Buckets ${buckets.length}")
@@ -154,28 +157,36 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               var bi = 0
               while (t < graphDef.endTime.toEpochMilli) {
                 val v = line.data.data(t)
-                // val y = buckets.size - bucketScaler(v)
-                var y = 0
-                val yi = yticks.iterator
-                var found = false
-                while (yi.hasNext && !found) {
-                  val ti = yi.next()
-                  if (v < ti.v) {
-                    found = true
-                  } else {
-                    y += 1
-                  }
-                }
-                if (!found) {
-                  y = buckets.length - 1
-                }
-                val x = if (t < lastTick.timestamp) {
-                  bi
-                } else {
-                  bi += 1
-                  if (ti.hasNext) lastTick = ti.next()
-                  bi
-                }
+                // System.out.println(s"---- ${v} @ ${t}")
+                val ys = yScaler(v) // to get to a 0 index
+                // System.out.println(String.format(s" V %.8f @ ${t} -> ${ys}", v))
+                val y = bucketScaler(ys) // doesn't work
+
+//                val y = (chartEnd - ys) / buckets.size
+//                System.out.println(s"ys ${ys}  ${y}")
+//                var y = 0
+//                val yi = yticks.iterator
+//                var found = false
+//                while (yi.hasNext && !found) {
+//                  val ti = yi.next()
+//                  if (v < ti.v) {
+//                    found = true
+//                  } else {
+//                    y += 1
+//                  }
+//                }
+//                if (!found) {
+//                  y = buckets.length - 1
+//                }
+//                val x = if (t < lastTick.timestamp) {
+//                  bi
+//                } else {
+//                  bi += 1
+//                  if (ti.hasNext) lastTick = ti.next()
+//                  bi
+//                }
+                val xs = xScaler(t)
+                val x = hCells - bucketXScaler(xs) - 1
                 // System.out.println(s" Y: ${y}   X: ${x}")
                 if (x < hCells && y < buckets.length) {
                   var b = buckets(y)
@@ -202,7 +213,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             val colorScaler =
               Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
             var last = 0
-            val yScaler = axis.scale(y1, chartEnd)
+            // val yScaler = axis.scale(y1, chartEnd)
             val yi = yticks.iterator
             var lastY = chartEnd + 1
             buckets.foreach { bucket =>
@@ -328,7 +339,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               case LineStyle.STACK =>
                 TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
             }
-
+            System.out.println(s"DRAW LINE ${y1} to ${chartEnd}")
             lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
           }
         }

@@ -17,6 +17,9 @@ package com.netflix.atlas.eval.graph
 
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.databind.JsonNode
+import com.netflix.atlas.chart.graphics.Scales
+import com.netflix.atlas.chart.model.Scale
+import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.SimpleStaticDatabase
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
@@ -50,38 +53,7 @@ class TryHeatMap extends FunSuite {
   private val goldenDir = s"$baseDir/src/test/resources/graph/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
 
-  private val graphAssertions =
-    new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
-
-  private val db = {
-    val f = "/Users/clarsen/Downloads/ptile_data_gb.json"
-    val json = Json.decode[GraphResponse](new FileInputStream(f))
-    val w = 3600 * 3
-    var time = System.currentTimeMillis() - (w * 1000)
-    time = time - (time % 60_000)
-    val timeseries = List.newBuilder[TimeSeries]
-    val seriesArrays = new Array[Array[Double]](json.metrics.length)
-    for (i <- 0 until json.metrics.length) {
-      seriesArrays(i) = new Array[Double](w / 60)
-    }
-
-    json.values.zipWithIndex.foreach { tuple =>
-      val timeIndex = tuple._2
-      tuple._1.zipWithIndex.foreach { arrayTuple =>
-        val tsIndex = arrayTuple._2
-        seriesArrays(tsIndex)(timeIndex) = arrayTuple._1
-      }
-    }
-    seriesArrays.zipWithIndex.foreach { t =>
-      timeseries += TimeSeries(
-        json.metrics(t._2),
-        new ArrayTimeSeq(DsType.Gauge, time, 60_000, t._1)
-      )
-    }
-
-    // StaticDatabase.demo
-    new SimpleStaticDatabase(timeseries.result(), ConfigFactory.load().getConfig("atlas.core.db"))
-  }
+  private var db: Database = null
   private val grapher = Grapher(ConfigFactory.load())
 
   def imageTest(name: String)(uri: => String): Unit = {
@@ -101,7 +73,42 @@ class TryHeatMap extends FunSuite {
     }
   }
 
+  def getDB(custom: Boolean = false): Database = {
+    if (custom) {
+      val f = "/Users/clarsen/Downloads/ptile_data_gb.json"
+      val json = Json.decode[GraphResponse](new FileInputStream(f))
+      val w = 3600 * 3
+      var time = System.currentTimeMillis() - (w * 1000)
+      time = time - (time % 60_000)
+      val timeseries = List.newBuilder[TimeSeries]
+      val seriesArrays = new Array[Array[Double]](json.metrics.length)
+      for (i <- 0 until json.metrics.length) {
+        seriesArrays(i) = new Array[Double](w / 60)
+      }
+
+      json.values.zipWithIndex.foreach { tuple =>
+        val timeIndex = tuple._2
+        tuple._1.zipWithIndex.foreach { arrayTuple =>
+          val tsIndex = arrayTuple._2
+          seriesArrays(tsIndex)(timeIndex) = arrayTuple._1
+        }
+      }
+      seriesArrays.zipWithIndex.foreach { t =>
+        timeseries += TimeSeries(
+          json.metrics(t._2),
+          new ArrayTimeSeq(DsType.Gauge, time, 60_000, t._1)
+        )
+      }
+
+      // StaticDatabase.demo
+      new SimpleStaticDatabase(timeseries.result(), ConfigFactory.load().getConfig("atlas.core.db"))
+    } else {
+      StaticDatabase.demo
+    }
+  }
+
   imageTest("my histo") {
+    db = getDB()
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
@@ -109,7 +116,31 @@ class TryHeatMap extends FunSuite {
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
 
-    "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color"
+    "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=1296&h=800&e=1671137340000&s=e-3h"
+    // "/api/v1/graph?q=name,sps,:eq,:heatmap,blues,:palette,name,sps,:eq,1,:axis,ff0000,:color&w=1296&h=800"
+  }
+
+  test("scale foo?") {
+    val startV = 64200.0
+    val startTS = 1671126600000L
+    val endV = 74940.0
+    val endTS = 1671137340000L
+    val y1 = 5
+    val y2 = 805
+
+    val s1 = Scales.factory(Scale.LINEAR)(startV, endV, y1, y2)
+    val s2 = Scales.factory(Scale.LINEAR)(startV, endV, y1, y2)
+
+    var v = startV
+    var t = startTS
+    while (v <= endV) {
+      val scaled1 = s1(v)
+      val scaled2 = s2(v)
+      assertEquals(scaled1, scaled2)
+      System.out.println(s"  ---- ${v} @ ${t}  [${scaled1}, ${scaled2}]")
+      v += 60
+      t += 60_000
+    }
   }
 
 //  test("such great heights") {
