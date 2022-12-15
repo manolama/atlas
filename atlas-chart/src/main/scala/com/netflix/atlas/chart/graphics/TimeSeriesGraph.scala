@@ -136,10 +136,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           // assume all lines in the group will be for a heat map
           if (GENERIC) {
             val yticks = axis.ticks(y1, chartEnd)
-            val buckets = new Array[Array[Long]](yticks.size + 1)
+            val buckets =
+              new Array[Array[Long]](yticks.size + 1) // plus 1 for the data above the final tick
             val hCells = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).size + 1
             val yHeight = (chartEnd - y1) / yticks.size
-            val bucketScaler = axis.scale(0, buckets.length - 1)
+            val bucketScaler = axis.scale(0, buckets.length)
             val xScaler = timeAxis.scale(x1 + leftOffset, x2 - rightOffset)
             var cmin = Long.MaxValue
             var cmax = Long.MinValue
@@ -153,7 +154,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               var bi = 0
               while (t < graphDef.endTime.toEpochMilli) {
                 val v = line.data.data(t)
-                // val y = bucketScaler(v)
+                // val y = buckets.size - bucketScaler(v)
                 var y = 0
                 val yi = yticks.iterator
                 var found = false
@@ -202,22 +203,33 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
             var last = 0
             val yScaler = axis.scale(y1, chartEnd)
-            buckets.zip(yticks).foreach { tuple =>
-              val (bucket, ytick) = tuple
-              val y = yScaler(ytick.v)
-              // System.out.println(s"Last ${last} new Y ${y}")
+            val yi = yticks.iterator
+            var lastY = chartEnd
+            buckets.foreach { bucket =>
+              val ytick = if (yi.hasNext) yi.next() else null
+              val nextY = if (ytick != null) yScaler(ytick.v) else y1
               if (bucket != null) {
                 val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
-                lineElement.draw(g, x1 + leftOffset, y, x2 - rightOffset, yHeight)
+                lineElement.draw(g, x1 + leftOffset, nextY, x2 - rightOffset, lastY - nextY)
               }
-              last = y
+              lastY = nextY
             }
-            // final bucket
-            val bucket = buckets.last
-            if (bucket != null) {
-              val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
-              lineElement.draw(g, x1 + leftOffset, last - yHeight, x2 - rightOffset, yHeight)
-            }
+//            buckets.zip(yticks).foreach { tuple =>
+//              val (bucket, ytick) = tuple
+//              val y = yScaler(ytick.v)
+//              // System.out.println(s"Last ${last} new Y ${y}")
+//              if (bucket != null) {
+//                val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
+//                lineElement.draw(g, x1 + leftOffset, y, x2 - rightOffset, yHeight)
+//              }
+//              last = y
+//            }
+//            // final bucket
+//            val bucket = buckets.last
+//            if (bucket != null) {
+//              val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
+//              lineElement.draw(g, x1 + leftOffset, last - yHeight, x2 - rightOffset, yHeight)
+//            }
 
 //            Style(Color.RED).configure(g)
 //            g.drawLine(x1, 305, x2, 305)

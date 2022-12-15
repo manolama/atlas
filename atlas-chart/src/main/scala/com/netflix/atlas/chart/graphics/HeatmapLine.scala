@@ -22,7 +22,7 @@ case class HeatmapLine(
       if (dp > 0) {
         val c = palette.uniqueColors(colorScaler(dp))
         Style(c).configure(g)
-        System.out.println(s" last ${last} px ${px}")
+        System.out.println(s" last ${last} px ${px}  Y1 ${y1} height ${y2}")
         g.fillRect(last, y1, px - last, y2)
       }
       last = px
