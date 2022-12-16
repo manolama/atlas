@@ -135,6 +135,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     def addLine(line: LineDef): Unit = {
       var t = graphDef.startTime.toEpochMilli
       val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
+      System.out.println(
+        s"Last tick: ${timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).last} and query end: ${graphDef.endTime.toEpochMilli}"
+      )
       var lastTick = ti.next()
       var bi = 0
       while (t < graphDef.endTime.toEpochMilli) {
@@ -157,8 +160,8 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         val x = if (t <= lastTick.timestamp) {
           bi
         } else {
-          bi += 1
           if (ti.hasNext) lastTick = ti.next()
+          bi += 1
           bi
         }
 
@@ -177,7 +180,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           }
         } else {
           System.out.println(
-            s"************** WTF? X ${x} vs ${hCells}, Y ${y} vs ${buckets.length}"
+            s"************** WTF? X ${x} vs ${hCells}, Y ${y} vs ${buckets.length} @ ${t}"
           )
         }
         t += graphDef.step
