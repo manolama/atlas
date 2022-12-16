@@ -49,7 +49,7 @@ object Scales {
     v => ((v - d1) / pixelSpan).toInt + r1
   }
 
-  private def log10(value: Double): Double = {
+  def log10(value: Double): Double = {
     value match {
       case v if v > 0.0 => math.log10(v + 1.0)
       case v if v < 0.0 => -math.log10(-(v - 1.0))

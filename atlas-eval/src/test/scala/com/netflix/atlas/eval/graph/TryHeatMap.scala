@@ -30,6 +30,7 @@ import com.netflix.atlas.json.Json
 import java.io.FileInputStream
 import java.util.Map.Entry
 import java.util.function.Consumer
+import scala.math.log10
 //import akka.http.scaladsl.model.headers.Host
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
@@ -130,6 +131,50 @@ class TryHeatMap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
+  }
+
+  def scaleBack(
+    d1: Double,
+    d2: Double,
+    r1: Int,
+    r2: Int,
+    x: Double
+  ): Double = {
+//    Math
+//      .pow(10, d1) + ((Math.pow(10, x) - r1) * ((log10(d2) - log10(d1)) / (r2 - r1)))
+//    ((log10(d1) * (Math.exp(x) - r2)) + (log10(d2) * (r1 - Math.exp(x)))) / (r1 - r2)
+    Math.exp(
+      (d1 * r1 - r1 * log10(d1) - d1 * r2 + x * log10(d1) + r1 * log10(d2) - x * log10(
+        d2
+      )) / (r1 - r2)
+    )
+  }
+
+  test("scale backwards is ___?") {
+//    val d1 = 1.0
+//    val d2 = 4.0
+//    val r1 = 0
+//    val r2 = 6
+
+    val d1 = 1.0
+    val d2 = 7.0
+    val r1 = 0
+    val r2 = 6
+
+    val v = 0.0
+    val x = ((log10(v) - d1) / ((log10(d2) - log10(d1)) / (r2 - r1))) + r1
+
+    // val scale = Scales.logarithmic(d1, d2, r1, r2)
+    val scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
+
+    for (i <- d1.toInt to d2.toInt) {
+      System.out.println(s"maxmin ${i} => ${r2 - scale(i)}")
+    }
+    System.out.println("--------")
+    for (i <- r1 to r2) {
+      val v = scaleBack(d1, d2, r1, r2, i)
+      System.out.println(s"idx ${i} => ${v.toInt}  scaled => ${r2 - scale(v.toInt)}")
+    }
   }
 
 //  test("such great heights") {

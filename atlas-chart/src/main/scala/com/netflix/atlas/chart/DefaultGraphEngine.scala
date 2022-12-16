@@ -105,12 +105,13 @@ class DefaultGraphEngine extends PngGraphEngine {
               plot,
               Some(label),
               showStats,
-              entriesPerPlot
+              entriesPerPlot,
+              graph
             )
         }
       } else {
         config.plots.foreach { plot =>
-          belowCanvas += Legend(config.theme.legend, plot, None, showStats, entriesPerPlot)
+          belowCanvas += Legend(config.theme.legend, plot, None, showStats, entriesPerPlot, graph)
         }
       }
 

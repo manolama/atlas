@@ -103,6 +103,8 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
   }
 
+  var heatmaps: Map[String, HeatMapState] = Map.empty
+
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     g.setClip(x1, y1, x2 - x1, y2 - y1)
     g.setColor(graphDef.theme.canvas.background.color)
@@ -458,6 +460,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                   rightOffset,
                   line.query.getOrElse("")
                 )
+                heatmaps += line.query.getOrElse("") -> heatmap
               }
               heatmap.addLine(line)
             case _ =>
