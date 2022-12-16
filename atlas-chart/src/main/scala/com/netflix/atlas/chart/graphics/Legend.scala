@@ -17,7 +17,7 @@ package com.netflix.atlas.chart.graphics
 
 import java.awt.Font
 import java.awt.Graphics2D
-
+import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.PlotDef
 
 /**
@@ -41,7 +41,23 @@ case class Legend(
 ) extends Element
     with VariableHeight {
 
-  private val numEntries = plot.data.size
+  private val (numEntries, numHeatMaps) = {
+    var lastHeatmapQuery: String = null
+    var count = 0
+    var heatmaps = 0
+    plot.lines.foreach { line =>
+      line.lineStyle match {
+        case LineStyle.HEATMAP =>
+          if (lastHeatmapQuery == null || !lastHeatmapQuery.equals(line.query.getOrElse(""))) {
+            lastHeatmapQuery = line.query.getOrElse("")
+            count += 1
+            heatmaps += 1
+          }
+        case _ => count += 1
+      }
+    }
+    (count, heatmaps)
+  }
 
   private val header = HorizontalPadding(5) :: label.toList.map { str =>
     val bold = ChartSettings.normalFont.deriveFont(Font.BOLD)
@@ -49,8 +65,42 @@ case class Legend(
     Text(str, font = bold, alignment = TextAlignment.LEFT, style = Style(headerColor))
   }
 
-  private val entries = plot.data.take(maxEntries).flatMap { data =>
-    List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
+  private val entries = {
+//    plot.data.take(maxEntries).flatMap { data =>
+//      List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
+//    }
+    // nuts, can't use this since it's unordered.
+    // plot.data.groupBy()
+
+    val results = List.newBuilder[Element with Product]
+    var lastHeatmapLegend: HeatMapLegend = null
+    plot.lines.zip(plot.data).foreach { tuple =>
+      val (line, data) = tuple
+      results += HorizontalPadding(2)
+      line.lineStyle match {
+        case LineStyle.HEATMAP =>
+          if (
+            lastHeatmapLegend == null ||
+            !lastHeatmapLegend.query.equals(line.query.getOrElse(""))
+          ) {
+            if (lastHeatmapLegend != null) {
+              results += lastHeatmapLegend
+            }
+            lastHeatmapLegend = HeatMapLegend(styles, plot, showStats, line.query.getOrElse(""))
+          }
+          lastHeatmapLegend.addLine(line)
+        case _ =>
+          if (lastHeatmapLegend != null) {
+            results += lastHeatmapLegend
+            lastHeatmapLegend = null
+          }
+          results += LegendEntry(styles, plot, data, showStats)
+      }
+    }
+    if (lastHeatmapLegend != null) {
+      results += lastHeatmapLegend
+    }
+    results.result()
   }
 
   private val footer =

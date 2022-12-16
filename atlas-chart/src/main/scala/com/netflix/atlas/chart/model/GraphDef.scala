@@ -95,9 +95,21 @@ case class GraphDef(
   renderingHints: Set[String] = Set.empty
 ) {
 
-  /** Total number of lines for all plots. */
+  /** Total number of lines for all plots. Note that heatmaps count as a single line. */
   val numLines: Int = plots.foldLeft(0) { (acc, p) =>
-    acc + p.data.size
+    var lastHeatmapQuery: String = null
+    var count = 0
+    p.lines.foreach { line =>
+      line.lineStyle match {
+        case LineStyle.HEATMAP =>
+          if (lastHeatmapQuery == null || !lastHeatmapQuery.equals(line.query.getOrElse(""))) {
+            lastHeatmapQuery = line.query.getOrElse("")
+            count += 1
+          }
+        case _ => count += 1
+      }
+    }
+    acc + count
   }
 
   require(timezones.nonEmpty, "at least one timezone must be specified for the chart")
