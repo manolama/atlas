@@ -92,7 +92,8 @@ case class TimeAxis(
 
     style.configure(g)
     val xscale = scale(x1, x2)
-    val majorTicks = ticks(x1, x2).filter(_.major)
+    val ti = ticks(x1, x2)
+    val majorTicks = ti.filter(_.major)
     var indicatedTransition = false
     majorTicks.foreach { tick =>
       val px = xscale(tick.timestamp)

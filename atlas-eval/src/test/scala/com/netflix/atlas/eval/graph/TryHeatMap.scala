@@ -116,31 +116,8 @@ class TryHeatMap extends FunSuite {
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
 
-    "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=1296&h=800&e=1671137340000&s=e-3h"
+    "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=600&h=400&e=1671137340000&s=e-3h"
     // "/api/v1/graph?q=name,sps,:eq,:heatmap,blues,:palette,name,sps,:eq,1,:axis,ff0000,:color&w=1296&h=800"
-  }
-
-  test("scale foo?") {
-    val startV = 64200.0
-    val startTS = 1671126600000L
-    val endV = 74940.0
-    val endTS = 1671137340000L
-    val y1 = 5
-    val y2 = 805
-
-    val s1 = Scales.factory(Scale.LINEAR)(startV, endV, y1, y2)
-    val s2 = Scales.factory(Scale.LINEAR)(startV, endV, y1, y2)
-
-    var v = startV
-    var t = startTS
-    while (v <= endV) {
-      val scaled1 = s1(v)
-      val scaled2 = s2(v)
-      assertEquals(scaled1, scaled2)
-      System.out.println(s"  ---- ${v} @ ${t}  [${scaled1}, ${scaled2}]")
-      v += 60
-      t += 60_000
-    }
   }
 
 //  test("such great heights") {
