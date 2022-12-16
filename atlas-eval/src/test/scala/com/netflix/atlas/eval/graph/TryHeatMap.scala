@@ -116,8 +116,8 @@ class TryHeatMap extends FunSuite {
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
 
-    "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=600&h=400&e=1671137340000&s=e-3h"
-    // "/api/v1/graph?q=name,sps,:eq,:heatmap,blues,:palette,name,sps,:eq,1,:axis,ff0000,:color&w=1296&h=800"
+    // "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=600&h=400&e=1671137340000&s=e-3h"
+    "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,blues,:palette,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color&w=1296&h=400"
   }
 
 //  test("such great heights") {

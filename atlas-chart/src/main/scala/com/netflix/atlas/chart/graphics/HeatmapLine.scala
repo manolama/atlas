@@ -3,7 +3,8 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.model.TimeSeq
 
-import java.awt.{Color, Graphics2D}
+import java.awt.Color
+import java.awt.Graphics2D
 
 case class HeatmapLine(
   ts: Array[Long],
@@ -20,13 +21,9 @@ case class HeatmapLine(
     ts.foreach { dp =>
       val x = if (ti.hasNext) xscale(ti.next().timestamp) else x2
       if (dp > 0) {
-        //val c = palette.uniqueColors(colorScaler(dp))
-        val c = if (dp == 1) Color.CYAN
-        else if (dp == 2) Color.BLUE
-        else if (dp == 3) Color.MAGENTA
-        else Color.BLACK
+        val c = palette.uniqueColors(colorScaler(dp))
         Style(c).configure(g)
-        //System.out.println(s" last ${last} px ${x}  Y1 ${y1} height ${y2}")
+        // System.out.println(s" last ${last} px ${x}  Y1 ${y1} height ${y2}")
         g.fillRect(last, y1, x - last, y2)
       }
       last = x
