@@ -119,9 +119,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     x2: Int,
     chartEnd: Int,
     leftOffset: Int,
-    rightOffset: Int
+    rightOffset: Int,
+    query: String
   ) {
 
+    System.out.println("***** Start heatmap")
     val yticks = axis.ticks(y1, chartEnd)
 
     val buckets =
@@ -131,13 +133,14 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
     var cmin = Long.MaxValue
     var cmax = Long.MinValue
+    var firstLine: LineDef = null
 
     def addLine(line: LineDef): Unit = {
+      if (firstLine == null) {
+        firstLine = line
+      }
       var t = graphDef.startTime.toEpochMilli
       val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
-      System.out.println(
-        s"Last tick: ${timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).last} and query end: ${graphDef.endTime.toEpochMilli}"
-      )
       var lastTick = ti.next()
       var bi = 0
       while (t < graphDef.endTime.toEpochMilli) {
@@ -188,8 +191,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     }
 
     def draw(g: Graphics2D): Unit = {
-      val palette = plot.lines.head.palette.getOrElse(
-        Palette.singleColor(plot.lines.head.color)
+      System.out.println("***** Draw heatmap")
+      val palette = firstLine.palette.getOrElse(
+        Palette.singleColor(firstLine.color)
       )
       val colorScaler =
         Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
@@ -210,6 +214,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   }
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+
     val leftAxisW = yaxes.head.width
     val rightAxisW = yaxes.tail.foldLeft(0) { (acc, axis) =>
       acc + axis.width
@@ -432,8 +437,15 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 //          }
 //        } else {
         plot.lines.foreach { line =>
+
           line.lineStyle match {
             case LineStyle.HEATMAP =>
+              if (heatmap != null && !heatmap.query.equals(line.query.getOrElse(""))) {
+                System.out.println("Flushing previous heatmap due to different query")
+                heatmap.draw(g)
+                heatmap = null
+              }
+
               if (heatmap == null) {
                 heatmap = HeatMapState(
                   plot,
@@ -443,12 +455,14 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                   x2,
                   chartEnd,
                   leftOffset,
-                  rightOffset
+                  rightOffset,
+                  line.query.getOrElse("")
                 )
               }
               heatmap.addLine(line)
             case _ =>
               if (heatmap != null) {
+                System.out.println("---- flushing prev heat map due to non-heatmap line")
                 heatmap.draw(g)
                 heatmap = null
               }
@@ -467,6 +481,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
         if (heatmap != null) {
           heatmap.draw(g)
+          heatmap = null
         }
 
         plot.horizontalSpans.foreach { hspan =>
