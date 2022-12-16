@@ -77,7 +77,6 @@ case class Legend(
     var lastHeatmapLegend: HeatMapLegend = null
     plot.lines.zip(plot.data).foreach { tuple =>
       val (line, data) = tuple
-      results += HorizontalPadding(2)
       line.lineStyle match {
         case LineStyle.HEATMAP =>
           if (
@@ -85,6 +84,7 @@ case class Legend(
             !lastHeatmapLegend.query.equals(line.query.getOrElse(""))
           ) {
             if (lastHeatmapLegend != null) {
+              results += HorizontalPadding(2)
               results += lastHeatmapLegend
             }
             lastHeatmapLegend =
@@ -96,6 +96,7 @@ case class Legend(
             results += lastHeatmapLegend
             lastHeatmapLegend = null
           }
+          results += HorizontalPadding(2)
           results += LegendEntry(styles, plot, data, showStats)
       }
     }

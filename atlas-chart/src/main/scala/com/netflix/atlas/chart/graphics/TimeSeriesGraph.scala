@@ -136,6 +136,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     var cmin = Long.MaxValue
     var cmax = Long.MinValue
     var firstLine: LineDef = null
+    var legendMinMax: Array[(Long, Long)] = null
 
     def addLine(line: LineDef): Unit = {
       if (firstLine == null) {
@@ -197,6 +198,8 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       val palette = firstLine.palette.getOrElse(
         Palette.singleColor(firstLine.color)
       )
+      legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
+      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
       val colorScaler =
         Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
       val yScaler = axis.scale(y1, chartEnd)
@@ -206,7 +209,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         val ytick = if (yi.hasNext) yi.next() else null
         val nextY = if (ytick != null) yScaler(ytick.v) else y1
         if (bucket != null) {
-          val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette)
+          val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette, legendMinMax)
           lineElement.draw(g, x1 + leftOffset, nextY, x2 - rightOffset, lastY - nextY)
         }
         lastY = nextY

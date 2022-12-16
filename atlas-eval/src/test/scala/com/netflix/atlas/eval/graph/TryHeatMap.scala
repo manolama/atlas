@@ -119,6 +119,7 @@ class TryHeatMap extends FunSuite {
 
     // "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=600&h=400&e=1671137340000&s=e-3h"
     "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color&w=1296&h=400&no_legend_stats=1"
+    "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&no_legend_stats=1"
 
     // heatmap, lines, heatmap same axis
     // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color:palette,name,sps,:eq,(,nf.cluster,),:by,:heatmap,greens,:palette&w=1296&h=400"
@@ -168,12 +169,12 @@ class TryHeatMap extends FunSuite {
     val scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
 
     for (i <- d1.toInt to d2.toInt) {
-      System.out.println(s"maxmin ${i} => ${r2 - scale(i)}")
+      // System.out.println(s"maxmin ${i} => ${r2 - scale(i)}")
     }
     System.out.println("--------")
     for (i <- r1 to r2) {
       val v = scaleBack(d1, d2, r1, r2, i)
-      System.out.println(s"idx ${i} => ${v.toInt}  scaled => ${r2 - scale(v.toInt)}")
+      // System.out.println(s"idx ${i} => ${v.toInt}  scaled => ${r2 - scale(v.toInt)}")
     }
   }
 
