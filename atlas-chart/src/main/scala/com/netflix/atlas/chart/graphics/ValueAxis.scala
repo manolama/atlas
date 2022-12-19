@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+
 import java.awt.Graphics2D
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
@@ -217,113 +219,179 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     style.configure(g)
     g.drawLine(x2, y1, x2, y2)
 
-    val ticks = getTicks(y1, y2)
-    drawNormal(ticks, g, x1, y1, x2, y2)
+    val majorTicks = ticks(y1, y2).filter(_.major)
+    drawNormal(majorTicks, g, x1, y1, x2, y2)
 
     label.foreach { t =>
       drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
     }
   }
 
-  // FOR PTILE HEAT
-  def getTicks(y1: Int, y2: Int): Map[Int, ValueTick] = {
+//  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+//    style.configure(g)
+//    g.drawLine(x2, y1, x2, y2)
+//
+//    val ticks = getTicks(y1, y2)
+//    drawNormal(ticks, g, x1, y1, x2, y2)
+//
+//    label.foreach { t =>
+//      drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
+//    }
+//  }
+
+  override def ticks(y1: Int, y2: Int): List[ValueTick] = {
     val numTicks = (y2 - y1) / minTickLabelHeight
-    val ticks = Map.newBuilder[Int, ValueTick]
-    val bktRange = max - min
+    val maxBkt = PercentileBuckets.indexOf(max.toLong * 1000 * 1000 * 1000)
+    val minBkt = PercentileBuckets.indexOf(min.toLong * 1000 * 1000 * 1000)
+    val bktRange = maxBkt - minBkt
+    val ticks = List.newBuilder[ValueTick]
     skipBuckets = (bktRange / numTicks / 4).toInt
     System.out.println(s"Getting ticks.... R: ${bktRange}  Skip ${skipBuckets}")
     var cnt = 0
-    for (i <- min.toInt to max.toInt) {
+    for (i <- minBkt.toInt to maxBkt.toInt) {
       if (i % skipBuckets == 0) {
         val sec = bktSeconds(i)
         val prefix = Ticks.getDurationPrefix(sec, sec)
         // val fmt = Ticks.durationLabelFormat(prefix, sec)
         val fmt = prefix.format(sec, "%.1f%s")
         val label = prefix.format(sec, fmt)
-        val t = ValueTick(i, 0.0, i % numTicks == 0, Some(label))
+        val t = ValueTick(bktSeconds(i), 0.0, i % numTicks == 0, Some(label))
         //      System.out.println(s"  [${i}]    ${t}")
-        ticks += i -> t
+        ticks += t
         cnt += 1
       }
     }
-
-//    val sec = bktSeconds(max.toInt)
-//    val prefix = Ticks.getDurationPrefix(sec, sec)
-//    val fmt = Ticks.durationLabelFormat(prefix, sec)
-//    val label = prefix.format(sec, fmt)
-//    val t = ValueTick(max.toInt, 0.0, true, Some(label))
-//    System.out.println(s"  [${max.toInt}]    ${t}")
-//    ticks += t
     ticks.result()
   }
 
-  def bktSeconds(index: Int): Double = {
-    PercentileBuckets.get(index).toDouble / 1000 / 1000 / 1000
-  }
+  // FOR PTILE HEAT
+//  def getTicks(y1: Int, y2: Int): Map[Int, ValueTick] = {
+//    val numTicks = (y2 - y1) / minTickLabelHeight
+//    val ticks = Map.newBuilder[Int, ValueTick]
+//    val maxBkt = PercentileBuckets.indexOf(max.toLong * 1000 * 1000 * 1000)
+//    val minBkt = PercentileBuckets.indexOf(min.toLong * 1000 * 1000 * 1000)
+//    val bktRange = maxBkt - minBkt
+//    skipBuckets = (bktRange / numTicks / 4).toInt
+//    System.out.println(s"Getting ticks.... R: ${bktRange}  Skip ${skipBuckets}")
+//    var cnt = 0
+//    for (i <- minBkt.toInt to maxBkt.toInt) {
+//      if (i % skipBuckets == 0) {
+//        val sec = bktSeconds(i)
+//        val prefix = Ticks.getDurationPrefix(sec, sec)
+//        // val fmt = Ticks.durationLabelFormat(prefix, sec)
+//        val fmt = prefix.format(sec, "%.1f%s")
+//        val label = prefix.format(sec, fmt)
+//        val t = ValueTick(bktSeconds(i), 0.0, i % numTicks == 0, Some(label))
+//        //      System.out.println(s"  [${i}]    ${t}")
+//        ticks += i -> t
+//        cnt += 1
+//      }
+//    }
+//
+////    val sec = bktSeconds(max.toInt)
+////    val prefix = Ticks.getDurationPrefix(sec, sec)
+////    val fmt = Ticks.durationLabelFormat(prefix, sec)
+////    val label = prefix.format(sec, fmt)
+////    val t = ValueTick(max.toInt, 0.0, true, Some(label))
+////    System.out.println(s"  [${max.toInt}]    ${t}")
+////    ticks += t
+//    ticks.result()
+//  }
+//
+//  def bktSeconds(index: Int): Double = {
+//    PercentileBuckets.get(index).toDouble / 1000 / 1000 / 1000
+//  }
+
+//  private def drawNormal(
+//    ticks: List[ValueTick],
+//    g: Graphics2D,
+//    x1: Int,
+//    y1: Int,
+//    x2: Int,
+//    y2: Int
+//  ): Unit = {
+//    // val yscale = scale(y1, y2)
+//
+//    // y2 is chart end
+//
+//    // tmep
+//    val bktRange = (max.toInt - min.toInt) + 1
+//    val dpHeight = ((y2 + 1) - y1) / bktRange.toDouble
+//    // val yFudge = Math.round(bktRange.toDouble / ((y2 - y1) - (bktRange * dpHeight)))
+//    var ctr = 0
+//    var previousOffset = y2.toDouble + 1
+//    for (i <- min.toInt to max.toInt) {
+//      // val py = yscale(tick.v)
+//      // val py = y2 - (tick.v.toInt * 3)
+//      val nextOffset = previousOffset - dpHeight
+//      val h = (Math.round(previousOffset) - Math.round(nextOffset)).toInt
+//      val offset = Math.round(previousOffset).toInt - h
+//      previousOffset = nextOffset
+//
+//      ticks.get(i) match {
+//        case Some(tick) =>
+//          if (tick.major && offset >= y1) {
+//            // g.drawLine(x2, py, x2 - tickMarkLength, py)
+//            g.drawLine(x2, offset, x2 - tickMarkLength, offset)
+//
+//            if (plotDef.showTickLabels) {
+//              val txt = Text(
+//                tick.label,
+//                font = ChartSettings.smallFont,
+//                alignment = TextAlignment.RIGHT,
+//                style = style
+//              )
+//              val txtH = ChartSettings.smallFontDims.height
+//              // val ty = py - txtH / 2
+//              val ty = offset - txtH / 2
+//              txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
+//            }
+////            System.out.println(
+////              s" ***** tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
+////            )
+//          } else {
+////            System.out.println(
+////              s"       tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
+////            )
+//          }
+//        case None => // no-op
+//      }
+//
+//      // offset -= offsetAdjust(ctr, yFudge, dpHeight)
+//      // overshoots it!!!!!!!! e.g. 1.9m is at offset 27 instead of 19 as it should be
+////      for (_ <- 0 until skipBuckets - 1) {
+////        previousOffset -= dpHeight
+////      }
+//      ctr += 1 + skipBuckets
+////      ctr += 1
+////      offset -= h
+//    }
+//  }
 
   private def drawNormal(
-    ticks: Map[Int, ValueTick],
+    ticks: List[ValueTick],
     g: Graphics2D,
     x1: Int,
     y1: Int,
     x2: Int,
     y2: Int
   ): Unit = {
-    // val yscale = scale(y1, y2)
+    val yscale = scale(y1, y2)
+    ticks.foreach { tick =>
+      val py = yscale(tick.v)
+      g.drawLine(x2, py, x2 - tickMarkLength, py)
 
-    // y2 is chart end
-
-    // tmep
-    val bktRange = (max.toInt - min.toInt) + 1
-    val dpHeight = ((y2 + 1) - y1) / bktRange.toDouble
-    // val yFudge = Math.round(bktRange.toDouble / ((y2 - y1) - (bktRange * dpHeight)))
-    var ctr = 0
-    var previousOffset = y2.toDouble + 1
-    for (i <- min.toInt to max.toInt) {
-      // val py = yscale(tick.v)
-      // val py = y2 - (tick.v.toInt * 3)
-      val nextOffset = previousOffset - dpHeight
-      val h = (Math.round(previousOffset) - Math.round(nextOffset)).toInt
-      val offset = Math.round(previousOffset).toInt - h
-      previousOffset = nextOffset
-
-      ticks.get(i) match {
-        case Some(tick) =>
-          if (tick.major && offset >= y1) {
-            // g.drawLine(x2, py, x2 - tickMarkLength, py)
-            g.drawLine(x2, offset, x2 - tickMarkLength, offset)
-
-            if (plotDef.showTickLabels) {
-              val txt = Text(
-                tick.label,
-                font = ChartSettings.smallFont,
-                alignment = TextAlignment.RIGHT,
-                style = style
-              )
-              val txtH = ChartSettings.smallFontDims.height
-              // val ty = py - txtH / 2
-              val ty = offset - txtH / 2
-              txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
-            }
-//            System.out.println(
-//              s" ***** tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
-//            )
-          } else {
-//            System.out.println(
-//              s"       tick Height ${h} @ ${tick.v.toInt}  Offset ${offset} -> ${tick.label}"
-//            )
-          }
-        case None => // no-op
+      if (plotDef.showTickLabels) {
+        val txt = Text(
+          tick.label,
+          font = ChartSettings.smallFont,
+          alignment = TextAlignment.RIGHT,
+          style = style
+        )
+        val txtH = ChartSettings.smallFontDims.height
+        val ty = py - txtH / 2
+        txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
       }
-
-      // offset -= offsetAdjust(ctr, yFudge, dpHeight)
-      // overshoots it!!!!!!!! e.g. 1.9m is at offset 27 instead of 19 as it should be
-//      for (_ <- 0 until skipBuckets - 1) {
-//        previousOffset -= dpHeight
-//      }
-      ctr += 1 + skipBuckets
-//      ctr += 1
-//      offset -= h
     }
   }
 

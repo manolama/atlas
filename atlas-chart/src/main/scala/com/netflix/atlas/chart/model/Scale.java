@@ -23,7 +23,8 @@ public enum Scale {
   LINEAR,
   LOGARITHMIC,
   POWER_2,
-  SQRT;
+  SQRT,
+  PERCENTILE;
 
   /** Returns the scale constant associated with a given name. */
   public static Scale fromName(String s) {
@@ -32,6 +33,7 @@ public enum Scale {
       case "log":    return LOGARITHMIC;
       case "pow2":   return POWER_2;
       case "sqrt":   return SQRT;
+      case "percentile": return PERCENTILE;
       default:
         throw new IllegalArgumentException("unknown scale type '" + s
             + "', should be linear, log, pow2, or sqrt");

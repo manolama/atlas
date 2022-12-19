@@ -565,7 +565,7 @@ object StyleVocabulary extends Vocabulary {
           )
         }
 
-        StyleExpr(MathExpr.PerStep(e), Map("ls" -> "heat")) :: stack
+        StyleExpr(MathExpr.PerStep(e), Map("ls" -> "heatmap")) :: stack
     }
 
     private def toSum(af: AggregateFunction): DataExpr.Sum = {

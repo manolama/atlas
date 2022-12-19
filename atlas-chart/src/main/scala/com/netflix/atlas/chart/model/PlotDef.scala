@@ -15,8 +15,11 @@
  */
 package com.netflix.atlas.chart.model
 
-import java.awt.Color
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 
+import java.awt.Color
 import com.netflix.atlas.chart.graphics.Theme
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
@@ -64,6 +67,8 @@ case class PlotDef(
     if (dataLines.isEmpty) 0.0 -> 1.0
     else {
       val step = dataLines.head.data.data.step
+      // TODO - oohhhhewwwwwwwweeewewewewe how would STACK lines interact with
+      // Percentile graphs...? Blech!!!!!
       val (regular, stacked) = dataLines
         .filter(_.lineStyle != LineStyle.VSPAN)
         .partition(_.lineStyle != LineStyle.STACK)
@@ -76,7 +81,17 @@ case class PlotDef(
       var t = start
       while (t < end) {
         regular.foreach { line =>
-          val v = line.data.data(t)
+          val v = line.lineStyle match {
+            case LineStyle.HEATMAP =>
+              // TODO - super duper inefficient since we only need to get the bucket seconds ONCE per
+              // line. meh.
+              if (isSpectatorPercentile(line)) {
+                bktSeconds(line)
+              } else {
+                line.data.data(t)
+              }
+            case _ => line.data.data(t)
+          }
           if (JDouble.isFinite(v)) {
             max = if (v > max) v else max
             min = if (v < min) v else min

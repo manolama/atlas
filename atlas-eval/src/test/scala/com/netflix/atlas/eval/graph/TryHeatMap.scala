@@ -17,6 +17,7 @@ package com.netflix.atlas.eval.graph
 
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.databind.JsonNode
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.Scales
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.db.Database
@@ -26,6 +27,7 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.TryHeatMap.GraphResponse
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.histogram.PercentileBuckets
 
 import java.io.FileInputStream
 import java.util.Map.Entry
@@ -76,7 +78,7 @@ class TryHeatMap extends FunSuite {
 
   def getDB(custom: Boolean = false): Database = {
     if (custom) {
-      val f = "/Users/clarsen/Downloads/ptile_data_gb.json"
+      val f = "/Users/clarsen/Downloads/ptile_data5.json"
       val json = Json.decode[GraphResponse](new FileInputStream(f))
       val w = 3600 * 3
       var time = System.currentTimeMillis() - (w * 1000)
@@ -109,17 +111,21 @@ class TryHeatMap extends FunSuite {
   }
 
   imageTest("my histo") {
-    db = getDB()
+    db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap"
+
+    // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,95,99.99,99.99999,),:percentiles&w=1296&h=400&tick_labels=duration"
+
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
 
     // "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=600&h=400&e=1671137340000&s=e-3h"
-    "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color&w=1296&h=400&no_legend_stats=1"
-    "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&no_legend_stats=1"
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color&w=1296&h=400&no_legend_stats=1"
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&no_legend_stats=1"
 
     // heatmap, lines, heatmap same axis
     // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color:palette,name,sps,:eq,(,nf.cluster,),:by,:heatmap,greens,:palette&w=1296&h=400"
@@ -210,6 +216,47 @@ class TryHeatMap extends FunSuite {
 //    System.out.println(s"Remainder: ${prev}")
 //
 //  }
+
+  test("the bucketeer....") {
+
+    /**
+      * BUCKET IDX: 158  seconds: 68.71947673599999
+      *  BUCKET IDX: 159  seconds: 91.62596898100001
+      *  BUCKET IDX: 160  seconds: 114.532461226
+      */
+    val bktMax = 160
+    val seconds = bktSeconds(bktMax)
+    System.out.println(s"SECONDS ${seconds} for ${bktMax}")
+
+    val idx = PercentileBuckets.indexOf(seconds.toLong * 1000 * 1000 * 1000)
+    System.out.println(s"To bkt Idx: ${idx}")
+  }
+
+//  test("bucket boundaries?") {
+//    val counts = new Array[Long](PercentileBuckets.length())
+//    counts(17) += 15
+//
+//    System.out.println("Nanos for bkt 5: " + PercentileBuckets.get(5))
+//    System.out.println(
+//      PercentileBuckets.indexOf(20) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(20))
+//    )
+//    System.out.println(
+//      PercentileBuckets.indexOf(21) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(21))
+//    )
+//    System.out.println(
+//      PercentileBuckets.indexOf(25) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(25))
+//    )
+//    System.out.println(
+//      PercentileBuckets.indexOf(26) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(26))
+//    )
+//    System.out.println(
+//      PercentileBuckets.indexOf(27) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(27))
+//    )
+//
+//    System.out.println(s"P: ${PercentileBuckets.percentile(counts, 99.9999)}")
+//
+//  }
+
 }
 
 object TryHeatMap {

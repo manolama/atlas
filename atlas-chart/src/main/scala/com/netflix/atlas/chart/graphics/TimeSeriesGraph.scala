@@ -19,6 +19,8 @@ import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
 import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktIdx
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktNanos
 import com.netflix.atlas.chart.model.GraphDef
@@ -88,18 +90,17 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
-//      if (plot.lines.find(_.lineStyle == LineStyle.HEAT).nonEmpty) {
-//        // TODO - assuming percentiles here
-//        HeatMapTimerValueAxis(
-//          plot,
-//          graphDef.theme.axis,
-//          bktIdx(plot.lines.head),
-//          bktIdx(plot.lines.last)
-//        )
-//      } else
-      if (i == 0)
+      if (i == 0) {
+//        if (
+//          plot.lines.head.lineStyle == LineStyle.HEATMAP &&
+//          isSpectatorPercentile(plot.lines.head)
+//        ) {
+        HeatMapTimerValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
+        // } else {
         LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
-      else
+        // }
+
+      } else
         RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
   }
 
@@ -111,9 +112,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     g.fillRect(x1, y1, x2 - x1, y2 - y1)
   }
 
-  val GENERIC = true
-
-  case class HeatMapState(
+  case class HeatMapBasic(
     plot: PlotDef,
     axis: ValueAxis,
     x1: Int,
@@ -123,7 +122,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     leftOffset: Int,
     rightOffset: Int,
     query: String
-  ) {
+  ) extends HeatMapState {
 
     System.out.println("***** Start heatmap")
     val yticks = axis.ticks(y1, chartEnd)
@@ -139,6 +138,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     var legendMinMax: Array[(Long, Long)] = null
 
     def addLine(line: LineDef): Unit = {
+      val seconds = if (isSpectatorPercentile(line)) bktSeconds(line) else -1
       if (firstLine == null) {
         firstLine = line
       }
@@ -148,12 +148,13 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       var bi = 0
       while (t < graphDef.endTime.toEpochMilli) {
         val v = line.data.data(t)
+        val cmp = if (seconds >= 0) seconds else v
         var y = 0
         val yi = yticks.iterator
         var found = false
         while (yi.hasNext && !found) {
           val ti = yi.next()
-          if (v <= ti.v) {
+          if (cmp <= ti.v) {
             found = true
           } else {
             y += 1
@@ -177,7 +178,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             b = new Array[Long](hCells)
             buckets(y) = b
           }
-          b(x) += 1
+          if (seconds >= 0) b(x) += v.toLong else b(x) += 1
           if (b(x) > 0 && b(x) > cmax) {
             cmax = b(x)
           }
@@ -452,17 +453,33 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               }
 
               if (heatmap == null) {
-                heatmap = HeatMapState(
-                  plot,
-                  axis,
-                  x1,
-                  y1,
-                  x2,
-                  chartEnd,
-                  leftOffset,
-                  rightOffset,
-                  line.query.getOrElse("")
-                )
+                if (isSpectatorPercentile(line)) {
+                  heatmap = PercentileHeatMap(
+                    graphDef,
+                    plot,
+                    axis,
+                    timeAxis,
+                    x1,
+                    y1,
+                    x2,
+                    chartEnd,
+                    leftOffset,
+                    rightOffset,
+                    line.query.getOrElse("")
+                  )
+                } else {
+                  heatmap = HeatMapBasic(
+                    plot,
+                    axis,
+                    x1,
+                    y1,
+                    x2,
+                    chartEnd,
+                    leftOffset,
+                    rightOffset,
+                    line.query.getOrElse("")
+                  )
+                }
                 heatmaps += line.query.getOrElse("") -> heatmap
               }
               heatmap.addLine(line)

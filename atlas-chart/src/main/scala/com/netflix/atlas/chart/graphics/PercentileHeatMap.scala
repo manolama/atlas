@@ -1,11 +1,16 @@
 package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
 import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
@@ -14,212 +19,154 @@ import com.netflix.spectator.api.histogram.PercentileBuckets
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
+import java.util.regex.Pattern
 import scala.collection.mutable
 
-case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
+case class PercentileHeatMap(
+  graphDef: GraphDef,
+  plot: PlotDef,
+  axis: ValueAxis,
+  timeAxis: TimeAxis,
+  x1: Int,
+  y1: Int,
+  x2: Int,
+  chartEnd: Int,
+  leftOffset: Int,
+  rightOffset: Int,
+  query: String
+) extends HeatMapState {
 
-  val start: Long = graphDef.startTime.toEpochMilli
-  val end: Long = graphDef.endTime.toEpochMilli
+  System.out.println("***** Start heatmap")
+  val yticks = axis.ticks(y1, chartEnd)
 
-  override def height: Int = {
-    val max = GraphConstants.MaxHeight
-    val h =
-      if (graphDef.height > max) max
-      else {
-        val min = GraphConstants.MinCanvasHeight
-        if (graphDef.height < min) min else graphDef.height
+  val buckets =
+    new Array[Array[Long]](yticks.size + 1) // plus 1 for the data above the final tick
+  val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
+  val hCells = xti.size + 1
+
+  var cmin = Long.MaxValue
+  var cmax = Long.MinValue
+  var firstLine: LineDef = null
+  var legendMinMax: Array[(Long, Long)] = null
+
+  def addLine(line: LineDef): Unit = {
+    val seconds = if (isSpectatorPercentile(line)) bktSeconds(line) else -1
+    val bktIdx = PercentileHeatMap.bktIdx(line)
+    val prevBktIdx = if (bktIdx == 0) 0 else bktIdx - 1
+    val prevBktSec = bktSeconds(prevBktIdx)
+    // we need to figure out how many buckets to fill. This is due to the regular
+    // ticks scale but exponential bucket size. Higher buckets can spread across
+    // cells.
+    var bucketsPerBucket = -1
+    val yti = yticks.iterator
+    var y = 0
+    var f = false
+    while (yti.hasNext && !f) {
+      val ti = yti.next()
+      if (ti.v > prevBktSec) {
+        bucketsPerBucket += 1
       }
-    if (graphDef.onlyGraph || graphDef.layout.isFixedHeight) h
-    else {
-      h + timeAxes.map(_.height).sum
-    }
-  }
-
-  override def width: Int = {
-    val max = GraphConstants.MaxWidth
-    val w =
-      if (graphDef.width > max) max
-      else {
-        val min = GraphConstants.MinCanvasWidth
-        if (graphDef.width < min) min else graphDef.width
-      }
-    if (graphDef.onlyGraph || graphDef.layout.isFixedWidth) w
-    else {
-      val rightPadding = if (yaxes.tail.nonEmpty) 0 else TimeSeriesGraph.minRightSidePadding
-      w + yaxes.map(_.width).sum + rightPadding
-    }
-  }
-
-  val timeAxes: List[TimeAxis] = graphDef.timezones.zipWithIndex.map {
-    case (tz, i) =>
-      TimeAxis(
-        Style(color = graphDef.theme.axis.line.color),
-        start,
-        end,
-        graphDef.step,
-        tz,
-        if (i == 0) 40 else 0xFF
-      )
-  }
-  val timeAxis: TimeAxis = timeAxes.head
-
-  val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
-    case (plot, i) =>
-      val bounds = plot.bounds(start, end)
-      if (i == 0) {
-        // TODO - need log support
-//        val minSecs = bktNanos(plot.lines.head).toDouble / 1000 / 1000 / 1000
-//        val maxSecs = bktNanos(plot.lines.last).toDouble / 1000 / 1000 / 1000
-//        System.out.println(s"Y Min sec ${minSecs}  Max: ${maxSecs}")
-        HeatMapTimerValueAxis(
-          plot,
-          graphDef.theme.axis,
-          bktIdx(plot.lines.head),
-          bktIdx(plot.lines.last)
-        )
-        // LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
-      } else
-        RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
-  }
-
-  private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    g.setClip(x1, y1, x2 - x1, y2 - y1)
-    g.setColor(graphDef.theme.canvas.background.color)
-    g.fillRect(x1, y1, x2 - x1, y2 - y1)
-  }
-
-  override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    val leftAxisW = yaxes.head.width
-    val rightAxisW = yaxes.tail.foldLeft(0) { (acc, axis) =>
-      acc + axis.width
-    }
-    val rightSideW = if (rightAxisW > 0) rightAxisW else TimeSeriesGraph.minRightSidePadding
-    val axisW = leftAxisW + rightSideW
-    val width = x2 - x1 - axisW
-
-    val showAxes = !graphDef.onlyGraph && width >= GraphConstants.MinCanvasWidth
-    val leftOffset = if (showAxes) leftAxisW else TimeSeriesGraph.minRightSidePadding
-    val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
-
-    val timeAxisH = if (graphDef.onlyGraph) 10 else timeAxis.height
-    val timeGrid = TimeGrid(timeAxis, graphDef.theme.majorGrid.line, graphDef.theme.minorGrid.line)
-
-    val chartEnd = y2 - timeAxisH * timeAxes.size
-
-    val prevClip = g.getClip
-    clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
-
-    // resort
-    val plot = graphDef.plots(0)
-    val minBktIdx = bktIdx(plot.lines.head)
-    val maxBktIdx = bktIdx(plot.lines.last)
-    val bktRange = bktIdx(plot.lines.last) - bktIdx(plot.lines.head)
-    val minNanos = bktNanos(plot.lines.head)
-    val maxNanos = bktNanos(plot.lines.last)
-    val ypixels = chartEnd - y1
-    val dpHeight = ypixels / bktRange
-    val yFudge = Math.round(bktRange.toDouble / (ypixels - (bktRange * dpHeight)))
-    System.out.println(
-      s"Min Nanos ${minNanos}  Max Nanos ${maxNanos}  Pixels: [Y1=${y1}, Y2=${y2}, CE=${chartEnd}, TOT=${
-          ypixels
-        }, Fudge=${yFudge}]  DPH: ${dpHeight} Series ${plot.data.length} Bkt Range: ${bktRange}"
-    )
-    val logScaler = Scales.factory(Scale.LOGARITHMIC)(minNanos, maxNanos, 0, ypixels / dpHeight)
-
-    // val combinedSeries = new Array[Array[Long]](Math.min(ypixels, lines))
-    val combinedSeries = new mutable.TreeMap[Int, (Long, Array[Double])]
-    val numDps = (graphDef.endTime.toEpochMilli - graphDef.startTime.toEpochMilli) / graphDef.step
-    val reds = Palette.fromResource("reds")
-    var redList = List.empty[Color]
-    for (i <- 0 until 7) {
-      redList ::= reds.colors(i)
-    }
-
-    var cmin = Long.MaxValue
-    var cmax = Long.MinValue
-    val temp = new mutable.TreeMap[Int, Int]()
-    plot.lines.foreach { line =>
-      val idx = bktIdx(line)
-      val cnt = temp.getOrElseUpdate(idx, 0)
-      temp += (idx -> (cnt + 1))
-      val (nanos, arr) =
-        combinedSeries.getOrElseUpdate(idx, bktNanos(line) -> new Array[Double](numDps.toInt))
-      var t = graphDef.startTime.toEpochMilli
-      var di = 0
-      while (t < graphDef.endTime.toEpochMilli) {
-        val v = (line.data.data(t) * 60).toLong
-        arr(di) += v
-        if (arr(di) > cmax) cmax = arr(di).toLong
-        if (arr(di) < cmin) cmin = arr(di).toLong
-        di += 1
-        t += line.data.data.step
+      if (ti.v > seconds) {
+        f = true
+      } else {
+        y += 1
       }
     }
-    // temp.foreachEntry { (k, v) => System.out.println(s"${k}: ${v}") }
-    val colorScaler = Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, redList.size - 1)
+    if (!f) {
+      y = buckets.length - 1
+    }
 
-    val step =
-      System.out.println(s"Max counts: ${cmax}  Min counts: ${cmin}  Y Pixels: ${ypixels}")
+    if (firstLine == null) {
+      firstLine = line
+    }
+    var t = graphDef.startTime.toEpochMilli
+    val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
+    var lastTick = ti.next()
+    var bi = 0
+    while (t < graphDef.endTime.toEpochMilli) {
+      val v = line.data.data(t)
+//      val cmp = if (seconds >= 0) seconds else v
+//      var y = 0
+//      val yi = yticks.iterator
+//      var found = false
+//      while (yi.hasNext && !found) {
+//        val ti = yi.next()
+//        if (cmp <= ti.v) {
+//          found = true
+//        } else {
+//          y += 1
+//        }
+//      }
+//      if (!found) {
+//        y = buckets.length - 1
+//      }
 
-    graphDef.plots.zip(yaxes).foreach {
-      case (plot, axis) =>
-        // TODO - if we have to consolidate buckets, do that
-        System.out
-          .println(s"Plot: ${plot.lines.length}  Axis: ${axis.valueScale}  DPH: ${dpHeight}")
+      val x = if (t <= lastTick.timestamp) {
+        bi
+      } else {
+        if (ti.hasNext) lastTick = ti.next()
+        bi += 1
+        bi
+      }
 
-        var ctr = 0
-        var yH = chartEnd
-        for (i <- minBktIdx until maxBktIdx) {
-          val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
-          combinedSeries.get(i) match {
-            case Some((nanos, line)) =>
-              // System.out.println(s"YAY  @idx ${i} @offset ${yH - h} H: ${h}")
-              val ts = new ArrayTimeSeq(DsType.Gauge, graphDef.startTime.toEpochMilli, 60_000, line)
-              val style = Style(color = Color.RED, stroke = new BasicStroke(1))
-              val lineElement =
-                PTileHistoLine(
-                  style,
-                  ts,
-                  timeAxis,
-                  axis,
-                  cmax - cmin,
-                  yH - h,
-                  h,
-                  colorScaler,
-                  redList
-                )
-              lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-            case None => // no-op
-            // System.out.println(s"nope @idx ${i} @offset ${yH - h} H: ${h}")
+      val bktCount = v / bucketsPerBucket
+
+      if (x < hCells && y < buckets.length) {
+        for (i <- y - bucketsPerBucket to y) {
+          var row = buckets(i)
+          if (row == null) {
+            row = new Array[Long](hCells)
+            buckets(i) = row
           }
-          ctr += 1
-          yH -= h
+          if (seconds >= 0) row(x) += v.toLong else row(x) += 1
+          if (row(x) > 0 && row(x) > cmax) {
+            cmax = row(x)
+          }
+          if (row(x) > 0 && row(x) < cmin) {
+            cmin = row(x)
+          }
         }
-
-      // System.out.println(s"Final H: ${yH}")
-    }
-    g.setClip(prevClip)
-
-    timeGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-
-    if (!graphDef.onlyGraph) {
-      timeAxes.zipWithIndex.foreach {
-        case (axis, i) =>
-          val offset = chartEnd + 1 + timeAxisH * i
-          axis.draw(g, x1 + leftOffset, offset, x2 - rightOffset, y2)
+      } else {
+        System.out.println(
+          s"************** WTF? X ${x} vs ${hCells}, Y ${y} vs ${buckets.length} @ ${t}"
+        )
       }
+      t += graphDef.step
     }
+  }
 
-    val valueGrid =
-      ValueGrid(yaxes.head, graphDef.theme.majorGrid.line, graphDef.theme.minorGrid.line)
-    valueGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
-    if (showAxes) {
-      yaxes.head.draw(g, x1, y1, x1 + leftAxisW - 1, chartEnd)
-      yaxes.tail.zipWithIndex.foreach {
-        case (axis, i) =>
-          val offset = leftAxisW + width + leftAxisW * i
-          axis.draw(g, x1 + offset, y1, x1 + offset + leftAxisW, chartEnd)
+  def draw(g: Graphics2D): Unit = {
+    System.out.println("***** Draw heatmap")
+    val palette = firstLine.palette.getOrElse(
+      Palette.singleColor(firstLine.color)
+    )
+    legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
+    for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
+    val colorScaler =
+      Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+    val yScaler = axis.scale(y1, chartEnd)
+    val yi = yticks.iterator
+    var lastY = chartEnd + 1
+    buckets.foreach { bucket =>
+      val ytick = if (yi.hasNext) yi.next() else null
+      val nextY = if (ytick != null) yScaler(ytick.v) else y1
+      if (bucket != null) {
+        val lineElement = HeatmapLine(bucket, timeAxis, colorScaler, palette, legendMinMax)
+        lineElement.draw(g, x1 + leftOffset, nextY, x2 - rightOffset, lastY - nextY)
       }
+      lastY = nextY
+    }
+  }
+}
+
+object PercentileHeatMap {
+
+  private val timerBucketIdPattern = Pattern.compile("^T[0-9A-F]{4}$")
+
+  def isSpectatorPercentile(line: LineDef): Boolean = {
+    line.data.tags.get("percentile") match {
+      case Some(v) => timerBucketIdPattern.matcher(v).find()
+      case _       => false
     }
   }
 
@@ -227,8 +174,15 @@ case class PercentileHeatMap(graphDef: GraphDef) extends Element with FixedHeigh
     PercentileBuckets.get(bktIdx(line))
   }
 
+  def bktSeconds(line: LineDef): Double = {
+    PercentileBuckets.get(bktIdx(line)) / 1000.0 / 1000.0 / 1000.0
+  }
+
+  def bktSeconds(bkt: Int): Double = {
+    PercentileBuckets.get(bkt) / 1000.0 / 1000.0 / 1000.0
+  }
+
   def bktIdx(line: LineDef): Int = {
     Integer.parseInt(line.data.tags("percentile").substring(1), 16)
   }
-
 }
