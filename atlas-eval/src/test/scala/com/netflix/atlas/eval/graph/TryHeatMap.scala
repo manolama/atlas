@@ -118,7 +118,7 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap"
 
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
-    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,95,99.99,99.99999,),:percentiles&w=1296&h=400&tick_labels=duration"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99999,99.999999999,),:percentiles,ff0000,:color&w=1296&h=400&tick_labels=duration&scale=log"
 
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
