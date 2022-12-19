@@ -46,7 +46,9 @@ case class HeatMapLegend(
         font = ChartSettings.smallFont,
         alignment = TextAlignment.CENTER
       )
-      val width = str.length * txt.dims.width
+
+      // val width = str.length * txt.dims.width
+      val width = g.getFontMetrics.stringWidth(str)
       if (width > maxWidth) {
         maxWidth = width
       }

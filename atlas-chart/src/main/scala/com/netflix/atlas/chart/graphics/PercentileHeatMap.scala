@@ -76,10 +76,6 @@ case class PercentileHeatMap(
       y = buckets.length - 1
     }
 
-    if (bucketsPerBucket > 1) {
-      System.out.println(s"Big bucket @ ${seconds} seconds => ${bucketsPerBucket}")
-    }
-
     if (firstLine == null) {
       firstLine = line
     }
