@@ -15,7 +15,10 @@
  */
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.Scale
+import com.netflix.spectator.api.histogram.PercentileBuckets
 
 /**
   * Helper functions for creating the scales to map data values and times to the
@@ -41,6 +44,7 @@ object Scales {
     case Scale.LOGARITHMIC => yscale(logarithmic)
     case Scale.POWER_2     => yscale(power(2.0))
     case Scale.SQRT        => yscale(power(0.5))
+    case Scale.PERCENTILE  => yscale(percentile)
   }
 
   /** Factory for a linear mapping. */
@@ -82,6 +86,92 @@ object Scales {
     val p2 = pow(d2, exp)
     val scale = linear(p1, p2, r1, r2)
     v => scale(pow(v, exp))
+  }
+
+  case class PTileB(
+    boundary: Double,
+    offset: Int,
+    vpt: Double,
+    height: Int
+  )
+
+  def percentile(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
+    // d1 = lower bucket in seconds
+    // d2 = upper bucket in seconds
+    val numTicks = (r2 - r1) / minTickLabelHeight
+    val maxBkt = PercentileBuckets.indexOf(d2.toLong * 1000 * 1000 * 1000)
+    val minBkt = PercentileBuckets.indexOf(d1.toLong * 1000 * 1000 * 1000)
+    val smallestBkt =
+      if (minBkt >= 1) PercentileBuckets.indexOf(minBkt - 1) / 1000 / 1000 / 1000 else 0
+    val bktRange = maxBkt - minBkt
+    val avgHeight = (r2 - r1).toDouble / (bktRange + 1)
+
+    var ticks = List.empty[PTileB]
+    var cnt = 0
+    var prev = 0.0
+    var prevI = 0.0
+    for (i <- minBkt until maxBkt) {
+      val next = prev + avgHeight
+      val h = (Math.round(next) - Math.round(prev)).toInt
+      val offset = Math.round(prev).toInt + h
+      val sec = bktSeconds(i)
+      ticks = ticks :+ PTileB(sec, offset, (sec - prevI) / h, h)
+      cnt += 1
+      prevI = sec
+      prev = next
+    }
+
+//
+//    v => {
+//      var prev = r2.toDouble
+//      var found = false
+//      var idx = 0
+//      var y = 0
+//      while (idx < ticks.size && !found) {
+//        val next = prev - h
+//        val lh = (Math.round(prev) - Math.round(next)).toInt
+//        val offset = Math.round(prev).toInt - lh
+//
+//        if (ticks(idx) >= v) {
+//          if (idx > 0) idx -= 1
+//          val pv = if (idx == 0) smallestBkt else ticks(idx - 1)
+//          val vpoffset = (ticks(idx) - pv) / offset
+//          var i = 0
+//          var nv = pv
+//          while (v < nv) {
+//            nv += vpoffset
+//            i += 1
+//          }
+//          y = r2 - Math.round(prev).toInt + i
+//          found = true
+//        }
+//        prev = next
+//        idx += 1
+//      }
+//      // System.out.println(s"Row: ${v}  Y ${y}")
+//      r2 - y + r1
+//    }
+
+    v => {
+      var idx = 0
+      var value = -1
+      while (value < 0 && idx < ticks.size) {
+        val tick = ticks(idx)
+        if (v <= tick.boundary) {
+          var offset = tick.boundary - tick.vpt
+          var cnt = 0
+          while (v <= offset && cnt + 1 < tick.height) {
+            offset -= tick.vpt
+            cnt += 1
+          }
+          value = tick.offset - cnt
+        }
+        idx += 1
+      }
+      if (value < 0) value = r2
+      //r2 - value + r1
+      value
+    }
   }
 
   /**

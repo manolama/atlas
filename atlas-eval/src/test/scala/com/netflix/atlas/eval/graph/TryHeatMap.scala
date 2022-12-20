@@ -18,7 +18,11 @@ package com.netflix.atlas.eval.graph
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.databind.JsonNode
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
 import com.netflix.atlas.chart.graphics.Scales
+import com.netflix.atlas.chart.graphics.Style
+import com.netflix.atlas.chart.graphics.Styles
+import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.SimpleStaticDatabase
@@ -118,7 +122,7 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap"
 
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
-    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99,99.99999,99.999999999,),:percentiles,ff0000,:color&w=1296&h=400&tick_labels=duration"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99,99.99999,99.999999999,),:percentiles,ff0000,:color&w=1296&h=400&tick_labels=duration&scale=percentile"
 
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
@@ -256,6 +260,27 @@ class TryHeatMap extends FunSuite {
 //    System.out.println(s"P: ${PercentileBuckets.percentile(counts, 99.9999)}")
 //
 //  }
+
+  test("scale") {
+//    val axis = HeatMapTimerValueAxis(
+//      PlotDef(List.empty),
+//      Styles(Style(), Style(), Style()),
+//      1.9999999999999997e-9,
+//      114.532461226
+//    )
+//    axis.ticks(5, 405)
+    val scaler = Scales.percentile(1.9999999999999997e-9, 114.532461226, 5, 405)
+
+//    for (i <- 0 to 160) {
+//      System.out.println(s"${bktSeconds(i)} -> ${scaler(bktSeconds(i))}")
+//    }
+    System.out.println("--------------")
+    // alignment
+    System.out.println(s"${63} -> ${scaler(63)}")
+    System.out.println(s"${75} -> ${scaler(75)}")
+    System.out.println(s"${91} -> ${scaler(91)}")
+    System.out.println(s"${92} -> ${scaler(92)}")
+  }
 
 }
 

@@ -85,21 +85,21 @@ case class PercentileHeatMap(
     var bi = 0
     while (t < graphDef.endTime.toEpochMilli) {
       val v = line.data.data(t)
-//      val cmp = if (seconds >= 0) seconds else v
-//      var y = 0
-//      val yi = yticks.iterator
-//      var found = false
-//      while (yi.hasNext && !found) {
-//        val ti = yi.next()
-//        if (cmp <= ti.v) {
-//          found = true
-//        } else {
-//          y += 1
-//        }
-//      }
-//      if (!found) {
-//        y = buckets.length - 1
-//      }
+      val cmp = if (seconds >= 0) seconds else v
+      var y = 0
+      val yi = yticks.iterator
+      var found = false
+      while (yi.hasNext && !found) {
+        val ti = yi.next()
+        if (cmp <= ti.v) {
+          found = true
+        } else {
+          y += 1
+        }
+      }
+      if (!found) {
+        y = buckets.length - 1
+      }
 
       val x = if (t <= lastTick.timestamp) {
         bi
@@ -108,8 +108,6 @@ case class PercentileHeatMap(
         bi += 1
         bi
       }
-
-      val bktCount = v / bucketsPerBucket
 
       if (x < hCells && y < buckets.length) {
         for (i <- y - bucketsPerBucket to y) {
@@ -157,6 +155,7 @@ case class PercentileHeatMap(
       lastY = nextY
     }
   }
+
 }
 
 object PercentileHeatMap {

@@ -206,10 +206,20 @@ case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Dou
   }
 }
 
+case class PTileBoundary(
+  boundary: Double,
+  tick: ValueTick,
+  offset: Int,
+  vpt: Double,
+  height: Int
+)
+
 case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
     extends ValueAxis {
 
   import ValueAxis._
+
+  var tickCache = List.empty[PTileBoundary]
 
   protected var skipBuckets = 0
 
@@ -240,27 +250,49 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
 //  }
 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
+    // TODO y1,y2 could be different?
+    if (tickCache.nonEmpty) {
+      return tickCache.filter(_.tick != null).map(_.tick)
+    }
+
     val numTicks = (y2 - y1) / minTickLabelHeight
-    val maxBkt = PercentileBuckets.indexOf(max.toLong * 1000 * 1000 * 1000)
+    val maxBkt = PercentileBuckets.indexOf(Math.round(max).toLong * 1000 * 1000 * 1000)
     val minBkt = PercentileBuckets.indexOf(min.toLong * 1000 * 1000 * 1000)
     val bktRange = maxBkt - minBkt
     val ticks = List.newBuilder[ValueTick]
-    skipBuckets = (bktRange / numTicks / 4).toInt
+    skipBuckets = bktRange / numTicks / 4
+    val avgHeight = (y2 - y1).toDouble / (bktRange + 1)
+
     System.out.println(s"Getting ticks.... R: ${bktRange}  Skip ${skipBuckets}")
     var cnt = 0
-    for (i <- minBkt.toInt to maxBkt.toInt) {
+    var prev = 0.0
+    var prevI = 0.0
+    for (i <- minBkt until maxBkt) {
+      val next = prev + avgHeight
+      val h = (Math.round(next) - Math.round(prev)).toInt
+      val offset = Math.round(prev).toInt + h
+
+      val sec = bktSeconds(i)
+
+      var t: ValueTick = null
       if (i % skipBuckets == 0) {
-        val sec = bktSeconds(i)
         val prefix = Ticks.getDurationPrefix(sec, sec)
         // val fmt = Ticks.durationLabelFormat(prefix, sec)
         val fmt = prefix.format(sec, "%.1f%s")
         val label = prefix.format(sec, fmt)
-        val t = ValueTick(bktSeconds(i), 0.0, i % numTicks == 0, Some(label))
+        t = ValueTick(bktSeconds(i), 0.0, i % numTicks == 0, Some(label))
         //      System.out.println(s"  [${i}]    ${t}")
+
         ticks += t
-        cnt += 1
       }
+
+      tickCache = tickCache :+ PTileBoundary(sec, t, offset, (sec - prevI) / h, h)
+      cnt += 1
+      prevI = sec
+      prev = next
     }
+
+    // TODO - final bucket
     ticks.result()
   }
 
