@@ -16,6 +16,7 @@
 package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.getScale
 
 import java.awt.Graphics2D
 import com.netflix.atlas.chart.model.LineDef
@@ -250,6 +251,55 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
 //  }
 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
+    val scale = getScale(min, max, y1, y2)
+    val numTicks = (y2 - y1) / minTickLabelHeight
+    val maxBkt = PercentileBuckets.indexOf(Math.round(max * 1000 * 1000 * 1000))
+    val minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
+    val bktRange = maxBkt - minBkt
+    val ticks = List.newBuilder[ValueTick]
+
+    if (bktRange < numTicks) {
+      // ewww we need some interpolation now... blech
+      var idx = 0
+      val fillsPerBkt = Math.round((numTicks * 4) / bktRange.toDouble).toInt - 1
+      scale.foreach { s =>
+        val delta = (s.boundary - s.prevBoundary) / fillsPerBkt
+
+        // TODO - but it's not really linear!!!!!!!!!!!!!!!!!!!!
+        for (i <- 1 to fillsPerBkt + 1) {
+          val sec = s.prevBoundary + (delta * i)
+          if (sec <= max) {
+            val prefix = Ticks.getDurationPrefix(sec, sec)
+            val fmt = prefix.format(sec, "%.1f%s")
+            val label = prefix.format(sec, fmt)
+            val t = ValueTick(sec, 0.0, idx % numTicks == 0 || sec == max, Some(label))
+            ticks += t
+            idx += 1
+          }
+        }
+      }
+      System.out.println(s"TOTAL TICKS: ${ticks.result().size}")
+    } else {
+      // whew, simple case, just align on buckets
+      skipBuckets = bktRange / numTicks / 4 // fudge
+      var i = 0
+      scale.foreach { s =>
+        if (i % skipBuckets == 0) {
+          val sec = s.boundary
+          val prefix = Ticks.getDurationPrefix(sec, sec)
+          val fmt = prefix.format(sec, "%.1f%s")
+          val label = prefix.format(sec, fmt)
+          val t = ValueTick(sec, 0.0, i % numTicks == 0, Some(label))
+          ticks += t
+        }
+        i += 1
+      }
+    }
+
+    ticks.result()
+  }
+
+  def ticksOLD(y1: Int, y2: Int): List[ValueTick] = {
     // TODO y1,y2 could be different?
     if (tickCache.nonEmpty) {
       return tickCache.filter(_.tick != null).map(_.tick)
@@ -267,11 +317,10 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     var cnt = 0
     var prev = 0.0
     var prevI = 0.0
-    for (i <- minBkt until maxBkt) {
+    for (i <- minBkt to maxBkt) {
       val next = prev + avgHeight
       val h = (Math.round(next) - Math.round(prev)).toInt
       val offset = Math.round(prev).toInt + h
-
       val sec = bktSeconds(i)
 
       var t: ValueTick = null
@@ -412,6 +461,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     ticks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x2, py, x2 - tickMarkLength, py)
+      System.out.println(s"  Tick line: ${py}")
 
       if (plotDef.showTickLabels) {
         val txt = Text(
