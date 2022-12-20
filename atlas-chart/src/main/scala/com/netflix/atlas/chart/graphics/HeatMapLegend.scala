@@ -68,7 +68,7 @@ case class HeatMapLegend(
     }
     labelBuilder += txt
 
-    val w = Math.max(d, maxWidth)
+    val w = Math.max(d, maxWidth) + 1
     val halfMax = w / 2
     var blockX = x1 + 2 + halfMax
     val blockY = y1
