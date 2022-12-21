@@ -28,8 +28,8 @@ class PercentileHeatMapSuite extends FunSuite {
   }
 
   test("scale 2 buckets") {
-    val min = 51.53960755
-    val max = 57.266230611
+    val min = 51.48234131939
+    val max = 114.532461226
     val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
     val ticks = axis.ticks(5, 405)
     val scale = axis.scale(5, 405)

@@ -169,7 +169,7 @@ case class PercentileHeatMap(
       Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
     val yScaler = axis.scale(y1, chartEnd)
     val yi = yticks.iterator
-    var lastY = chartEnd + 1
+    var lastY = chartEnd
     buckets.foreach { bucket =>
       val ytick = if (yi.hasNext) yi.next() else null
       val nextY = if (ytick != null) yScaler(ytick.v) else y1
@@ -234,7 +234,7 @@ object PercentileHeatMap {
   def getScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
     val bktRange = maxBkt - minBkt
-    val avgHeight = (y2 - y1).toDouble / (bktRange + 1)
+    val avgHeight = (y2 - y1).toDouble / bktRange
 
     var ticks = List.empty[PtileScale]
     var cnt = 0

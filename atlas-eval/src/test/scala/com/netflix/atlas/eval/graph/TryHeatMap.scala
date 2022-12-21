@@ -120,14 +120,14 @@ class TryHeatMap extends FunSuite {
 //        "T0096",
 //        "T0097",
 //        "T0098",
-//        "T0099",
-//        "T009A",
-        "T009B",
-        "T009C",
-        "T009D",
-        "T009E",
-        "T009F",
-        "T00A0"
+        "T0099",
+        "T009A"
+//        "T009B",
+//        "T009C",
+//        "T009D",
+//        "T009E",
+//        "T009F",
+//        "T00A0"
       )
       if (true) {
         ts = ts.filter { t =>
@@ -153,7 +153,7 @@ class TryHeatMap extends FunSuite {
 
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 
-    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99,99.99999,99.999999999,),:percentiles,ff0000,:color&w=1296&h=400&tick_labels=duration&scale=percentile"
+    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette,name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,99.99999,99.999999999,),:percentiles,ff0000,:color&w=1296&h=400&tick_labels=duration&scale=percentile"
 
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"

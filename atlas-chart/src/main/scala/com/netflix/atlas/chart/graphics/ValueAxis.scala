@@ -258,6 +258,17 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     val bktRange = (maxBkt - minBkt) + 1
     val ticks = List.newBuilder[ValueTick]
 
+    // min tick
+    if (minBkt > 0) {
+      // don't leave the bottom of a bucket hanging!
+      val sec = bktSeconds(minBkt - 1)
+      val prefix = Ticks.getDurationPrefix(sec, sec)
+      val fmt = prefix.format(sec, "%.1f%s")
+      val label = prefix.format(sec, fmt)
+      val t = ValueTick(sec, 0.0, true, Some(label))
+      ticks += t
+    }
+
     if (bktRange < numTicks) {
       // ewww we need some interpolation now... blech
       var idx = 0
@@ -272,7 +283,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
             val prefix = Ticks.getDurationPrefix(sec, sec)
             val fmt = prefix.format(sec, "%.1f%s")
             val label = prefix.format(sec, fmt)
-            val t = ValueTick(sec, 0.0, idx % numTicks == 0, Some(label))
+            val t = ValueTick(sec, 0.0, sec == s.boundary, Some(label))
             ticks += t
             idx += 1
           }
