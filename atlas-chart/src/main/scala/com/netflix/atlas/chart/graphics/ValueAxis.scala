@@ -17,6 +17,7 @@ package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getScale
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
 
 import java.awt.Graphics2D
 import com.netflix.atlas.chart.model.LineDef
@@ -253,9 +254,12 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
     val scale = getScale(min, max, y1, y2)
     val numTicks = (y2 - y1) / minTickLabelHeight
-    val maxBkt = PercentileBuckets.indexOf(Math.round(max * 1000 * 1000 * 1000))
-    val minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
-    val bktRange = maxBkt - minBkt
+    val (minBkt, maxBkt) = minMaxBuckets(min, max)
+    System.out.println("------ Ticks ----------")
+    System.out.println(s"Min Idx: ${minBkt}  Seconds: ${bktSeconds(minBkt)} ")
+    System.out.println(s"Max Idx: ${maxBkt}  Seconds: ${bktSeconds(maxBkt)} ")
+    System.out.println("------ Ticks ----------")
+    val bktRange = (maxBkt - minBkt) + 1
     val ticks = List.newBuilder[ValueTick]
 
     if (bktRange < numTicks) {
@@ -268,11 +272,11 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
         // TODO - but it's not really linear!!!!!!!!!!!!!!!!!!!!
         for (i <- 1 to fillsPerBkt + 1) {
           val sec = s.prevBoundary + (delta * i)
-          if (sec <= max) {
+          if (sec <= s.boundary) {
             val prefix = Ticks.getDurationPrefix(sec, sec)
             val fmt = prefix.format(sec, "%.1f%s")
             val label = prefix.format(sec, fmt)
-            val t = ValueTick(sec, 0.0, idx % numTicks == 0 || sec == max, Some(label))
+            val t = ValueTick(sec, 0.0, idx % numTicks == 0, Some(label))
             ticks += t
             idx += 1
           }

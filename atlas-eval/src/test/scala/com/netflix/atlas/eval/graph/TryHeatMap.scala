@@ -108,7 +108,17 @@ class TryHeatMap extends FunSuite {
       }
 
       // StaticDatabase.demo
-      new SimpleStaticDatabase(timeseries.result(), ConfigFactory.load().getConfig("atlas.core.db"))
+
+      var ts = timeseries.result()
+
+      if (true) {
+        ts = ts.filter { t =>
+          t.tags("percentile").equals("T009A") ||
+          t.tags("percentile").equals("T009B")
+        }
+      }
+
+      new SimpleStaticDatabase(ts, ConfigFactory.load().getConfig("atlas.core.db"))
     } else {
       StaticDatabase.demo
     }
