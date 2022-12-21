@@ -259,17 +259,16 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     val ticks = List.newBuilder[ValueTick]
 
     // min tick
-    if (minBkt > 0) {
-      // don't leave the bottom of a bucket hanging!
-      val sec = bktSeconds(minBkt - 1)
-      val prefix = Ticks.getDurationPrefix(sec, sec)
-      val fmt = prefix.format(sec, "%.1f%s")
-      val label = prefix.format(sec, fmt)
-      val t = ValueTick(sec, 0.0, true, Some(label))
-      ticks += t
-    }
-
     if (bktRange < numTicks) {
+      if (minBkt > 0) {
+        // don't leave the bottom of a bucket hanging!
+        val sec = bktSeconds(minBkt - 1)
+        val prefix = Ticks.getDurationPrefix(sec, sec)
+        val fmt = prefix.format(sec, "%.1f%s")
+        val label = prefix.format(sec, fmt)
+        val t = ValueTick(sec, 0.0, true, Some(label))
+        ticks += t
+      }
       // ewww we need some interpolation now... blech
       var idx = 0
       val fillsPerBkt = Math.round((numTicks * 4) / bktRange.toDouble).toInt - 1
@@ -294,18 +293,30 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       // whew, simple case, just align on buckets
       skipBuckets = Math.max(1, bktRange / numTicks / 4) // fudge
       var i = 0
+      var t: ValueTick = null
       scale.foreach { s =>
         if (i % skipBuckets == 0) {
           val sec = s.boundary
           val prefix = Ticks.getDurationPrefix(sec, sec)
           val fmt = prefix.format(sec, "%.1f%s")
           val label = prefix.format(sec, fmt)
-          val t = ValueTick(sec, 0.0, i % numTicks == 0, Some(label))
+          t = ValueTick(sec, 0.0, i % numTicks == 0, Some(label))
           ticks += t
         }
         i += 1
       }
+
+      // fudge for some off by error
+      if (t.v < scale.last.boundary) {
+        val sec = scale.last.boundary
+        val prefix = Ticks.getDurationPrefix(sec, sec)
+        val fmt = prefix.format(sec, "%.1f%s")
+        val label = prefix.format(sec, fmt)
+        t = ValueTick(sec, 0.0, i % numTicks == 0, Some(label))
+        ticks += t
+      }
     }
+
     System.out.println("------ Ticks ----------")
     System.out.println(s"More ticks than buckets? ${bktRange < numTicks}")
     System.out.println(s"Min Idx: ${minBkt}  Seconds: ${bktSeconds(minBkt)} ")
