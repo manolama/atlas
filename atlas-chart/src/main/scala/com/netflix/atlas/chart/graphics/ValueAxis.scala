@@ -291,28 +291,37 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       System.out.println(s"TOTAL TICKS: ${ticks.result().size}")
     } else {
       // whew, simple case, just align on buckets
-      skipBuckets = Math.max(1, bktRange / numTicks / 4) // fudge
+      skipBuckets = bktRange / numTicks / 4 // fudge
       var i = 0
       var t: ValueTick = null
       scale.foreach { s =>
-        if (i % skipBuckets == 0) {
+        if (skipBuckets == 0 || i % skipBuckets == 0) {
           val sec = s.boundary
           val prefix = Ticks.getDurationPrefix(sec, sec)
           val fmt = prefix.format(sec, "%.1f%s")
           val label = prefix.format(sec, fmt)
-          t = ValueTick(sec, 0.0, i % numTicks == 0, Some(label))
+          val major = {
+            if (skipBuckets == 0) {
+              if (scale.length <= numTicks) true
+              else if (i % (scale.length / numTicks) == 0) true
+              else false
+            } else {
+              i % numTicks == 0
+            }
+          }
+          t = ValueTick(sec, 0.0, major, Some(label))
           ticks += t
         }
         i += 1
       }
 
-      // fudge for some off by error
+      // fudge for some off-by-one-or-n error
       if (t.v < scale.last.boundary) {
         val sec = scale.last.boundary
         val prefix = Ticks.getDurationPrefix(sec, sec)
         val fmt = prefix.format(sec, "%.1f%s")
         val label = prefix.format(sec, fmt)
-        t = ValueTick(sec, 0.0, i % numTicks == 0, Some(label))
+        t = ValueTick(sec, 0.0, true, Some(label))
         ticks += t
       }
     }
