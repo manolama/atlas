@@ -72,15 +72,16 @@ case class PercentileHeatMap(
       }
     } else {
       // consolidate possibly
-      var last = scale.head.prevBoundary
+      var last = chartEnd
       yticks.foreach { tick =>
-        val filtered = scale.filter(s => s.boundary > last && s.boundary <= tick.v)
-        if (filtered.nonEmpty) {
-          bkts(idx) = Bkt(null, filtered.last.offset, filtered.map(_.height).sum, tick, filtered, 1)
-          last = filtered.last.boundary
-        } else {
-          bkts(idx) = Bkt(null, 0, 0, tick, filtered, 1)
-        }
+//        val filtered = scale.filter(s => s.boundary > last && s.boundary <= tick.v)
+//        if (filtered.nonEmpty) {
+        val offset = yscale(tick.v)
+        bkts(idx) = Bkt(null, offset, last - offset, tick, List.empty, 1)
+        last = offset
+//        } else {
+//          bkts(idx) = Bkt(null, 0, 0, tick, filtered, 1)
+//        }
         idx += 1
       }
     }
@@ -239,7 +240,7 @@ object PercentileHeatMap {
     var cnt = 0
     var prev = y1.toDouble
     var prevI = if (minBkt == 0) 0.0 else bktSeconds(minBkt - 1)
-    for (i <- minBkt to maxBkt) {
+    for (i <- minBkt until maxBkt) {
       val next = prev + avgHeight
       val h = (Math.round(next) - Math.round(prev)).toInt
       val offset = Math.round(prev).toInt + h
@@ -255,7 +256,7 @@ object PercentileHeatMap {
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
     (
       PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong),
-      PercentileBuckets.indexOf(Math.round(max * 1000 * 1000 * 1000))
+      PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
     )
   }
 }

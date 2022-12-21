@@ -255,10 +255,6 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     val scale = getScale(min, max, y1, y2)
     val numTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    System.out.println("------ Ticks ----------")
-    System.out.println(s"Min Idx: ${minBkt}  Seconds: ${bktSeconds(minBkt)} ")
-    System.out.println(s"Max Idx: ${maxBkt}  Seconds: ${bktSeconds(maxBkt)} ")
-    System.out.println("------ Ticks ----------")
     val bktRange = (maxBkt - minBkt) + 1
     val ticks = List.newBuilder[ValueTick]
 
@@ -285,7 +281,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       System.out.println(s"TOTAL TICKS: ${ticks.result().size}")
     } else {
       // whew, simple case, just align on buckets
-      skipBuckets = bktRange / numTicks / 4 // fudge
+      skipBuckets = Math.max(1, bktRange / numTicks / 4) // fudge
       var i = 0
       scale.foreach { s =>
         if (i % skipBuckets == 0) {
@@ -299,7 +295,12 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
         i += 1
       }
     }
-
+    System.out.println("------ Ticks ----------")
+    System.out.println(s"More ticks than buckets? ${bktRange < numTicks}")
+    System.out.println(s"Min Idx: ${minBkt}  Seconds: ${bktSeconds(minBkt)} ")
+    System.out.println(s"Max Idx: ${maxBkt}  Seconds: ${bktSeconds(maxBkt)} ")
+    System.out.println(s"Total ticks: ${ticks.result().size}")
+    System.out.println("------ Ticks ----------")
     ticks.result()
   }
 

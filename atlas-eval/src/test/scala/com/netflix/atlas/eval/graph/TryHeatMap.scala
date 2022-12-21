@@ -111,10 +111,30 @@ class TryHeatMap extends FunSuite {
 
       var ts = timeseries.result()
 
+      val keys = List(
+//        "T0091",
+//        "T0092",
+//        "T0093",
+//        "T0094",
+//        "T0095",
+//        "T0096",
+//        "T0097",
+//        "T0098",
+//        "T0099",
+//        "T009A",
+        "T009B",
+        "T009C",
+        "T009D",
+        "T009E",
+        "T009F",
+        "T00A0"
+      )
       if (true) {
         ts = ts.filter { t =>
-          t.tags("percentile").equals("T009A") ||
-          t.tags("percentile").equals("T009B")
+          keys.contains(t.tags("percentile"))
+//          t.tags("percentile").equals("T0099") ||
+//          t.tags("percentile").equals("T009A") ||
+//          t.tags("percentile").equals("T009B")
         }
       }
 
