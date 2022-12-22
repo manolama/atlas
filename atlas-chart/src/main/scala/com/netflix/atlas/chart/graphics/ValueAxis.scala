@@ -239,19 +239,45 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     }
   }
 
-//  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-//    style.configure(g)
-//    g.drawLine(x2, y1, x2, y2)
-//
-//    val ticks = getTicks(y1, y2)
-//    drawNormal(ticks, g, x1, y1, x2, y2)
-//
-//    label.foreach { t =>
-//      drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
-//    }
-//  }
-
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
+    val scale = getScale(min, max, y1, y2)
+    val ticks = List.newBuilder[ValueTick]
+
+    scale.foreach { s =>
+      if (!s.skipTick) {
+        val prefix = Ticks.getDurationPrefix(s.base, s.base)
+        val fmt = prefix.format(s.base, "%.1f%s")
+        val label = prefix.format(s.base, fmt)
+        ticks += ValueTick(s.base, 0.0, s.majorTick, Some(label))
+      }
+
+      if (s.subTicks.nonEmpty) {
+        s.subTicks.foreach { tuple =>
+          val (v, isMajor, _) = tuple
+          val prefix = Ticks.getDurationPrefix(v, v)
+          val fmt = prefix.format(v, "%.1f%s")
+          val label = prefix.format(v, fmt)
+          ticks += ValueTick(v, 0.0, isMajor, Some(label))
+        }
+      }
+    }
+
+    // final tick at the top
+    val top = scale.last.next
+    val prefix = Ticks.getDurationPrefix(top, top)
+    val fmt = prefix.format(top, "%.1f%s")
+    val label = prefix.format(top, fmt)
+    ticks += ValueTick(top, 0.0, true, Some(label))
+    ticks.result()
+  }
+
+  /**
+    * AMOST WORKING but not quite. Look above for the version that reads the scale
+    * @param y1
+    * @param y2
+    * @return
+    */
+  def ticksALMOST(y1: Int, y2: Int): List[ValueTick] = {
     val scale = getScale(min, max, y1, y2)
     val numTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(min, max)
@@ -273,16 +299,16 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       var idx = 0
       val fillsPerBkt = Math.round((numTicks * 4) / bktRange.toDouble).toInt - 1
       scale.foreach { s =>
-        val delta = (s.boundary - s.prevBoundary) / fillsPerBkt
+        val delta = (s.next - s.base) / fillsPerBkt
 
         // TODO - but it's not really linear!!!!!!!!!!!!!!!!!!!!
         for (i <- 1 to fillsPerBkt + 1) {
-          val sec = s.prevBoundary + (delta * i)
-          if (sec <= s.boundary) {
+          val sec = s.base + (delta * i)
+          if (sec <= s.base) {
             val prefix = Ticks.getDurationPrefix(sec, sec)
             val fmt = prefix.format(sec, "%.1f%s")
             val label = prefix.format(sec, fmt)
-            val t = ValueTick(sec, 0.0, sec == s.boundary, Some(label))
+            val t = ValueTick(sec, 0.0, sec == s.base, Some(label))
             ticks += t
             idx += 1
           }
@@ -296,7 +322,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       var t: ValueTick = null
       scale.foreach { s =>
         if (skipBuckets == 0 || i % skipBuckets == 0) {
-          val sec = s.boundary
+          val sec = s.base
           val prefix = Ticks.getDurationPrefix(sec, sec)
           val fmt = prefix.format(sec, "%.1f%s")
           val label = prefix.format(sec, fmt)
@@ -316,14 +342,14 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
       }
 
       // fudge for some off-by-one-or-n error
-      if (t.v < scale.last.boundary) {
-        val sec = scale.last.boundary
-        val prefix = Ticks.getDurationPrefix(sec, sec)
-        val fmt = prefix.format(sec, "%.1f%s")
-        val label = prefix.format(sec, fmt)
-        t = ValueTick(sec, 0.0, true, Some(label))
-        ticks += t
-      }
+      // if (t.v < scale.last.base) {
+      val sec = scale.last.next
+      val prefix = Ticks.getDurationPrefix(sec, sec)
+      val fmt = prefix.format(sec, "%.1f%s")
+      val label = prefix.format(sec, fmt)
+      t = ValueTick(sec, 0.0, true, Some(label))
+      ticks += t
+      // }
     }
 
     System.out.println("------ Ticks ----------")

@@ -97,15 +97,15 @@ object Scales {
       var value = -1
       while (value < 0 && idx < ticks.size) {
         val tick = ticks(idx)
-        if (v <= tick.boundary) {
-          val vpt = (tick.boundary - tick.prevBoundary) / tick.height
-          var offset = tick.boundary - vpt
+        if (v >= tick.base && v < tick.next) {
+          val vpt = (tick.next - tick.base) / tick.height
+          var offset = tick.base + vpt
           var cnt = 0
-          while (v <= offset && cnt + 1 < tick.height) {
-            offset -= vpt
+          while (v > offset && cnt + 1 < tick.height) {
+            offset += vpt
             cnt += 1
           }
-          value = tick.offset - cnt
+          value = tick.y + cnt
         }
         idx += 1
       }

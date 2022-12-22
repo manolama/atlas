@@ -6,6 +6,7 @@ import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
+import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
@@ -20,6 +21,7 @@ import com.netflix.spectator.api.histogram.PercentileBuckets
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
+import java.util
 import java.util.regex.Pattern
 import scala.collection.mutable
 
@@ -44,46 +46,59 @@ case class PercentileHeatMap(
 
   case class Bkt(
     counts: Array[Long],
-    offset: Int,
+    y: Int,
     height: Int,
-    tick: ValueTick,
-    ptileScale: List[PtileScale],
+    v: Double,
+    next: Double,
+//    tick: ValueTick,
+//    ptileScale: List[PtileScale],
     ticksPerBucket: Int
   )
 
   val buckets = {
-    val bkts = new Array[Bkt](yticks.size)
+    val bkts = new Array[Bkt](yticks.size - 1)
 
     // two ways to combine.
     // 1) There are more buckets than ticks.
     // 2) There are more ticks than buckets.
-    var idx = 0
-    if (yticks.length > scale.length) {
-      // splits
-      scale.foreach { s =>
-        var last = yscale(s.prevBoundary)
-        val filtered = yticks.filter(t => t.v > s.prevBoundary && t.v <= s.boundary)
-        filtered.foreach { tick =>
-          val offset = yscale(tick.v)
-          bkts(idx) = Bkt(null, offset, last - offset, tick, List(s), filtered.size)
-          last = offset
-          idx += 1
-        }
-      }
-    } else {
-      // consolidate possibly
-      var last = chartEnd
-      yticks.foreach { tick =>
-//        val filtered = scale.filter(s => s.boundary > last && s.boundary <= tick.v)
-//        if (filtered.nonEmpty) {
-        val offset = yscale(tick.v)
-        bkts(idx) = Bkt(null, offset, last - offset, tick, List.empty, 1)
-        last = offset
-//        } else {
-//          bkts(idx) = Bkt(null, 0, 0, tick, filtered, 1)
+//    var idx = 0
+//    var lastY = chartEnd
+//    if (yticks.length > scale.length) {
+//      // splits
+//      scale.foreach { s =>
+//        val filtered = yticks.filter(t => t.v >= s.base && t.v < s.next)
+//        filtered.foreach { tick =>
+//          val offset = yscale(tick.v)
+//          bkts(idx) = Bkt(null, offset, lastY - offset, tick, List(s), filtered.size)
+//          lastY = offset
+//          idx += 1
 //        }
-        idx += 1
-      }
+//      }
+//    } else {
+//      // consolidate possibly
+//      var last = chartEnd
+//      yticks.foreach { tick =>
+////        val filtered = scale.filter(s => s.boundary > last && s.boundary <= tick.v)
+////        if (filtered.nonEmpty) {
+//        val offset = yscale(tick.v)
+//        bkts(idx) = Bkt(null, offset, last - offset, tick.v, 1)
+//        last = offset
+////        } else {
+////          bkts(idx) = Bkt(null, 0, 0, tick, filtered, 1)
+////        }
+//        idx += 1
+//      }
+//    }
+
+    // simplify I hope....
+    val tpm = Math.max(1, yticks.length / scale.length)
+    var lastY = y1
+    for (i <- yticks.length - 2 to 0 by -1) {
+      val tick = yticks(i)
+      val y = yscale(tick.v)
+      val nextTick = yticks(i + 1)
+      bkts(i) = Bkt(null, y, y - lastY, tick.v, nextTick.v, tpm)
+      lastY = y
     }
 
     bkts
@@ -97,15 +112,37 @@ case class PercentileHeatMap(
   var legendMinMax: Array[(Long, Long)] = null
 
   def addLine(line: LineDef): Unit = {
-    val seconds = if (isSpectatorPercentile(line)) bktSeconds(line) else -1
+    // Remember, when we make this call, it's actually the NEXT bucket so we need
+    // to shift down.
+    val seconds = if (isSpectatorPercentile(line)) {
+      var b = bktIdx(line)
+      b = if (b > 0) b - 1 else b
+      bktSeconds(b)
+    } else -1
     // we need to figure out how many buckets to fill. This is due to the regular
     // ticks scale but exponential bucket size. Higher buckets can spread across
     // cells.
-    var (row, idx) = buckets.zipWithIndex
-      .find(bkt => seconds <= bkt._1.tick.v)
-      .getOrElse((buckets.head, 0))
+    // var i = 0
+    var bucketIndex = 0
+    var found = false
+    buckets.zipWithIndex.foreach { tuple =>
+      val (bk, i) = tuple
+      if (seconds >= bk.v && seconds < bk.next) {
+        found = true
+        bucketIndex = i
+      }
+    }
+    if (!found) {
+      System.out.println(s"********** WTF? Nothing found for ${seconds}????")
+      bucketIndex = 0
+    }
+    var row = buckets(bucketIndex)
+    if (bucketIndex >= buckets.length) {
+      System.out.println("WTF? Out of range????")
+    }
+    System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
 
-    System.out.println(s"*** Row seconds ${seconds} in bkt Boundary ${row.tick.v}")
+    // System.out.println(s"*** Row seconds ${seconds} in bkt Boundary ${row.tick.v}")
     if (firstLine == null) {
       firstLine = line
     }
@@ -130,11 +167,11 @@ case class PercentileHeatMap(
           // TODO - change counts to double now.... confusing as all get out....
           val count = Math.max(1, (v / tpb).toInt)
           for (i <- 0 until tpb) {
-            if (idx - i >= 0) {
-              row = buckets(idx - i)
+            if (bucketIndex + i < buckets.length) {
+              row = buckets(bucketIndex + i)
               if (row.counts == null) {
                 row = row.copy(counts = new Array[Long](hCells))
-                buckets(idx - i) = row
+                buckets(bucketIndex + i) = row
               }
 
               if (seconds >= 0) row.counts(x) += count else row.counts(x) += 1
@@ -145,12 +182,14 @@ case class PercentileHeatMap(
               if (row.counts(x) > 0 && row.counts(x) < cmin) {
                 cmin = row.counts(x)
               }
+            } else {
+              System.out.println("WTF??????????? Trying to inc in bucket OVER what we ant!")
             }
           }
           //        }
         } else {
           System.out.println(
-            s"************** WTF? X ${x} vs ${hCells}, Y ${idx} vs ${buckets.length} @ ${t}"
+            s"************** WTF? X ${x} vs ${hCells}, Y ${bucketIndex} vs ${buckets.length} @ ${t}"
           )
         }
       }
@@ -167,17 +206,16 @@ case class PercentileHeatMap(
     for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
     val colorScaler =
       Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
-    val yScaler = axis.scale(y1, chartEnd)
-    val yi = yticks.iterator
-    var lastY = chartEnd
+    // val yi = yticks.iterator
+    // var lastY = chartEnd
     buckets.foreach { bucket =>
-      val ytick = if (yi.hasNext) yi.next() else null
-      val nextY = if (ytick != null) yScaler(ytick.v) else y1
+      // val ytick = if (yi.hasNext) yi.next() else null
+      // val nextY = if (ytick != null) yscale(ytick.v) else y1
       if (bucket != null && bucket.counts != null) {
         val lineElement = HeatmapLine(bucket.counts, timeAxis, colorScaler, palette, legendMinMax)
 
         // val yy = (chartEnd - bucket.offset + y1 + bucket.height) - bucket.height
-        val yy = bucket.offset
+        val yy = bucket.y - bucket.height + 1
         System.out.println(s"YY ${yy} & H ${bucket.height}")
         lineElement.draw(
           g,
@@ -189,19 +227,33 @@ case class PercentileHeatMap(
           bucket.height
         )
       }
-      lastY = nextY
+      // lastY = nextY
     }
   }
 
 }
 
+/**
+  *
+  * @param boundary
+  * @param y
+  *   Tick line, top of the bucket. To plot the cell, add the height offset then
+  *   it will plot UP from that line.
+  * @param height
+  * @param prevBoundary
+  * @param bktIndex
+  * @param split
+  */
 case class PtileScale(
-  boundary: Double,
-  offset: Int,
+  base: Double,
+  y: Int,
   height: Int,
-  prevBoundary: Double,
+  next: Double,
   bktIndex: Int,
-  split: Boolean
+  skipTick: Boolean,
+  majorTick: Boolean,
+  // base, isMajor, next
+  subTicks: List[(Double, Boolean, Double)] = List.empty
 )
 
 object PercentileHeatMap {
@@ -231,31 +283,70 @@ object PercentileHeatMap {
     Integer.parseInt(line.data.tags("percentile").substring(1), 16)
   }
 
+  /**
+    * Percentiles are bucketed inclusive/exclusive. I.e. the call from
+    * PercentileBuckets.get(bktIdx) is the exclusive boundary of the NEXT bucket.
+    *
+    * So .got is the BOTTOM of the bucket and lines on the tick. Plot to the next
+    * tick but NOT inclusive, so we should have a dotted line at the top of the graph
+    * 
+    * @param d1
+    * @param d2
+    * @param y1
+    * @param y2
+    * @return
+    */
   def getScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
+    // aiming for about 10px per tick
+    val majorTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
     val bktRange = maxBkt - minBkt
-    val avgHeight = (y2 - y1).toDouble / bktRange
+    val fillsPerBkt = Math.round((majorTicks * 4) / bktRange.toDouble).toInt
+    val avgBktHeight = (y2 - y1).toDouble / bktRange
 
     var ticks = List.empty[PtileScale]
     var cnt = 0
     var prev = y1.toDouble
-    var prevI = if (minBkt == 0) 0.0 else bktSeconds(minBkt - 1)
+    // var prevI = if (minBkt == 0) 0.0 else bktSeconds(minBkt - 1)
+    val skipBuckets = bktRange / majorTicks / 4
+
     for (i <- minBkt until maxBkt) {
-      val next = prev + avgHeight
-      val h = (Math.round(next) - Math.round(prev)).toInt
-      val offset = Math.round(prev).toInt + h
-      val sec = bktSeconds(i)
-      ticks = ticks :+ PtileScale(sec, offset, h, prevI, i, h >= 15)
+      val nextY = prev + avgBktHeight
+      val h = (Math.round(nextY) - Math.round(prev)).toInt
+      val y = Math.round(prev).toInt
+      val base = bktSeconds(if (i > 0) i - 1 else i)
+      val nextBucket = bktSeconds(i)
+
+      val subTicks = if (bktRange < majorTicks) {
+        val list = List.newBuilder[(Double, Boolean, Double)]
+        val delta = (nextBucket - base) / fillsPerBkt
+        for (i <- 1 until fillsPerBkt) {
+          val v = base + (delta * i)
+          val nxt = base + (delta * i + 1)
+          list.addOne((v, v == base, nxt))
+        }
+        list.result()
+      } else List.empty
+
+      val skip = !(skipBuckets == 0 || i % skipBuckets == 0) && !(i == minBkt)
+      val isMajor = if (skipBuckets == 0 || i % skipBuckets == 0) {
+        if (skipBuckets == 0) {
+          true
+        } else {
+          i % majorTicks == 0
+        }
+      } else false
+      ticks = ticks :+ PtileScale(base, y, h, nextBucket, i, skip, isMajor, subTicks)
       cnt += 1
-      prevI = sec
-      prev = next
+      prev = nextY
     }
     ticks
   }
 
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
+    val minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
     (
-      PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong),
+      if (minBkt > 0) minBkt - 1 else minBkt,
       PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
     )
   }
