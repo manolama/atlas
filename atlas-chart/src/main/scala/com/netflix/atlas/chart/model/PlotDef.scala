@@ -132,31 +132,38 @@ case class PlotDef(
       // TODO fun edge case for ptile buckets. IF we have one bucket, the max and min are the
       // same. This will cause a 1 to be added and throw off bucketing. For now, if all of
       // the lines are heatmaps and percentiles, do some fudging.
-      if (
-        max == min &&
-        lines
-          .find(l =>
-            l.lineStyle != LineStyle.HEATMAP || (l.lineStyle == LineStyle.HEATMAP && !isSpectatorPercentile(
-              l
-            ))
-          )
-          .isEmpty
-      ) {
-        val bi = bktIdx((min * 1000 * 1000 * 1000).toInt)
-        min = if (bi > 1) {
-          (bktNanos(bi - 2) + 1).toDouble / 1000 / 1000 / 1000
-        } else {
-          0
-        }
-      }
+      val ptileOverride =
+        if (
+          max == min &&
+          lines
+            .find(l =>
+              l.lineStyle != LineStyle.HEATMAP || (l.lineStyle == LineStyle.HEATMAP && !isSpectatorPercentile(
+                l
+              ))
+            )
+            .isEmpty
+        ) {
+          true
+//        val bi = bktIdx((min * 1000 * 1000 * 1000).toInt)
+//        min = if (bi > 1) {
+//          (bktNanos(bi - 2) + 1).toDouble / 1000 / 1000 / 1000
+//        } else {
+//          0
+//        }
+        } else false
 
       min = if (min == JDouble.MAX_VALUE) 0.0 else min
       max = if (max == -JDouble.MAX_VALUE) 1.0 else max
-      finalBounds(hasArea, min, max)
+      finalBounds(hasArea, min, max, ptileOverride)
     }
   }
 
-  private[model] def finalBounds(hasArea: Boolean, min: Double, max: Double): (Double, Double) = {
+  private[model] def finalBounds(
+    hasArea: Boolean,
+    min: Double,
+    max: Double,
+    ptileOverride: Boolean = false
+  ): (Double, Double) = {
 
     // Try to figure out bounds following the guidelines:
     // * An explicit bound should always get used.
@@ -171,10 +178,19 @@ case class PlotDef(
     if (l < u) l -> u
     else {
       (lower, upper) match {
+
         case (Explicit(_), Explicit(_)) => l       -> u
         case (_, Explicit(_))           => (u - 1) -> u
-        case (Explicit(_), _)           => l       -> (l + 1)
-        case (_, _)                     => l       -> (u + 1)
+        case (Explicit(_), _) =>
+          if (ptileOverride)
+            l -> l
+          else
+            l -> (l + 1)
+        case (_, _) =>
+          if (ptileOverride)
+            l -> u
+          else
+            l -> (u + 1)
       }
     }
   }

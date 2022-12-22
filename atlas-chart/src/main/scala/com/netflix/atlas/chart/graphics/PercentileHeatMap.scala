@@ -91,7 +91,11 @@ case class PercentileHeatMap(
 //    }
 
     // simplify I hope....
-    val tpm = Math.max(1, yticks.length - 1 / scale.length)
+    val tpm =
+      if (yticks.size - 1 >= scale.size) {
+        Math.max(1, ((yticks.size - 1) / scale.size))
+      } else
+        1
     var lastY = y1
     for (i <- yticks.length - 2 to 0 by -1) {
       val tick = yticks(i)
@@ -354,7 +358,7 @@ object PercentileHeatMap {
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
     val minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
     (
-      minBkt, // if (minBkt > 0) minBkt - 1 else minBkt,
+      if (minBkt > 0) minBkt - 1 else minBkt,
       PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
     )
   }
