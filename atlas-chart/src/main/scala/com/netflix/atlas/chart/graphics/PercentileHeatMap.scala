@@ -91,7 +91,7 @@ case class PercentileHeatMap(
 //    }
 
     // simplify I hope....
-    val tpm = Math.max(1, yticks.length / scale.length)
+    val tpm = Math.max(1, yticks.length - 1 / scale.length)
     var lastY = y1
     for (i <- yticks.length - 2 to 0 by -1) {
       val tick = yticks(i)
@@ -167,7 +167,7 @@ case class PercentileHeatMap(
           // TODO - change counts to double now.... confusing as all get out....
           val count = Math.max(1, (v / tpb).toInt)
           for (i <- 0 until tpb) {
-            if (bucketIndex + i < buckets.length) {
+            if (bucketIndex + i < buckets.length) { // edge case if there is only a single bucket.
               row = buckets(bucketIndex + i)
               if (row.counts == null) {
                 row = row.copy(counts = new Array[Long](hCells))
@@ -183,7 +183,7 @@ case class PercentileHeatMap(
                 cmin = row.counts(x)
               }
             } else {
-              System.out.println("WTF??????????? Trying to inc in bucket OVER what we ant!")
+              System.out.println("WTF??????????? Trying to inc in bucket OVER what we want!")
             }
           }
           //        }
@@ -271,6 +271,10 @@ object PercentileHeatMap {
     PercentileBuckets.get(bktIdx(line))
   }
 
+  def bktNanos(index: Int): Long = {
+    PercentileBuckets.get(index)
+  }
+
   def bktSeconds(line: LineDef): Double = {
     PercentileBuckets.get(bktIdx(line)) / 1000.0 / 1000.0 / 1000.0
   }
@@ -281,6 +285,10 @@ object PercentileHeatMap {
 
   def bktIdx(line: LineDef): Int = {
     Integer.parseInt(line.data.tags("percentile").substring(1), 16)
+  }
+
+  def bktIdx(v: Long): Int = {
+    PercentileBuckets.indexOf(v)
   }
 
   /**
@@ -346,7 +354,7 @@ object PercentileHeatMap {
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
     val minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
     (
-      if (minBkt > 0) minBkt - 1 else minBkt,
+      minBkt, // if (minBkt > 0) minBkt - 1 else minBkt,
       PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
     )
   }

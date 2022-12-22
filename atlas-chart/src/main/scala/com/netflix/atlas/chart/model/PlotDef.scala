@@ -16,6 +16,7 @@
 package com.netflix.atlas.chart.model
 
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 
@@ -86,7 +87,9 @@ case class PlotDef(
               // TODO - super duper inefficient since we only need to get the bucket seconds ONCE per
               // line. meh.
               if (isSpectatorPercentile(line)) {
-                bktSeconds(line)
+                val bs = bktSeconds(line)
+                // System.out.println(s"***** BS: ${bs}  Idx: ${bktIdx(line)}")
+                bs
               } else {
                 line.data.data(t)
               }
@@ -124,6 +127,27 @@ case class PlotDef(
       // If an area or stack is shown it will fill to zero and the filled area should be shown
       val hasArea = dataLines.exists { line =>
         line.lineStyle == LineStyle.AREA || line.lineStyle == LineStyle.STACK
+      }
+
+      // TODO fun edge case for ptile buckets. IF we have one bucket, the max and min are the
+      // same. This will cause a 1 to be added and throw off bucketing. For now, if all of
+      // the lines are heatmaps and percentiles, do some fudging.
+      if (
+        max == min &&
+        lines
+          .find(l =>
+            l.lineStyle != LineStyle.HEATMAP || (l.lineStyle == LineStyle.HEATMAP && !isSpectatorPercentile(
+              l
+            ))
+          )
+          .isEmpty
+      ) {
+        val bi = bktIdx((min * 1000 * 1000 * 1000).toInt)
+        min = if (bi > 1) {
+          (bktNanos(bi - 2) + 1).toDouble / 1000 / 1000 / 1000
+        } else {
+          0
+        }
       }
 
       min = if (min == JDouble.MAX_VALUE) 0.0 else min

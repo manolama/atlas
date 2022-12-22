@@ -59,14 +59,14 @@ class PercentileHeatMapSuite extends FunSuite {
   }
 
   test("scale x2 buckets") {
-    val min = 0.002446676
-    val max = 0.003145726
+    val min = 0.002796201
+    val max = 0.002796201
     val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
     val ticks = axis.ticks(5, 305)
     val scale = axis.scale(5, 305)
     val s = getScale(min, max, 5, 305)
 
-    val bi = 26
+    val bi = 92
     System.out.println(s"Bkt IDX: ${bi}")
     System.out.println(s"Nanos: ${PercentileBuckets.get(bi)}")
     System.out.println(
