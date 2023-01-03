@@ -79,21 +79,27 @@ case class PercentileHeatMap(
 
   def updateLegendMM(count: Long, scaleIndex: Int): Unit = {
     if (legendMinMax == null) {
-      legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
-      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
+      legendMinMax = new Array[(Long, Long, Long)](palette.uniqueColors.size)
+      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
     }
-    val (n, a) = legendMinMax(scaleIndex)
+    val (n, a, c) = legendMinMax(scaleIndex)
     val nn = if (count < n) count else n
     val aa = if (count > a) count else a
-    legendMinMax(scaleIndex) = (nn, aa)
+    legendMinMax(scaleIndex) = (nn, aa, c + 1)
   }
 
   def palette = firstLine.palette.getOrElse(
     Palette.singleColor(firstLine.color)
   )
 
-  def colorScaler =
+  lazy val colorScaler =
     Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+
+  def getColor(dp: Long): Color = {
+    val scaled = colorScaler(dp)
+    updateLegendMM(dp, scaled)
+    palette.uniqueColors(scaled)
+  }
 
   def colorMap: List[CellColor] = {
     palette.uniqueColors
@@ -112,7 +118,7 @@ case class PercentileHeatMap(
   var cmin = Long.MaxValue
   var cmax = Long.MinValue
   var firstLine: LineDef = null
-  var legendMinMax: Array[(Long, Long)] = null
+  var legendMinMax: Array[(Long, Long, Long)] = null
 
   def addLine(line: LineDef): Unit = {
     // Remember, when we make this call, it's actually the NEXT bucket so we need
@@ -205,17 +211,17 @@ case class PercentileHeatMap(
     val palette = firstLine.palette.getOrElse(
       Palette.singleColor(firstLine.color)
     )
-    legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
-    for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
-    val colorScaler =
-      Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+//    legendMinMax = new Array[(Long, Long, Long)](palette.uniqueColors.size)
+//    for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
+//    val colorScaler =
+//      Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
     // val yi = yticks.iterator
     // var lastY = chartEnd
     buckets.foreach { bucket =>
       // val ytick = if (yi.hasNext) yi.next() else null
       // val nextY = if (ytick != null) yscale(ytick.v) else y1
       if (bucket != null && bucket.counts != null) {
-        val lineElement = HeatmapLine(bucket.counts, timeAxis, colorScaler, palette, legendMinMax)
+        val lineElement = HeatmapLine(bucket.counts, timeAxis, this)
 
         // val yy = (chartEnd - bucket.offset + y1 + bucket.height) - bucket.height
         val yy = bucket.y - bucket.height + 1

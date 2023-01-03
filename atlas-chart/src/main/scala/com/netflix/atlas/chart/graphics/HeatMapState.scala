@@ -20,7 +20,7 @@ trait HeatMapState {
 
   def firstLine: LineDef
 
-  def legendMinMax: Array[(Long, Long)]
+  def legendMinMax: Array[(Long, Long, Long)]
 
   def `type`: String
 
@@ -35,6 +35,8 @@ trait HeatMapState {
   def colorScaler: Scales.DoubleScale
 
   def colorMap: List[CellColor]
+
+  def getColor(dp: Long): Color
 }
 
 case class CellColor(

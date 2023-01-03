@@ -277,7 +277,9 @@ private[chart] object JsonCodec {
       gen.writeStartArray()
       if (bkt != null) {
         bkt.foreach { dp =>
-          heatmap.updateLegendMM(dp, scaler(dp))
+          if (dp > 0) {
+            heatmap.updateLegendMM(dp, scaler(dp))
+          }
           gen.writeNumber(dp)
         }
       }

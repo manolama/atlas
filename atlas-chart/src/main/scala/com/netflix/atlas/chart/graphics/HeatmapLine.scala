@@ -9,9 +9,9 @@ import java.awt.Graphics2D
 case class HeatmapLine(
   ts: Array[Long],
   xaxis: TimeAxis,
-  colorScaler: Scales.DoubleScale,
-  palette: Palette,
-  legendMinMax: Array[(Long, Long)]
+//  colorScaler: Scales.DoubleScale,
+//  palette: Palette,
+  heatmap: HeatMapState // legendMinMax: Array[(Long, Long)]
 ) extends Element {
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
@@ -22,12 +22,14 @@ case class HeatmapLine(
     ts.foreach { dp =>
       val x = if (ti.hasNext) xscale(ti.next().timestamp) else x2
       if (dp > 0) {
-        val scaled = colorScaler(dp)
-        val (n, a) = legendMinMax(scaled)
-        val nn = if (dp < n) dp else n
-        val aa = if (dp > a) dp else a
-        legendMinMax(scaled) = (nn, aa)
-        val c = palette.uniqueColors(scaled)
+//        val scaled = colorScaler(dp)
+//        heatmap.updateLegendMM(dp, scaled)
+////        val (n, a) = legendMinMax(scaled)
+////        val nn = if (dp < n) dp else n
+////        val aa = if (dp > a) dp else a
+////        legendMinMax(scaled) = (nn, aa)
+//        val c = palette.uniqueColors(scaled)
+        val c = heatmap.getColor(dp)
         Style(c).configure(g)
         // System.out.println(s" last ${last} px ${x}  Y1 ${y1} height ${y2}")
         g.fillRect(last, y1, x - last, y2)
