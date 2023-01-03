@@ -109,7 +109,7 @@ object Scales {
         }
         idx += 1
       }
-      if (value < 0) value = r2
+      if (value < 0) value = Int.MaxValue // write off the canvas. Probably a cleaner way.
       value
     }
   }
