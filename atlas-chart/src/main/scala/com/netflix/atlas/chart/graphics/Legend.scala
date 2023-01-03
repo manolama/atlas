@@ -90,7 +90,6 @@ case class Legend(
             lastHeatmapLegend =
               HeatMapLegend(styles, plot, showStats, line.query.getOrElse(""), graph)
           }
-          lastHeatmapLegend.addLine(line)
         case _ =>
           if (lastHeatmapLegend != null) {
             results += lastHeatmapLegend

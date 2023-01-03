@@ -20,12 +20,16 @@ import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Base64
-
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.atlas.chart.graphics.HeatMap
+import com.netflix.atlas.chart.graphics.HeatMapState
+import com.netflix.atlas.chart.graphics.PercentileHeatMap
+import com.netflix.atlas.chart.graphics.TimeSeriesGraph
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -81,7 +85,7 @@ private[chart] object JsonCodec {
     writeGraphDefMetadata(gen, config)
     config.plots.zipWithIndex.foreach {
       case (plot, i) =>
-        writePlotDefMetadata(gen, plot, i)
+        writePlotDefMetadata(gen, config, plot, i)
     }
     config.plots.zipWithIndex.foreach {
       case (plot, i) =>
@@ -159,7 +163,12 @@ private[chart] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writePlotDefMetadata(gen: JsonGenerator, plot: PlotDef, id: Int): Unit = {
+  private def writePlotDefMetadata(
+    gen: JsonGenerator,
+    config: GraphDef,
+    plot: PlotDef,
+    id: Int
+  ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "plot-metadata")
     gen.writeNumberField("id", id)
@@ -174,6 +183,118 @@ private[chart] object JsonCodec {
     gen.writeStringField("upper", plot.upper.toString)
     gen.writeStringField("lower", plot.lower.toString)
     gen.writeStringField("tickLabelMode", plot.tickLabelMode.name())
+    gen.writeEndObject()
+
+    plot.lines.find(_.lineStyle == LineStyle.HEATMAP) match {
+      case true  => writePlotHeatmaps(gen, config, plot, id)
+      case false => // no-op
+    }
+
+  }
+
+  private def writePlotHeatmaps(
+    gen: JsonGenerator,
+    config: GraphDef,
+    plot: PlotDef,
+    id: Int
+  ): Unit = {
+    var heatmap: HeatMapState = null
+    val graph = TimeSeriesGraph(config)
+
+    val y1 = 5 // TODO - follow DefaultGraphEngine L78-L83 to figure out the starting height.
+    val chartEnd = graph.height // TODO - then figure out th chart end.
+    var heatmapIndex = 0
+
+    plot.lines.foreach { l =>
+      l.lineStyle match {
+        case LineStyle.HEATMAP =>
+          if (heatmap != null && !heatmap.query.equals(l.query.getOrElse(""))) {
+            writeHeatMap(gen, heatmap, id, heatmapIndex)
+            heatmapIndex += 1
+            heatmap = null
+          }
+
+          if (heatmap == null) {
+            if (isSpectatorPercentile(l)) {
+              heatmap = PercentileHeatMap(
+                config,
+                plot,
+                graph.yaxes(id),
+                graph.timeAxis,
+                0,
+                y1,
+                graph.width,
+                chartEnd,
+                0, // leftOffset, TODO - don't think this is needed.
+                0, // rightOffset, TODO - don't think this is needed.
+                l.query.getOrElse("")
+              )
+            } else {
+              heatmap = HeatMap(
+                config,
+                plot,
+                graph.yaxes(id),
+                graph.timeAxis,
+                0,
+                y1,
+                graph.width,
+                chartEnd,
+                0,
+                0,
+                l.query.getOrElse("")
+              )
+            }
+
+            heatmap.addLine(l)
+          }
+        case _ =>
+          if (heatmap != null) {
+            writeHeatMap(gen, heatmap, id, heatmapIndex)
+            heatmapIndex += 1
+            heatmap = null
+          }
+      }
+    }
+
+    if (heatmap != null) {
+      writeHeatMap(gen, heatmap, id, heatmapIndex)
+      heatmapIndex += 1
+      heatmap = null
+    }
+  }
+
+  private def writeHeatMap(
+    gen: JsonGenerator,
+    heatmap: HeatMapState,
+    plotId: Int,
+    id: Int
+  ): Unit = {
+    gen.writeStartObject()
+    gen.writeStringField("type", heatmap.`type`)
+    gen.writeNumberField("plot", plotId)
+    gen.writeNumberField("id", id)
+
+    gen.writeArrayFieldStart("yticks")
+    heatmap.yticks.foreach { tick =>
+      gen.writeStartObject()
+      gen.writeNumberField("value", tick.v)
+      gen.writeBooleanField("isMajor", tick.major)
+      gen.writeStringField("label", tick.label)
+      gen.writeEndObject()
+    }
+    gen.writeEndArray()
+
+    gen.writeArrayFieldStart("colorLegend")
+    // TODO - color
+    gen.writeEndArray()
+
+    gen.writeObjectFieldStart("data")
+    gen.writeStringField("type", "heatmap")
+    gen.writeArrayFieldStart("values")
+    // TODO - each bucket line
+    gen.writeEndArray()
+    gen.writeEndObject()
+
     gen.writeEndObject()
   }
 

@@ -93,7 +93,7 @@ case class PercentileHeatMap(
     // simplify I hope....
     val tpm =
       if (yticks.size - 1 >= scale.size) {
-        Math.max(1, ((yticks.size - 1) / scale.size))
+        Math.max(1, (yticks.size - 1) / scale.size)
       } else
         1
     var lastY = y1
@@ -235,6 +235,7 @@ case class PercentileHeatMap(
     }
   }
 
+  override def `type`: String = "percentile-heatmap"
 }
 
 /**

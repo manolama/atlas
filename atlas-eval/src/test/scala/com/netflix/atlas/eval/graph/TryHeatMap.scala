@@ -36,6 +36,7 @@ import com.netflix.spectator.api.histogram.PercentileBuckets
 import java.io.FileInputStream
 import java.util.Map.Entry
 import java.util.function.Consumer
+import scala.jdk.CollectionConverters._
 import scala.math.log10
 //import akka.http.scaladsl.model.headers.Host
 import com.netflix.atlas.chart.util.GraphAssertions
@@ -113,43 +114,43 @@ class TryHeatMap extends FunSuite {
 
       val keys = List(
         // "T0001",
-//        "T0036",
-//        "T0037",
-//        "T0038",
-//        "T0039",
-//        "T003A",
-//        "T003B",
-//        "T003C",
-//        "T003D",
-//        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
-//        "T003F",
-//        "T0040",
-//        "T0041",
-//        "T0042",
-//        "T0043",
-//        "T0044",
-//        "T0045",
-//        "T0046",
-//        "T0047",
-//        "T0048",
-//        "T0049",
-//        "T004A",
-//        "T004B",
-//        "T004C",
-//        "T004D",
-//        "T004E",
-//        "T004F",
-//        "T0050",
-//        "T0051",
-//        "T0052",
-//        "T0053",
-//        "T0054",
-//        "T0055",
-//        "T0056",
-//        "T0057",
-//        "T0058",
-//        "T0059",
-//        "T005A",
+        "T0036",
+        "T0037",
+        "T0038",
+        "T0039",
+        "T003A",
+        "T003B",
+        "T003C",
+        "T003D",
+        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
+        "T003F",
+        "T0040",
+        "T0041",
+        "T0042",
+        "T0043",
+        "T0044",
+        "T0045",
+        "T0046",
+        "T0047",
+        "T0048",
+        "T0049",
+        "T004A",
+        "T004B",
+        "T004C",
+        "T004D",
+        "T004E",
+        "T004F",
+        "T0050",
+        "T0051",
+        "T0052",
+        "T0053",
+        "T0054",
+        "T0055",
+        "T0056",
+        "T0057",
+        "T0058",
+        "T0059",
+        "T005A",
         "T005B",
         "T005C",
         "T005D",
@@ -173,54 +174,54 @@ class TryHeatMap extends FunSuite {
         "T006F",
         "T0070",
         "T0071",
-//        "T0072",
-//        "T0073",
-//        "T0074",
-//        "T0075",
-//        "T0076",
-//        "T0077",
-//        "T0078",
-//        "T0079",
-//        "T007A",
-//        "T007B",
-//        "T007C",
-//        "T007D",
-//        "T007E",
-//        "T007F",
-//        "T0080",
-//        "T0081",
-//        "T0082",
-//        "T0083",
-//        "T0084",
-//        "T0085",
-//        "T0086",
-//        "T0087",
-//        "T0088",
-//        "T0089",
-//        "T008A",
-//        "T008B",
-//        "T008C",
-//        "T008D",
-//        "T008E",
-//        "T008F",
-//        "T0090",
-//        "T0091",
-//        "T0092",
-//        "T0093",
-//        "T0094",
-//        "T0095",
-//        "T0096",
-//        "T0097",
-//        "T0098",
-//        "T0099",
-//        "T009A",
-//        "T009B",
-//        "T009C",
-//        "T009D",
-//        "T009E",
-//        "T009F",
-//        "T00A0"
-      )
+        "T0072",
+        "T0073",
+        "T0074",
+        "T0075",
+        "T0076",
+        "T0077",
+        "T0078",
+        "T0079",
+        "T007A",
+        "T007B",
+        "T007C",
+        "T007D",
+        "T007E",
+        "T007F",
+        "T0080",
+        "T0081",
+        "T0082",
+        "T0083",
+        "T0084",
+        "T0085",
+        "T0086",
+        "T0087",
+        "T0088",
+        "T0089",
+        "T008A",
+        "T008B",
+        "T008C",
+        "T008D",
+        "T008E",
+        "T008F",
+        "T0090",
+        "T0091",
+        "T0092",
+        "T0093",
+        "T0094",
+        "T0095",
+        "T0096",
+        "T0097",
+        "T0098",
+        "T0099",
+        "T009A",
+        "T009B",
+        "T009C",
+        "T009D",
+        "T009E",
+        "T009F",
+        "T00A0"
+      ).asJava
       if (true) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
@@ -246,11 +247,12 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 
     "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette," +
-//      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles,ff0000,:color,2,:lw," +
-//      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles,c203fc,:color,2,:lw," +
-//      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
-      // "&w=1296&h=400"
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles,ff0000,:color,2,:lw," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles,c203fc,:color,2,:lw," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
+      "&w=1296&h=600" +
       "&scale=percentile"
+    // "&l=2.1" // TODO - breaks
 
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
@@ -270,6 +272,21 @@ class TryHeatMap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
+  }
+
+  test("jsonv2 maybe?") {
+    db = getDB(true)
+    val uri =
+      "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette," +
+        "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles,ff0000,:color,2,:lw," +
+        "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles,c203fc,:color,2,:lw," +
+        "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
+        "&w=1296&h=600" +
+        "&scale=percentile" +
+        "&hints=no-image" +
+        "&format=v2.json"
+    val result = grapher.evalAndRender(Uri(uri), db)
+    System.out.println(result.dataString)
   }
 
   def scaleBack(

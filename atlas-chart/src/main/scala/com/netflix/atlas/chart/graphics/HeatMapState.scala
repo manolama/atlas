@@ -19,4 +19,8 @@ trait HeatMapState {
   def firstLine: LineDef
 
   def legendMinMax: Array[(Long, Long)]
+
+  def `type`: String
+
+  def yticks: List[ValueTick]
 }
