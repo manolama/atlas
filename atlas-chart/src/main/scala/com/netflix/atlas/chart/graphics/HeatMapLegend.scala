@@ -12,6 +12,7 @@ import java.awt.Graphics2D
 case class HeatMapLegend(
   styles: Styles,
   plot: PlotDef,
+  plotId: Int,
   showStats: Boolean,
   query: String,
   graph: TimeSeriesGraph
@@ -19,7 +20,7 @@ case class HeatMapLegend(
     with VariableHeight {
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    val state = graph.heatmaps(query)
+    val state = graph.heatmaps(plotId)
     val palette = state.firstLine.palette.getOrElse(
       Palette.singleColor(state.firstLine.color)
     )

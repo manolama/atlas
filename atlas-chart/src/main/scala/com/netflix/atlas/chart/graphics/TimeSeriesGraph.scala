@@ -106,7 +106,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       }
   }
 
-  var heatmaps: Map[String, HeatMapState] = Map.empty
+  var heatmaps = List.empty[HeatMapState]
 
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     g.setClip(x1, y1, x2 - x1, y2 - y1)
@@ -139,71 +139,57 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       case (plot, axis) =>
         var heatmap: HeatMapState = null
         val offsets = TimeSeriesStack.Offsets(timeAxis)
-        plot.lines.foreach { line =>
-
-          line.lineStyle match {
-            case LineStyle.HEATMAP =>
-              if (heatmap != null && !heatmap.query.equals(line.query.getOrElse(""))) {
-                System.out.println("Flushing previous heatmap due to different query")
-                heatmap.draw(g)
-                heatmap = null
-              }
-
-              if (heatmap == null) {
-                if (isSpectatorPercentile(line)) {
-                  heatmap = PercentileHeatMap(
-                    graphDef,
-                    plot,
-                    axis,
-                    timeAxis,
-                    x1,
-                    y1,
-                    x2,
-                    chartEnd,
-                    leftOffset,
-                    rightOffset,
-                    line.query.getOrElse("")
-                  )
-                } else {
-                  heatmap = HeatMap(
-                    graphDef,
-                    plot,
-                    axis,
-                    timeAxis,
-                    x1,
-                    y1,
-                    x2,
-                    chartEnd,
-                    leftOffset,
-                    rightOffset,
-                    line.query.getOrElse("")
-                  )
-                }
-                heatmaps += line.query.getOrElse("") -> heatmap
-              }
-              heatmap.addLine(line)
-            case _ =>
-              if (heatmap != null) {
-                System.out.println("---- flushing prev heat map due to non-heatmap line")
-                heatmap.draw(g)
-                heatmap = null
-              }
-              val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
-              val lineElement = line.lineStyle match {
-                case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
-                case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
-                case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
-                case LineStyle.STACK =>
-                  TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
-              }
-              lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+        // heatmaps first
+        plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { line =>
+          if (heatmap == null) {
+            if (isSpectatorPercentile(line)) {
+              heatmap = PercentileHeatMap(
+                graphDef,
+                plot,
+                axis,
+                timeAxis,
+                x1,
+                y1,
+                x2,
+                chartEnd,
+                leftOffset,
+                rightOffset,
+                line.query.getOrElse("")
+              )
+            } else {
+              heatmap = HeatMap(
+                graphDef,
+                plot,
+                axis,
+                timeAxis,
+                x1,
+                y1,
+                x2,
+                chartEnd,
+                leftOffset,
+                rightOffset,
+                line.query.getOrElse("")
+              )
+            }
           }
-
+          heatmap.addLine(line)
         }
 
         if (heatmap != null) {
           heatmap.draw(g)
-          heatmap = null
+        }
+        heatmaps = heatmaps :+ heatmap
+
+        plot.lines.filter(_.lineStyle != LineStyle.HEATMAP).foreach { line =>
+          val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
+          val lineElement = line.lineStyle match {
+            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
+            case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
+            case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
+            case LineStyle.STACK =>
+              TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
+          }
+          lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
         }
 
         plot.horizontalSpans.foreach { hspan =>

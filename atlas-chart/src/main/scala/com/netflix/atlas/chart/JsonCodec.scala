@@ -205,54 +205,39 @@ private[chart] object JsonCodec {
     val chartEnd = graph.height // TODO - then figure out th chart end.
     var heatmapIndex = 0
 
-    plot.lines.foreach { l =>
-      l.lineStyle match {
-        case LineStyle.HEATMAP =>
-          if (heatmap != null && !heatmap.query.equals(l.query.getOrElse(""))) {
-            writeHeatMap(gen, heatmap, id, heatmapIndex)
-            heatmapIndex += 1
-            heatmap = null
-          }
-
-          if (heatmap == null) {
-            if (isSpectatorPercentile(l)) {
-              heatmap = PercentileHeatMap(
-                config,
-                plot,
-                graph.yaxes(id),
-                graph.timeAxis,
-                0,
-                y1,
-                graph.width,
-                chartEnd,
-                0, // leftOffset, TODO - don't think this is needed.
-                0, // rightOffset, TODO - don't think this is needed.
-                l.query.getOrElse("")
-              )
-            } else {
-              heatmap = HeatMap(
-                config,
-                plot,
-                graph.yaxes(id),
-                graph.timeAxis,
-                0,
-                y1,
-                graph.width,
-                chartEnd,
-                0,
-                0,
-                l.query.getOrElse("")
-              )
-            }
-          }
-          heatmap.addLine(l)
-        case _ =>
-          if (heatmap != null) {
-            writeHeatMap(gen, heatmap, id, heatmapIndex)
-            heatmapIndex += 1
-            heatmap = null
-          }
+    plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { l =>
+      if (heatmap == null) {
+        if (isSpectatorPercentile(l)) {
+          heatmap = PercentileHeatMap(
+            config,
+            plot,
+            graph.yaxes(id),
+            graph.timeAxis,
+            0,
+            y1,
+            graph.width,
+            chartEnd,
+            0, // leftOffset, TODO - don't think this is needed.
+            0, // rightOffset, TODO - don't think this is needed.
+            l.query.getOrElse("")
+          )
+        } else {
+          heatmap = HeatMap(
+            config,
+            plot,
+            graph.yaxes(id),
+            graph.timeAxis,
+            0,
+            y1,
+            graph.width,
+            chartEnd,
+            0,
+            0,
+            l.query.getOrElse("")
+          )
+        }
       }
+      heatmap.addLine(l)
     }
 
     if (heatmap != null) {

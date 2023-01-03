@@ -38,6 +38,7 @@ case class Legend(
   label: Option[String],
   showStats: Boolean,
   maxEntries: Int,
+  plotId: Int,
   graph: TimeSeriesGraph
 ) extends Element
     with VariableHeight {
@@ -88,7 +89,7 @@ case class Legend(
               results += lastHeatmapLegend
             }
             lastHeatmapLegend =
-              HeatMapLegend(styles, plot, showStats, line.query.getOrElse(""), graph)
+              HeatMapLegend(styles, plot, plotId, showStats, line.query.getOrElse(""), graph)
           }
         case _ =>
           if (lastHeatmapLegend != null) {
