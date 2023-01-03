@@ -55,7 +55,7 @@ case class HeatMapLegend(
     }
 
     // max
-    val str = UnitPrefix.format(state.cmax, "%.0f%s")
+    val str = UnitPrefix.format(state.u, "%.0f%s")
     var txt = Text(
       str,
       font = ChartSettings.smallFont,

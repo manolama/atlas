@@ -145,12 +145,6 @@ case class PlotDef(
             .isEmpty
         ) {
           true
-//        val bi = bktIdx((min * 1000 * 1000 * 1000).toInt)
-//        min = if (bi > 1) {
-//          (bktNanos(bi - 2) + 1).toDouble / 1000 / 1000 / 1000
-//        } else {
-//          0
-//        }
         } else false
 
       min = if (min == JDouble.MAX_VALUE) 0.0 else min

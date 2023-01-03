@@ -14,9 +14,13 @@ trait HeatMapState {
 
   def query: String
 
-  def cmin: Long
+//  def cmin: Long
+//
+//  def cmax: Long
 
-  def cmax: Long
+  def l: Double
+
+  def u: Double
 
   def firstLine: LineDef
 

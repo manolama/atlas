@@ -37,6 +37,8 @@ case class HeatMap(
 
   var cmin = Long.MaxValue
   var cmax = Long.MinValue
+  var l: Double = 0
+  var u: Double = 0
   var firstLine: LineDef = null
   var legendMinMax: Array[(Long, Long, Long)] = null
 

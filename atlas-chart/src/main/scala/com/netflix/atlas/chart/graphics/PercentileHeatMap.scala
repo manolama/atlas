@@ -94,8 +94,8 @@ case class PercentileHeatMap(
   lazy val colorScaler = {
     // TODO - fix scale
     Scales.factory(plot.heatmapDef.getOrElse(HeatmapDef()).scale)(
-      cmin,
-      cmax,
+      l,
+      u,
       0,
       palette.uniqueColors.size - 1
     )
@@ -123,6 +123,8 @@ case class PercentileHeatMap(
 
   var cmin = Long.MaxValue
   var cmax = Long.MinValue
+  var l: Double = 0
+  var u: Double = 0
   var firstLine: LineDef = null
   var legendMinMax: Array[(Long, Long, Long)] = null
 
@@ -212,7 +214,23 @@ case class PercentileHeatMap(
     }
   }
 
+  def enforceBounds: Unit = {
+    l = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
+    u = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
+    if (l > cmin || u < cmax) {
+      buckets.foreach { row =>
+        for (i <- 0 until row.counts.length) {
+          val count = row.counts(i)
+          if (count < l || count > u) {
+            row.counts(i) = 0
+          }
+        }
+      }
+    }
+  }
+
   def draw(g: Graphics2D): Unit = {
+    enforceBounds
     System.out.println("***** Draw heatmap")
     val palette = firstLine.palette.getOrElse(
       Palette.singleColor(firstLine.color)
