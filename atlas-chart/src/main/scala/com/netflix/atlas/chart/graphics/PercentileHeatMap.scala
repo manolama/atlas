@@ -136,6 +136,10 @@ case class PercentileHeatMap(
       b = if (b > 0) b - 1 else b
       bktSeconds(b)
     } else -1
+    // bounds check
+    if (seconds > yticks.last.v || seconds < yticks.head.v) {
+      return
+    }
     // we need to figure out how many buckets to fill. This is due to the regular
     // ticks scale but exponential bucket size. Higher buckets can spread across
     // cells.
@@ -386,9 +390,18 @@ object PercentileHeatMap {
   }
 
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
-    val minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
+    var minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
+    // we need to see if we received a match on an exact bucket boundary as we need
+    // to back off one bucket. If not, we may have an explicit bounds or another
+    // time series fudging the scale so account for that.
+    if (minBkt > 0) {
+      val seconds = bktSeconds(minBkt - 1)
+      if (Math.abs(seconds - min) < 1e-9) {
+        minBkt -= 1
+      }
+    }
     (
-      if (minBkt > 0) minBkt - 1 else minBkt,
+      minBkt,
       PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
     )
   }

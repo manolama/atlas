@@ -17,6 +17,8 @@ package com.netflix.atlas.eval.graph
 
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.databind.JsonNode
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
 import com.netflix.atlas.chart.graphics.Scales
@@ -252,8 +254,9 @@ class TryHeatMap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
       "&w=1296&h=600" +
       "&scale=percentile" +
-      "&heatmap_scale=log"
-    // "&l=2.1" // TODO - breaks
+      "&heatmap_scale=log" +
+//    "&u=17.5"
+      "&l=2.45"
 
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
@@ -432,6 +435,21 @@ class TryHeatMap extends FunSuite {
 
     System.out.println(s"Bucket 0 = ${PercentileBuckets.get(0)}")
     System.out.println(s"Bucket 1 = ${PercentileBuckets.get(1)}")
+  }
+
+  test("fudgefactor") {
+    val realBoundary = 2.147483647
+    val test = 2.4
+
+    var idx = bktIdx((realBoundary * 1000 * 1000 * 1000).toLong)
+    var givenS = bktNanos(idx - 1)
+    var matched = (realBoundary * 1000 * 1000 * 1000).toLong == givenS
+    System.out.println(s"MATCHED? ${matched}")
+
+    idx = bktIdx((test * 1000 * 1000 * 1000).toLong)
+    givenS = bktNanos(idx)
+    matched = (test * 1000 * 1000 * 1000).toLong == givenS
+    System.out.println(s"MATCHED? ${matched}")
   }
 
 }
