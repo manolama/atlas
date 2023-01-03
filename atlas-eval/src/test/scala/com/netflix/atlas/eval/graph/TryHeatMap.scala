@@ -251,7 +251,8 @@ class TryHeatMap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles,c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
       "&w=1296&h=600" +
-      "&scale=percentile"
+      "&scale=percentile" +
+      "&heatmap_scale=log"
     // "&l=2.1" // TODO - breaks
 
     // woot, works with y axis!

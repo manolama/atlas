@@ -3,6 +3,7 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
@@ -54,8 +55,15 @@ case class HeatMap(
     Palette.singleColor(firstLine.color)
   )
 
-  def colorScaler =
-    Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+  def colorScaler = {
+    // TODO - fix defaults
+    Scales.factory(plot.heatmapDef.getOrElse(HeatmapDef()).scale)(
+      cmin,
+      cmax,
+      0,
+      palette.uniqueColors.size - 1
+    )
+  }
 
   def getColor(dp: Long): Color = {
     var scaled = colorScaler(dp)

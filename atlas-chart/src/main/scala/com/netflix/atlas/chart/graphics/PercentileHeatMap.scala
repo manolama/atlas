@@ -8,6 +8,7 @@ import com.netflix.atlas.chart.graphics.PercentileHeatMap.getScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
@@ -50,8 +51,6 @@ case class PercentileHeatMap(
     height: Int,
     v: Double,
     next: Double,
-//    tick: ValueTick,
-//    ptileScale: List[PtileScale],
     ticksPerBucket: Int
   )
 
@@ -92,8 +91,15 @@ case class PercentileHeatMap(
     Palette.singleColor(firstLine.color)
   )
 
-  lazy val colorScaler =
-    Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+  lazy val colorScaler = {
+    // TODO - fix scale
+    Scales.factory(plot.heatmapDef.getOrElse(HeatmapDef()).scale)(
+      cmin,
+      cmax,
+      0,
+      palette.uniqueColors.size - 1
+    )
+  }
 
   def getColor(dp: Long): Color = {
     val scaled = colorScaler(dp)

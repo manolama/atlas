@@ -193,7 +193,11 @@ case class Grapher(settings: DefaultSettings) {
       tickLabels = getAxisParam(params, "tick_labels", id),
       palette = params.get(s"palette.$id"),
       sort = getAxisParam(params, "sort", id),
-      order = getAxisParam(params, "order", id)
+      order = getAxisParam(params, "order", id),
+      heatmapScale = getAxisParam(params, "heatmap_scale", id),
+      heatmapUpper = getAxisParam(params, "heatmap_u", id),
+      heatmapLower = getAxisParam(params, "heatmap_l", id),
+      heatmapPalette = getAxisParam(params, "heatmap_palette", id)
     )
   }
 
