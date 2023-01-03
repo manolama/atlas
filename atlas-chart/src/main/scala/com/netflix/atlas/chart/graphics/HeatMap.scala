@@ -39,6 +39,22 @@ case class HeatMap(
   var cmax = Long.MinValue
   var l: Double = 0
   var u: Double = 0
+
+  def enforceBounds: Unit = {
+    l = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
+    u = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
+    if (l > cmin || u < cmax) {
+      buckets.foreach { row =>
+        for (i <- 0 until row.length) {
+          val count = row(i)
+          if (count < l || count > u) {
+            row(i) = 0
+          }
+        }
+      }
+    }
+  }
+
   var firstLine: LineDef = null
   var legendMinMax: Array[(Long, Long, Long)] = null
 

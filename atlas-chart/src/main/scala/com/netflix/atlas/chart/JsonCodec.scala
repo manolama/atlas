@@ -271,7 +271,8 @@ private[chart] object JsonCodec {
     gen.writeObjectFieldStart("data")
     gen.writeStringField("type", "heatmap")
     gen.writeArrayFieldStart("values")
-    // TODO - each bucket line
+
+    heatmap.enforceBounds
     val scaler = heatmap.colorScaler
     heatmap.counts.foreach { bkt =>
       gen.writeStartArray()

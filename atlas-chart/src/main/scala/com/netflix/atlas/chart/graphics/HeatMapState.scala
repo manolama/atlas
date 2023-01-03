@@ -22,6 +22,8 @@ trait HeatMapState {
 
   def u: Double
 
+  def enforceBounds: Unit
+
   def firstLine: LineDef
 
   def legendMinMax: Array[(Long, Long, Long)]
