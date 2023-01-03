@@ -29,6 +29,7 @@ case class HeatMap(
 
   val buckets =
     new Array[Array[Long]](yticks.size + 1) // plus 1 for the data above the final tick
+  def counts: Array[Array[Long]] = buckets
   val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   val hCells = xti.size + 1
 
@@ -36,6 +37,35 @@ case class HeatMap(
   var cmax = Long.MinValue
   var firstLine: LineDef = null
   var legendMinMax: Array[(Long, Long)] = null
+
+  def updateLegendMM(count: Long, scaleIndex: Int): Unit = {
+    if (legendMinMax == null) {
+      legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
+      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
+    }
+    val (n, a) = legendMinMax(scaleIndex)
+    val nn = if (count < n) count else n
+    val aa = if (count > a) count else a
+    legendMinMax(scaleIndex) = (nn, aa)
+  }
+
+  def palette = firstLine.palette.getOrElse(
+    Palette.singleColor(firstLine.color)
+  )
+
+  def colorScaler =
+    Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+
+  def colorMap: List[CellColor] = {
+    palette.uniqueColors
+      .zip(legendMinMax)
+      // get rid of colors that weren't used.
+      .filterNot(t => t._2._1 == Long.MaxValue && t._2._2 == Long.MinValue)
+      .reverse
+      .map { tuple =>
+        CellColor(tuple._1, 255, tuple._2._1, tuple._2._2)
+      }
+  }
 
   def addLine(line: LineDef): Unit = {
     val seconds = if (isSpectatorPercentile(line)) bktSeconds(line) else -1
@@ -96,13 +126,8 @@ case class HeatMap(
 
   def draw(g: Graphics2D): Unit = {
     System.out.println("***** Draw heatmap")
-    val palette = firstLine.palette.getOrElse(
-      Palette.singleColor(firstLine.color)
-    )
     legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
     for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
-    val colorScaler =
-      Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
     val yScaler = axis.scale(y1, chartEnd)
     val yi = yticks.iterator
     var lastY = chartEnd + 1

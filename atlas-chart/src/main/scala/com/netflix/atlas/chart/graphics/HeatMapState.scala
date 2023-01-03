@@ -1,7 +1,9 @@
 package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.Palette
 
+import java.awt.Color
 import java.awt.Graphics2D
 
 trait HeatMapState {
@@ -23,4 +25,21 @@ trait HeatMapState {
   def `type`: String
 
   def yticks: List[ValueTick]
+
+  def counts: Array[Array[Long]]
+
+  def updateLegendMM(count: Long, scaleIndex: Int): Unit
+
+  def palette: Palette
+
+  def colorScaler: Scales.DoubleScale
+
+  def colorMap: List[CellColor]
 }
+
+case class CellColor(
+  color: Color,
+  alpha: Int,
+  min: Long,
+  max: Long
+)

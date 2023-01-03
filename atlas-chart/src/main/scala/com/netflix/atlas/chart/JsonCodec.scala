@@ -186,8 +186,8 @@ private[chart] object JsonCodec {
     gen.writeEndObject()
 
     plot.lines.find(_.lineStyle == LineStyle.HEATMAP) match {
-      case true  => writePlotHeatmaps(gen, config, plot, id)
-      case false => // no-op
+      case Some(_) => writePlotHeatmaps(gen, config, plot, id)
+      case None    => // no-op
     }
 
   }
@@ -244,9 +244,8 @@ private[chart] object JsonCodec {
                 l.query.getOrElse("")
               )
             }
-
-            heatmap.addLine(l)
           }
+          heatmap.addLine(l)
         case _ =>
           if (heatmap != null) {
             writeHeatMap(gen, heatmap, id, heatmapIndex)
@@ -284,15 +283,35 @@ private[chart] object JsonCodec {
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("colorLegend")
-    // TODO - color
-    gen.writeEndArray()
-
     gen.writeObjectFieldStart("data")
     gen.writeStringField("type", "heatmap")
     gen.writeArrayFieldStart("values")
     // TODO - each bucket line
+    val scaler = heatmap.colorScaler
+    heatmap.counts.foreach { bkt =>
+      gen.writeStartArray()
+      if (bkt != null) {
+        bkt.foreach { dp =>
+          heatmap.updateLegendMM(dp, scaler(dp))
+          gen.writeNumber(dp)
+        }
+      }
+      gen.writeEndArray()
+    }
     gen.writeEndArray()
+
+    gen.writeArrayFieldStart("colorLegend")
+    heatmap.colorMap.foreach { cm =>
+      gen.writeStartObject()
+      gen.writeFieldName("color")
+      writeColor(gen, cm.color)
+      gen.writeNumberField("alpha", cm.color.getAlpha)
+      gen.writeNumberField("min", cm.min)
+      gen.writeNumberField("max", cm.max)
+      gen.writeEndObject()
+    }
+    gen.writeEndArray()
+
     gen.writeEndObject()
 
     gen.writeEndObject()

@@ -57,39 +57,6 @@ case class PercentileHeatMap(
 
   val buckets = {
     val bkts = new Array[Bkt](yticks.size - 1)
-
-    // two ways to combine.
-    // 1) There are more buckets than ticks.
-    // 2) There are more ticks than buckets.
-//    var idx = 0
-//    var lastY = chartEnd
-//    if (yticks.length > scale.length) {
-//      // splits
-//      scale.foreach { s =>
-//        val filtered = yticks.filter(t => t.v >= s.base && t.v < s.next)
-//        filtered.foreach { tick =>
-//          val offset = yscale(tick.v)
-//          bkts(idx) = Bkt(null, offset, lastY - offset, tick, List(s), filtered.size)
-//          lastY = offset
-//          idx += 1
-//        }
-//      }
-//    } else {
-//      // consolidate possibly
-//      var last = chartEnd
-//      yticks.foreach { tick =>
-////        val filtered = scale.filter(s => s.boundary > last && s.boundary <= tick.v)
-////        if (filtered.nonEmpty) {
-//        val offset = yscale(tick.v)
-//        bkts(idx) = Bkt(null, offset, last - offset, tick.v, 1)
-//        last = offset
-////        } else {
-////          bkts(idx) = Bkt(null, 0, 0, tick, filtered, 1)
-////        }
-//        idx += 1
-//      }
-//    }
-
     // simplify I hope....
     val tpm =
       if (yticks.size - 1 >= scale.size) {
@@ -107,6 +74,38 @@ case class PercentileHeatMap(
 
     bkts
   }
+
+  def counts: Array[Array[Long]] = buckets.map(_.counts)
+
+  def updateLegendMM(count: Long, scaleIndex: Int): Unit = {
+    if (legendMinMax == null) {
+      legendMinMax = new Array[(Long, Long)](palette.uniqueColors.size)
+      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue)
+    }
+    val (n, a) = legendMinMax(scaleIndex)
+    val nn = if (count < n) count else n
+    val aa = if (count > a) count else a
+    legendMinMax(scaleIndex) = (nn, aa)
+  }
+
+  def palette = firstLine.palette.getOrElse(
+    Palette.singleColor(firstLine.color)
+  )
+
+  def colorScaler =
+    Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
+
+  def colorMap: List[CellColor] = {
+    palette.uniqueColors
+      .zip(legendMinMax)
+      // get rid of colors that weren't used.
+      .filterNot(t => t._2._1 == Long.MaxValue && t._2._2 == Long.MinValue)
+      .reverse
+      .map { tuple =>
+        CellColor(tuple._1, 255, tuple._2._1, tuple._2._2)
+      }
+  }
+
   val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   val hCells = xti.size + 1
 
