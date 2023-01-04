@@ -21,12 +21,13 @@ case class HeatMapLegend(
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val state = graph.heatmaps(plotId)
-    val palette = state.firstLine.palette.getOrElse(
-      Palette.singleColor(state.firstLine.color)
-    )
-//    val colorScaler =
-//      Scales.factory(Scale.LOGARITHMIC)(state.cmin, state.cmax, 0, palette.uniqueColors.size - 1)
+//    val palette = state.firstLine.palette.getOrElse(
+//      Palette.singleColor(state.firstLine.color)
+//    )
+    val palette = state.palette
 
+    // TODO - e.g. using 24 colors, the legend goes off the canvas. Need to handle that.
+    // even throws an exception printing the last text box.
     val d = ChartSettings.normalFontDims.height - 2
 
     val colorsAndMinMax = palette.uniqueColors

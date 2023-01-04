@@ -248,15 +248,16 @@ class TryHeatMap extends FunSuite {
 
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 
-    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles,ff0000,:color,2,:lw," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles,c203fc,:color,2,:lw," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
+    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
       // "&w=1296&h=600" +
       "&scale=percentile" +
       "&heatmap_scale=log" +
+      "&palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
 //    "&u=17.5"
-      "&l=2.45&u=2.92"
+//      "&l=2.45&u=2.92"
 
     // woot, works with y axis!
     // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"

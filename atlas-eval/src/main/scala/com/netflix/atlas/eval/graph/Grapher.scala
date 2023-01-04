@@ -315,6 +315,7 @@ case class Grapher(settings: DefaultSettings) {
         }
 
         var messages = List.empty[String]
+        var heatmapColor: Color = null
         val lines = exprs.flatMap { s =>
           val result = eval(s)
 
@@ -352,8 +353,17 @@ case class Grapher(settings: DefaultSettings) {
           }
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
+              val lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase))
               val color = s.color.getOrElse {
-                val c = linePalette(t.label)
+                val c = lineStyle match {
+                  case LineStyle.HEATMAP =>
+                    if (heatmapColor == null) {
+                      heatmapColor = linePalette(s"heatmap${yaxis}")
+                    }
+                    heatmapColor
+                  case _ => linePalette(t.label)
+                }
+
                 // Alpha setting if present will set the alpha value for the color automatically
                 // assigned by the palette. If using an explicit color it will have no effect as the
                 // alpha can be set directly using an ARGB hex format for the color.
@@ -368,7 +378,10 @@ case class Grapher(settings: DefaultSettings) {
                 } else if (axisCfg.palette.nonEmpty) {
                   Some(newP(axisCfg.palette.get))
                 } else {
-                  Some(newP(config.flags.palette))
+                  lineStyle match {
+                    case LineStyle.HEATMAP => None
+                    case _                 => Some(newP(config.flags.palette))
+                  }
                 }
 
               LineDef(
@@ -376,7 +389,7 @@ case class Grapher(settings: DefaultSettings) {
                 query = Some(s.expr.toString),
                 groupByKeys = s.expr.finalGrouping,
                 color = color,
-                lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
+                lineStyle = lineStyle,
                 lineWidth = s.lineWidth,
                 legendStats = stats,
                 p
