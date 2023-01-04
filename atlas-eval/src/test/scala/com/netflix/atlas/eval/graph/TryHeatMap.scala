@@ -255,7 +255,7 @@ class TryHeatMap extends FunSuite {
       // "&w=1296&h=600" +
       "&scale=percentile" +
       "&heatmap_scale=log" +
-      "&palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
+      "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
 

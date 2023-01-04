@@ -370,8 +370,10 @@ case class Grapher(settings: DefaultSettings) {
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
               }
 
-              val p: Option[Palette] =
-                if (s.color.nonEmpty) {
+              val p: Option[Palette] = {
+                if (lineStyle == LineStyle.HEATMAP && axisCfg.heatmapPalette.nonEmpty) {
+                  Some(Palette.create(axisCfg.heatmapPalette.get))
+                } else if (s.color.nonEmpty) {
                   None
                 } else if (s.palette.nonEmpty) {
                   Some(newP(s.palette.get))
@@ -383,6 +385,7 @@ case class Grapher(settings: DefaultSettings) {
                     case _                 => Some(newP(config.flags.palette))
                   }
                 }
+              }
 
               LineDef(
                 data = t,
