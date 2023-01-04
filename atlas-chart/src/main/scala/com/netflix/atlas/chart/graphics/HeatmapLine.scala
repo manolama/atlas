@@ -7,7 +7,7 @@ import java.awt.Color
 import java.awt.Graphics2D
 
 case class HeatmapLine(
-  ts: Array[Long],
+  ts: Array[Double],
   xaxis: TimeAxis,
 //  colorScaler: Scales.DoubleScale,
 //  palette: Palette,

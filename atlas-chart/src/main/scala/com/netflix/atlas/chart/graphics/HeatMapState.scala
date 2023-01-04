@@ -26,15 +26,15 @@ trait HeatMapState {
 
   def firstLine: LineDef
 
-  def legendMinMax: Array[(Long, Long, Long)]
+  def legendMinMax: Array[(Double, Double, Long)]
 
   def `type`: String
 
   def yticks: List[ValueTick]
 
-  def counts: Array[Array[Long]]
+  def counts: Array[Array[Double]]
 
-  def updateLegendMM(count: Long, scaleIndex: Int): Unit
+  def updateLegendMM(count: Double, scaleIndex: Int): Unit
 
   def palette: Palette
 
@@ -42,12 +42,12 @@ trait HeatMapState {
 
   def colorMap: List[CellColor]
 
-  def getColor(dp: Long): Color
+  def getColor(dp: Double): Color
 }
 
 case class CellColor(
   color: Color,
   alpha: Int,
-  min: Long,
-  max: Long
+  min: Double,
+  max: Double
 )

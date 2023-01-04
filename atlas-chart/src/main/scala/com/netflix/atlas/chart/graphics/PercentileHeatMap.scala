@@ -46,7 +46,7 @@ case class PercentileHeatMap(
   val scale = getScale(axis.min, axis.max, y1, chartEnd)
 
   case class Bkt(
-    counts: Array[Long],
+    counts: Array[Double],
     y: Int,
     height: Int,
     v: Double,
@@ -74,11 +74,11 @@ case class PercentileHeatMap(
     bkts
   }
 
-  def counts: Array[Array[Long]] = buckets.map(_.counts)
+  def counts: Array[Array[Double]] = buckets.map(_.counts)
 
-  def updateLegendMM(count: Long, scaleIndex: Int): Unit = {
+  def updateLegendMM(count: Double, scaleIndex: Int): Unit = {
     if (legendMinMax == null) {
-      legendMinMax = new Array[(Long, Long, Long)](palette.uniqueColors.size)
+      legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
       for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
     }
     val (n, a, c) = legendMinMax(scaleIndex)
@@ -101,7 +101,7 @@ case class PercentileHeatMap(
     )
   }
 
-  def getColor(dp: Long): Color = {
+  def getColor(dp: Double): Color = {
     val scaled = colorScaler(dp)
     updateLegendMM(dp, scaled)
     palette.uniqueColors(scaled)
@@ -111,7 +111,7 @@ case class PercentileHeatMap(
     palette.uniqueColors
       .zip(legendMinMax)
       // get rid of colors that weren't used.
-      .filterNot(t => t._2._1 == Long.MaxValue && t._2._2 == Long.MinValue)
+      .filterNot(t => t._2._1 == Double.MaxValue && t._2._2 == Double.MinValue)
       .reverse
       .map { tuple =>
         CellColor(tuple._1, 255, tuple._2._1, tuple._2._2)
@@ -121,12 +121,12 @@ case class PercentileHeatMap(
   val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   val hCells = xti.size + 1
 
-  var cmin = Long.MaxValue
-  var cmax = Long.MinValue
+  var cmin = Double.MaxValue
+  var cmax = Double.MinValue
   var l: Double = 0
   var u: Double = 0
   var firstLine: LineDef = null
-  var legendMinMax: Array[(Long, Long, Long)] = null
+  var legendMinMax: Array[(Double, Double, Long)] = null
 
   def addLine(line: LineDef): Unit = {
     // Remember, when we make this call, it's actually the NEXT bucket so we need
@@ -186,12 +186,13 @@ case class PercentileHeatMap(
         if (x < hCells) {
           val tpb = row.ticksPerBucket
           // TODO - change counts to double now.... confusing as all get out....
-          val count = Math.max(1, (v / tpb).toInt)
+          // val count = Math.max(1, (v / tpb).toInt)
+          val count = v / tpb
           for (i <- 0 until tpb) {
             if (bucketIndex + i < buckets.length) { // edge case if there is only a single bucket.
               row = buckets(bucketIndex + i)
               if (row.counts == null) {
-                row = row.copy(counts = new Array[Long](hCells))
+                row = row.copy(counts = new Array[Double](hCells))
                 buckets(bucketIndex + i) = row
               }
 

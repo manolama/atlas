@@ -32,14 +32,17 @@ case class HeatMapLegend(
     val colorsAndMinMax = palette.uniqueColors
       .zip(state.legendMinMax)
       // get rid of colors that weren't used.
-      .filterNot(t => t._2._1 == Long.MaxValue && t._2._2 == Long.MinValue)
+      .filterNot(t => t._2._3 == 0)
       .reverse
 
     val labelBuilder = List.newBuilder[Text]
     var maxWidth = 0
 
+    val format =
+      // if (colorsAndMinMax.last._2._1 - colorsAndMinMax.last._2._1.toLong > 0) "%.1f%s" else "%.0f%s"
+      "%.0f%s"
     colorsAndMinMax.foreach { t =>
-      val str = UnitPrefix.format(t._2._1, "%.0f%s")
+      val str = UnitPrefix.format(t._2._1, format)
       val txt = Text(
         str,
         font = ChartSettings.smallFont,
@@ -55,7 +58,7 @@ case class HeatMapLegend(
     }
 
     // max
-    val str = UnitPrefix.format(state.u, "%.0f%s")
+    val str = UnitPrefix.format(state.u, format)
     var txt = Text(
       str,
       font = ChartSettings.smallFont,
@@ -107,7 +110,7 @@ case class HeatMapLegend(
     }
 
     styles.text.configure(g)
-    blockX += 3
+    blockX += 5 // TODO - compute
     txt = Text(
       query,
       font = ChartSettings.normalFont,
@@ -117,40 +120,6 @@ case class HeatMapLegend(
     val txtY = y1
     val txtH = ChartSettings.normalFontDims.height
     txt.draw(g, blockX, txtY, x2, txtY + txtH)
-
-//    val blockWidth = redList.size * colorWidth
-//    val center = width / 2
-//    var blockX = center - (blockWidth / 2)
-//    val blockY = y1
-//    redList.foreach { c =>
-//      Style(c).configure(g)
-//      g.fillRect(blockX, blockY, colorWidth, colorWidth)
-//      blockX += colorWidth
-//    }
-//
-//    blockX = center - (blockWidth / 2)
-//
-//    val txtY = y1 + colorWidth + 5
-//    val txtH = ChartSettings.smallFontDims.height
-//    System.out.println(s"TEXT FOR MIN: [${UnitPrefix.format(cmin)}]")
-//    var txt = Text(
-//      UnitPrefix.format(cmin),
-//      font = ChartSettings.smallFont,
-//      alignment = TextAlignment.CENTER
-//    )
-//
-//    var txtX = center - (blockWidth / 2)
-//    val w = center - txtX
-//
-//    txt.draw(g, txtX - w, txtY, txtX + w, txtY + txtH)
-//
-//    txt = Text(
-//      UnitPrefix.format(cmax),
-//      font = ChartSettings.smallFont,
-//      alignment = TextAlignment.CENTER
-//    )
-//    txtX = center + w
-//    txt.draw(g, txtX - w, txtY, txtX + w, txtY + txtH)
   }
 
   override def minHeight: Int = 10

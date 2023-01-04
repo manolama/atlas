@@ -30,13 +30,13 @@ case class HeatMap(
   val yticks = axis.ticks(y1, chartEnd)
 
   val buckets =
-    new Array[Array[Long]](yticks.size + 1) // plus 1 for the data above the final tick
-  def counts: Array[Array[Long]] = buckets
+    new Array[Array[Double]](yticks.size + 1) // plus 1 for the data above the final tick
+  def counts: Array[Array[Double]] = buckets
   val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   val hCells = xti.size + 1
 
-  var cmin = Long.MaxValue
-  var cmax = Long.MinValue
+  var cmin = Double.MaxValue
+  var cmax = Double.MinValue
   var l: Double = 0
   var u: Double = 0
 
@@ -56,11 +56,11 @@ case class HeatMap(
   }
 
   var firstLine: LineDef = null
-  var legendMinMax: Array[(Long, Long, Long)] = null
+  var legendMinMax: Array[(Double, Double, Long)] = null
 
-  def updateLegendMM(count: Long, scaleIndex: Int): Unit = {
+  def updateLegendMM(count: Double, scaleIndex: Int): Unit = {
     if (legendMinMax == null) {
-      legendMinMax = new Array[(Long, Long, Long)](palette.uniqueColors.size)
+      legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
       for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
     }
     val (n, a, c) = legendMinMax(scaleIndex)
@@ -83,7 +83,7 @@ case class HeatMap(
     )
   }
 
-  def getColor(dp: Long): Color = {
+  def getColor(dp: Double): Color = {
     var scaled = colorScaler(dp)
     updateLegendMM(dp, scaled)
     palette.uniqueColors(scaled)
@@ -138,7 +138,7 @@ case class HeatMap(
       if (x < hCells && y < buckets.length) {
         var b = buckets(y)
         if (b == null) {
-          b = new Array[Long](hCells)
+          b = new Array[Double](hCells)
           buckets(y) = b
         }
         if (seconds >= 0) b(x) += v.toLong else b(x) += 1
