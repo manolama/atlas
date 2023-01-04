@@ -248,14 +248,15 @@ class TryHeatMap extends FunSuite {
 
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 
-    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,My%20Heatmap,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
       // "&w=1296&h=600" +
       "&scale=percentile" +
-      "&heatmap_scale=log" +
-      "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
+      "&heatmap_scale=log" // +
+    // "&heatmap_legend=My%20Nifty%20Percentile%20map"
+    // "&heatmap_palette=colors:d73027,fc8d59,fee08b,d9ef8b,91cf60,1a9850"
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
 
@@ -294,21 +295,54 @@ class TryHeatMap extends FunSuite {
     System.out.println(result.dataString)
   }
 
-  def scaleBack(
+  def scaleBackLOG(
     d1: Double,
     d2: Double,
     r1: Int,
     r2: Int,
-    x: Double
+    x: Int
   ): Double = {
 //    Math
 //      .pow(10, d1) + ((Math.pow(10, x) - r1) * ((log10(d2) - log10(d1)) / (r2 - r1)))
 //    ((log10(d1) * (Math.exp(x) - r2)) + (log10(d2) * (r1 - Math.exp(x)))) / (r1 - r2)
-    Math.exp(
-      (d1 * r1 - r1 * log10(d1) - d1 * r2 + x * log10(d1) + r1 * log10(d2) - x * log10(
-        d2
-      )) / (r1 - r2)
-    )
+//    Math.exp(
+//      (d1 * r1 - r1 * log10(d1) - d1 * r2 + x * log10(d1) + r1 * log10(d2) - x * log10(
+//        d2
+//      )) / (r1 - r2)
+//    )
+
+    // wolfram without parens
+//    d1 * Math.exp(
+//      Math.pow(r1, 2) * (-Scales.log10(d1)) + r1 * r2 * Scales.log10(d1) + r1 * x * Scales.log10(
+//        d1
+//      ) - r2 * x * Scales.log10(d1) + Math.pow(r1, 2) * Scales.log10(d2) - r1 * r2 * Scales.log10(
+//        d2
+//      ) - r1 * x * Scales.log10(d2) + r2 * x * Scales.log10(d2)
+//    )
+
+    // what I thought it should be.
+//    Math.pow(10, ((x - r1) * (r2 - r1) * (Scales.log10(d2) - Scales.log10(d1))) + Scales.log10(d1))
+
+    // wolfram WITH parens
+//    Math.exp(
+//      (-r2 * Scales.log10(d1) + x * Scales.log10(d1) + r1 * Scales.log10(d2) - x * Scales.log10(
+//        d2
+//      )) / (r1 - r2)
+//    )
+
+    // try scale back linear
+    Math.pow(10, scaleBackLinear(Scales.log10(d1), Scales.log10(d2), r1, r2, x))
+  }
+
+  def scaleBackLinear(
+    d1: Double,
+    d2: Double,
+    r1: Int,
+    r2: Int,
+    x: Int
+  ): Double = {
+    val pixelSpan = (d2 - d1) / (r2 - r1)
+    ((x - r1) * pixelSpan) + d1
   }
 
   test("scale backwards is ___?") {
@@ -317,24 +351,40 @@ class TryHeatMap extends FunSuite {
 //    val r1 = 0
 //    val r2 = 6
 
-    val d1 = 1.0
-    val d2 = 7.0
-    val r1 = 0
-    val r2 = 6
+    var d1 = 1.0
+    var d2 = 14.0
+    var r1 = 0
+    var r2 = 6
 
     val v = 0.0
     val x = ((log10(v) - d1) / ((log10(d2) - log10(d1)) / (r2 - r1))) + r1
 
-    // val scale = Scales.logarithmic(d1, d2, r1, r2)
-    val scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
+    var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
+    // val scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
 
     for (i <- d1.toInt to d2.toInt) {
       // System.out.println(s"maxmin ${i} => ${r2 - scale(i)}")
     }
-    System.out.println("--------")
-    for (i <- r1 to r2) {
-      val v = scaleBack(d1, d2, r1, r2, i)
-      // System.out.println(s"idx ${i} => ${v.toInt}  scaled => ${r2 - scale(v.toInt)}")
+//    System.out.println("--------")
+//    for (i <- d1.toInt to d2.toInt) {
+//      val v = scale(i)
+//      // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, v)
+//      val sb = d2 - scaleBackLOG(d1, d2, r1, r2, v)
+//      System.out.println(s"v ${i} => ${v} RevScale: => ${sb}")
+//    }
+
+    System.out.println("----------------------------")
+    val reals = List(20, 200, 3000, 25000, 320000)
+    // val reals = List(1, 64200, 64200 * 2, 64200 * 3, 320000)
+    d2 = 321000
+    scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
+    // scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
+
+    reals.foreach { r =>
+      val s = scale(r)
+      val sb = d2 - scaleBackLOG(d1, d2, r1, r2, s)
+      // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, s)
+      System.out.println(s"${r} scaled: ${s}  Back: ${sb.toInt}")
     }
   }
 

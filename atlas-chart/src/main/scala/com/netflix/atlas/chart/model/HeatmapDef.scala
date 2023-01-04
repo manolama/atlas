@@ -6,5 +6,6 @@ case class HeatmapDef(
   scale: Scale = Scale.LINEAR,
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,
-  palette: Option[Palette] = None
+  palette: Option[Palette] = None,
+  legend: Option[String] = None
 )

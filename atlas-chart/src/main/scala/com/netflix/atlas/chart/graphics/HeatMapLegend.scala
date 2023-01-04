@@ -110,17 +110,19 @@ case class HeatMapLegend(
       vx += w
     }
 
-    styles.text.configure(g)
-    blockX += 5 // TODO - compute
-    txt = Text(
-      query,
-      font = ChartSettings.normalFont,
-      alignment = TextAlignment.LEFT
-    )
+    if (query.length > 0) {
+      styles.text.configure(g)
+      blockX += 5 // TODO - compute
+      txt = Text(
+        query,
+        font = ChartSettings.normalFont,
+        alignment = TextAlignment.LEFT
+      )
 
-    val txtY = y1
-    val txtH = ChartSettings.normalFontDims.height
-    txt.draw(g, blockX, txtY, x2, txtY + txtH)
+      val txtY = y1
+      val txtH = ChartSettings.normalFontDims.height
+      txt.draw(g, blockX, txtY, x2, txtY + txtH)
+    }
   }
 
   override def minHeight: Int = 10

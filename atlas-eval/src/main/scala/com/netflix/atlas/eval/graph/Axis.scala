@@ -39,7 +39,8 @@ case class Axis(
   heatmapScale: Option[String] = None,
   heatmapUpper: Option[String] = None,
   heatmapLower: Option[String] = None,
-  heatmapPalette: Option[String] = None
+  heatmapPalette: Option[String] = None,
+  heatmapLegend: Option[String] = None
 ) {
 
   val tickLabelMode: TickLabelMode = {
@@ -71,7 +72,8 @@ case class Axis(
           heatmapScale.fold[Scale](Scale.LINEAR)(Scale.fromName(_)),
           heatmapUpper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
           heatmapLower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
-          heatmapPalette.fold[Option[Palette]](None)(p => Some(Palette.create(p)))
+          heatmapPalette.fold[Option[Palette]](None)(p => Some(Palette.create(p))),
+          heatmapLegend
         )
       )
     )

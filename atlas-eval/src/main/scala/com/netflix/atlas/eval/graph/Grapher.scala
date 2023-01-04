@@ -197,7 +197,8 @@ case class Grapher(settings: DefaultSettings) {
       heatmapScale = getAxisParam(params, "heatmap_scale", id),
       heatmapUpper = getAxisParam(params, "heatmap_u", id),
       heatmapLower = getAxisParam(params, "heatmap_l", id),
-      heatmapPalette = getAxisParam(params, "heatmap_palette", id)
+      heatmapPalette = getAxisParam(params, "heatmap_palette", id),
+      heatmapLegend = getAxisParam(params, "heatmap_legend", id)
     )
   }
 
@@ -302,7 +303,22 @@ case class Grapher(settings: DefaultSettings) {
       case (yaxis, exprs) =>
         val axisCfg = config.flags.axes(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
-
+        if (
+          (dfltStyle == LineStyle.STACK || exprs
+            .find(
+              _.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.STACK
+            )
+            .nonEmpty) && exprs
+            .find(
+              _.lineStyle
+                .fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.HEATMAP
+            )
+            .nonEmpty
+        ) {
+          throw new IllegalArgumentException(
+            "Not allowed to mix STACK and HEATMAP line styles on the same axis."
+          )
+        }
         val statFormatter = axisCfg.tickLabelMode match {
           case TickLabelMode.BINARY =>
             (v: Double) => UnitPrefix.binary(v).format(v)

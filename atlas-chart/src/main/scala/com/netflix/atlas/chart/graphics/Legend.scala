@@ -73,6 +73,32 @@ case class Legend(
 //    }
     // nuts, can't use this since it's unordered.
     // plot.data.groupBy()
+    val heatMapLabel: String = if (numHeatMaps > 0) {
+      if (plot.heatmapDef.nonEmpty && plot.heatmapDef.get.legend.nonEmpty) {
+        plot.heatmapDef.get.legend.get
+      } else if (
+        plot.data
+          .zip(plot.lines)
+          .filter(_._2.lineStyle == LineStyle.HEATMAP)
+          .groupBy(_._1.label)
+          .size == 1
+      ) {
+        plot.data
+          .zip(plot.lines)
+          .filter(_._2.lineStyle == LineStyle.HEATMAP)
+          .groupBy(_._1.label)
+          .head
+          ._1
+      } else if (
+        plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).groupBy(_.query.getOrElse("")).size == 1
+      ) {
+        plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).head.query.getOrElse("")
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
 
     val results = List.newBuilder[Element with Product]
     var lastHeatmapLegend: HeatMapLegend = null
@@ -80,16 +106,16 @@ case class Legend(
       val (line, data) = tuple
       line.lineStyle match {
         case LineStyle.HEATMAP =>
+          val k = heatMapLabel // line.query.getOrElse("")
           if (
             lastHeatmapLegend == null ||
-            !lastHeatmapLegend.query.equals(line.query.getOrElse(""))
+            !lastHeatmapLegend.query.equals(k)
           ) {
             if (lastHeatmapLegend != null) {
               results += HorizontalPadding(2)
               results += lastHeatmapLegend
             }
-            lastHeatmapLegend =
-              HeatMapLegend(styles, plot, plotId, showStats, line.query.getOrElse(""), graph)
+            lastHeatmapLegend = HeatMapLegend(styles, plot, plotId, showStats, k, graph)
           }
         case _ =>
           if (lastHeatmapLegend != null) {
