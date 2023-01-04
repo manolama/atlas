@@ -109,7 +109,10 @@ object Scales {
         }
         idx += 1
       }
-      if (value < 0) value = Int.MaxValue // write off the canvas. Probably a cleaner way.
+      if (value < 0) {
+        if (Math.abs(v - ticks.last.next) < 1e-9) value = r2 // hack for last tick
+        else value = Int.MaxValue // write off the canvas. Probably a cleaner way.
+      }
       value
     }
   }
