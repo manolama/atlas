@@ -42,8 +42,6 @@ case class BasicHeatMap(
 ) extends HeatMap {
 
   val yticks = axis.ticks(y1, chartEnd)
-  var lowerCellBound: Double = 0
-  var upperCellBound: Double = 0
 
   private val buckets =
     new Array[Array[Double]](yticks.size + 1) // plus 1 for the data above the final tick
@@ -52,6 +50,8 @@ case class BasicHeatMap(
 
   private var minCount = Double.MaxValue
   private var maxCount = Double.MinValue
+  private var lowerCellBound: Double = 0
+  private var upperCellBound: Double = 0
   private var firstLine: LineDef = null
 
   def counts: Array[Array[Double]] = {

@@ -42,8 +42,6 @@ case class PercentileHeatMap(
 ) extends HeatMap {
 
   val yticks = axis.ticks(y1, chartEnd)
-  var lowerCellBound: Double = 0
-  var upperCellBound: Double = 0
 
   private val yscale = axis.scale(y1, chartEnd)
   private val ptileScale = getScale(axis.min, axis.max, y1, chartEnd)
@@ -52,6 +50,8 @@ case class PercentileHeatMap(
 
   private var cmin = Double.MaxValue
   private var cmax = Double.MinValue
+  private var lowerCellBound: Double = 0
+  private var upperCellBound: Double = 0
   private var firstLine: LineDef = null
 
   case class Bkt(

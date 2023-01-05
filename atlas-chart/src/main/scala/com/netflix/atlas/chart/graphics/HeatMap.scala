@@ -34,12 +34,6 @@ trait HeatMap {
 
   def query: String
 
-  def lowerCellBound: Double
-
-  def upperCellBound: Double
-
-  // protected def enforceCellBounds: Unit
-
   def `type`: String
 
   def yticks: List[ValueTick]
@@ -58,6 +52,7 @@ trait HeatMap {
     val aa = if (count > a) count else a
     legendMinMax(scaleIndex) = (nn, aa, c + 1)
   }
+
   def palette: Palette
 
   def colorScaler: Scales.DoubleScale
@@ -76,7 +71,7 @@ trait HeatMap {
   def getColor(dp: Double): Color = {
     val scaled = colorScaler(dp)
     updateLegend(dp, scaled)
-    palette.uniqueColors(scaled)
+    palette.uniqueColors.reverse(scaled)
   }
 }
 
@@ -90,7 +85,7 @@ case class CellColor(
 object HeatMap {
 
   // Used to scale a single color on the alpha axis.
-  val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF)
+  val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF).reverse
 
   val defaultDef = HeatmapDef()
 

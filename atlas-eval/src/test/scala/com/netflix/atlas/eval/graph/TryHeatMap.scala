@@ -85,7 +85,7 @@ class TryHeatMap extends FunSuite {
 
   def getDB(custom: Boolean = false): Database = {
     if (custom) {
-      val f = "/Users/clarsen/Downloads/ptile_data7.json"
+      val f = "/Users/clarsen/Downloads/ptile_data4.json"
       val json = Json.decode[GraphResponse](new FileInputStream(f))
       val w = 3600 * 3
       var time = System.currentTimeMillis() - (w * 1000)
@@ -250,11 +250,11 @@ class TryHeatMap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
-      // "&w=1296&h=600" +
+      "&w=1296&h=600" +
       "&scale=percentile" +
-      "&heatmap_scale=log" +
-      // "&heatmap_legend=My%20Nifty%20Percentile%20map"
-      "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
+      "&heatmap_scale=log" // +
+    // "&heatmap_legend=My%20Nifty%20Percentile%20map"
+    // "&heatmap_palette=colors:d73027,fc8d59,fee08b,d9ef8b,91cf60,1a9850"
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
 
