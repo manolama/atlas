@@ -283,9 +283,9 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
-    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap" +
+    "/api/v1/graph?&q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap" +
       "&scale=percentile"
-      //"&heatmap_scale=log"
+    // "&heatmap_scale=log"
 
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 

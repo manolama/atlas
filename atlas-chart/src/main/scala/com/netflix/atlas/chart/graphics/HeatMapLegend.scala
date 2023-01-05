@@ -45,38 +45,43 @@ case class HeatMapLegend(
 
     // TODO - check for uniques!
     var format = "%.0f%s"
-    var lastLabel = UnitPrefix.format(colorsAndMinMax.head._2._1, format)
-    for (i <- 1 until colorsAndMinMax.size) {
-      val nextLabel = UnitPrefix.format(colorsAndMinMax(i)._2._1, format)
-      System.out.println(s"next ${nextLabel} prev ${lastLabel}")
-      if (lastLabel.equals(nextLabel)) {
-        format = "%.1f%s"
+    if (colorsAndMinMax.nonEmpty) {
+      var lastLabel = UnitPrefix.format(colorsAndMinMax.head._2._1, format)
+      for (i <- 1 until colorsAndMinMax.size) {
+        val nextLabel = UnitPrefix.format(colorsAndMinMax(i)._2._1, format)
+        System.out.println(s"next ${nextLabel} prev ${lastLabel}")
+        if (lastLabel.equals(nextLabel)) {
+          format = "%.1f%s"
+        }
+        lastLabel = nextLabel
       }
-      lastLabel = nextLabel
-    }
 
-    colorsAndMinMax.foreach { t =>
-      val str = UnitPrefix.format(t._2._1, format)
-      val txt = Text(
-        str,
-        font = ChartSettings.smallFont,
-        alignment = TextAlignment.CENTER
-      )
+      colorsAndMinMax.foreach { t =>
+        val str = UnitPrefix.format(t._2._1, format)
+        val txt = Text(
+          str,
+          font = ChartSettings.smallFont,
+          alignment = TextAlignment.CENTER
+        )
 
-      // val width = str.length * txt.dims.width
-      val width = g.getFontMetrics.stringWidth(str)
-      if (width > maxWidth) {
-        maxWidth = width
+        // val width = str.length * txt.dims.width
+        val width = g.getFontMetrics.stringWidth(str)
+        if (width > maxWidth) {
+          maxWidth = width
+        }
+        labelBuilder += txt
       }
-      labelBuilder += txt
     }
 
     // max
-    val last =
+    val last = if (colorsAndMinMax.nonEmpty) {
       if (colorsAndMinMax.last._2._2 == 0)
         colorsAndMinMax.last._2._1
       else
         colorsAndMinMax.last._2._2
+    } else {
+      0
+    }
     val str = UnitPrefix.format(last, format)
     var txt = Text(
       str,
@@ -106,31 +111,33 @@ case class HeatMapLegend(
       blockX += w
     }
 
-    {
-      val text = labels.last
-      val txtH = ChartSettings.smallFontDims.height
-      val txtY = blockY + d + 5
-      text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
-    }
-
-    // horizontal black line
-    styles.line.configure(g)
-    val lineY = y1 + d
-    g.drawLine(x1 + 2 + halfMax, lineY, blockX - 1, lineY)
-
-    // TICKS
-    var vx = x1 + 2 + halfMax
-    for (i <- 0 to colorsAndMinMax.size) {
-      if (i == colorsAndMinMax.size) {
-        vx -= 1
+    if (colorsAndMinMax.nonEmpty) {
+      {
+        val text = labels.last
+        val txtH = ChartSettings.smallFontDims.height
+        val txtY = blockY + d + 5
+        text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
       }
-      g.drawLine(vx, lineY, vx, lineY + 3)
-      vx += w
+
+      // horizontal black line
+      styles.line.configure(g)
+      val lineY = y1 + d
+      g.drawLine(x1 + 2 + halfMax, lineY, blockX - 1, lineY)
+
+      // TICKS
+      var vx = x1 + 2 + halfMax
+      for (i <- 0 to colorsAndMinMax.size) {
+        if (i == colorsAndMinMax.size) {
+          vx -= 1
+        }
+        g.drawLine(vx, lineY, vx, lineY + 3)
+        vx += w
+      }
     }
 
     if (query.length > 0) {
       styles.text.configure(g)
-      blockX += 5 // TODO - compute
+      blockX += halfMax
       txt = Text(
         query,
         font = ChartSettings.normalFont,
