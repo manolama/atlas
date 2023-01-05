@@ -1,5 +1,21 @@
+/*
+ * Copyright 2022-2023 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
 
@@ -8,25 +24,19 @@ import java.awt.Graphics2D
 
 trait HeatMap {
 
+  var legendMinMax: Array[(Double, Double, Long)] = null
+
   def addLine(line: LineDef): Unit
 
   def draw(g: Graphics2D): Unit
 
   def query: String
 
-//  def cmin: Long
-//
-//  def cmax: Long
+  def lowerCellBound: Double
 
-  def l: Double
-
-  def u: Double
+  def upperCellBound: Double
 
   def enforceBounds: Unit
-
-  def firstLine: LineDef
-
-  var legendMinMax: Array[(Double, Double, Long)] = null
 
   def `type`: String
 
@@ -34,7 +44,7 @@ trait HeatMap {
 
   def counts: Array[Array[Double]]
 
-  def updateLegendMM(count: Double, scaleIndex: Int): Unit = {
+  def updateLegend(count: Double, scaleIndex: Int): Unit = {
     if (legendMinMax == null) {
       legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
       for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
@@ -61,7 +71,7 @@ trait HeatMap {
 
   def getColor(dp: Double): Color = {
     val scaled = colorScaler(dp)
-    updateLegendMM(dp, scaled)
+    updateLegend(dp, scaled)
     palette.uniqueColors(scaled)
   }
 }
@@ -72,3 +82,26 @@ case class CellColor(
   min: Double,
   max: Double
 )
+
+object HeatMap {
+
+  // Used to scale a single color on the alpha axis.
+  val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF)
+
+  val defaultDef = HeatmapDef()
+
+  def choosePalette(line: LineDef): Palette = {
+    line.palette.getOrElse {
+      val colors = new Array[Color](singleColorAlphas.length)
+      for (i <- 0 until colors.length) {
+        colors(i) = new Color(
+          line.color.getRed,
+          line.color.getGreen,
+          line.color.getBlue,
+          singleColorAlphas(i)
+        )
+      }
+      Palette.fromArray("HeatMap", colors)
+    }
+  }
+}

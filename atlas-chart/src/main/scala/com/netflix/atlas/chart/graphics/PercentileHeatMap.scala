@@ -1,6 +1,7 @@
 package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
@@ -35,24 +36,23 @@ case class PercentileHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
-  leftOffset: Int,
-  rightOffset: Int,
-  query: String
+  query: String,
+  leftOffset: Int = 0,
+  rightOffset: Int = 0
 ) extends HeatMap {
 
-  System.out.println("***** Start heatmap")
   val yticks = axis.ticks(y1, chartEnd)
-  val yscale = axis.scale(y1, chartEnd)
-  val scale = getScale(axis.min, axis.max, y1, chartEnd)
+  var lowerCellBound: Double = 0
+  var upperCellBound: Double = 0
 
-  val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
-  val hCells = xti.size + 1
+  private val yscale = axis.scale(y1, chartEnd)
+  private val ptileScale = getScale(axis.min, axis.max, y1, chartEnd)
+  private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
+  private val hCells = xTicks.size + 1
 
-  var cmin = Double.MaxValue
-  var cmax = Double.MinValue
-  var l: Double = 0
-  var u: Double = 0
-  var firstLine: LineDef = null
+  private var cmin = Double.MaxValue
+  private var cmax = Double.MinValue
+  private var firstLine: LineDef = null
 
   case class Bkt(
     counts: Array[Double],
@@ -67,8 +67,8 @@ case class PercentileHeatMap(
     val bkts = new Array[Bkt](yticks.size - 1)
     // simplify I hope....
     val tpm =
-      if (yticks.size - 1 >= scale.size) {
-        Math.max(1, (yticks.size - 1) / scale.size)
+      if (yticks.size - 1 >= ptileScale.size) {
+        Math.max(1, (yticks.size - 1) / ptileScale.size)
       } else
         1
     var lastY = y1
@@ -85,28 +85,25 @@ case class PercentileHeatMap(
 
   def counts: Array[Array[Double]] = buckets.map(_.counts)
 
-  def palette = firstLine.palette.getOrElse {
-    val a = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF)
-    val alphas = new Array[Color](a.length)
-    for (i <- 0 until alphas.length) {
-      alphas(i) =
-        new Color(firstLine.color.getRed, firstLine.color.getGreen, firstLine.color.getBlue, a(i))
-    }
-    Palette.fromArray("HeatMap", alphas)
-  }
+  lazy val palette = choosePalette(firstLine)
 
   lazy val colorScaler = {
     // TODO - fix scale
-    if (u < 1) {
+    if (upperCellBound < 1) {
       // only linear really makes sense here.
-      Scales.linear(l, u, 0, palette.uniqueColors.size - 1)
+      Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
     } else {
       plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
-        case Scale.LINEAR      => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.LOGARITHMIC => Scales.logarithmic(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.POWER_2     => Scales.power(2)(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.SQRT        => Scales.power(0.5)(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.PERCENTILE  => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
+        case Scale.LINEAR =>
+          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.LOGARITHMIC =>
+          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.POWER_2 =>
+          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.SQRT =>
+          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.PERCENTILE =>
+          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
       }
     }
   }
@@ -203,13 +200,13 @@ case class PercentileHeatMap(
   }
 
   def enforceBounds: Unit = {
-    l = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
-    u = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
-    if (l > cmin || u < cmax) {
+    lowerCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
+    upperCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
+    if (lowerCellBound > cmin || upperCellBound < cmax) {
       buckets.foreach { row =>
         for (i <- 0 until row.counts.length) {
           val count = row.counts(i)
-          if (count < l || count > u) {
+          if (count < lowerCellBound || count > upperCellBound) {
             row.counts(i) = 0
           }
         }

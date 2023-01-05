@@ -153,9 +153,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                 y1,
                 x2,
                 chartEnd,
+                line.query.getOrElse(""),
                 leftOffset,
-                rightOffset,
-                line.query.getOrElse("")
+                rightOffset
               )
             } else {
               heatmap = BasicHeatMap(
@@ -167,9 +167,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                 y1,
                 x2,
                 chartEnd,
+                line.query.getOrElse(""),
                 leftOffset,
-                rightOffset,
-                line.query.getOrElse("")
+                rightOffset
               )
             }
           }

@@ -1,15 +1,30 @@
+/*
+ * Copyright 2022-2023 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
+import com.netflix.atlas.chart.graphics.HeatMap.defaultDef
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
-import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 
-import java.awt.Color
 import java.awt.Graphics2D
 
 case class BasicHeatMap(
@@ -21,32 +36,34 @@ case class BasicHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
-  leftOffset: Int,
-  rightOffset: Int,
-  query: String
+  query: String,
+  leftOffset: Int = 0,
+  rightOffset: Int = 0
 ) extends HeatMap {
 
   val yticks = axis.ticks(y1, chartEnd)
+  var lowerCellBound: Double = 0
+  var upperCellBound: Double = 0
 
-  val buckets =
+  private val buckets =
     new Array[Array[Double]](yticks.size + 1) // plus 1 for the data above the final tick
-  def counts: Array[Array[Double]] = buckets
-  val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
-  val hCells = xti.size + 1
+  private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
+  private val hCells = xTicks.size + 1
 
-  var cmin = Double.MaxValue
-  var cmax = Double.MinValue
-  var l: Double = 0
-  var u: Double = 0
+  private var minCount = Double.MaxValue
+  private var maxCount = Double.MinValue
+  private var firstLine: LineDef = null
+
+  def counts: Array[Array[Double]] = buckets
 
   def enforceBounds: Unit = {
-    l = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
-    u = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
-    if (l > cmin || u < cmax) {
+    lowerCellBound = plot.heatmapDef.getOrElse(defaultDef).lower.lower(false, minCount)
+    upperCellBound = plot.heatmapDef.getOrElse(defaultDef).upper.upper(false, maxCount)
+    if (lowerCellBound > minCount || upperCellBound < maxCount) {
       buckets.foreach { row =>
         for (i <- 0 until row.length) {
           val count = row(i)
-          if (count < l || count > u) {
+          if (count < lowerCellBound || count > upperCellBound) {
             row(i) = 0
           }
         }
@@ -54,24 +71,24 @@ case class BasicHeatMap(
     }
   }
 
-  var firstLine: LineDef = null
-
-  def palette = firstLine.palette.getOrElse(
-    Palette.singleColor(firstLine.color)
-  )
+  lazy val palette = choosePalette(firstLine)
 
   lazy val colorScaler = {
-    // TODO - fix scale
-    if (u < 1) {
+    if (upperCellBound < 1) {
       // only linear really makes sense here.
-      Scales.linear(l, u, 0, palette.uniqueColors.size - 1)
+      Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
     } else {
       plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
-        case Scale.LINEAR      => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.LOGARITHMIC => Scales.logarithmic(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.POWER_2     => Scales.power(2)(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.SQRT        => Scales.power(0.5)(l, u + 1, 0, palette.uniqueColors.size)
-        case Scale.PERCENTILE  => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
+        case Scale.LINEAR =>
+          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.LOGARITHMIC =>
+          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.POWER_2 =>
+          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.SQRT =>
+          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.PERCENTILE =>
+          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
       }
     }
   }
@@ -118,11 +135,11 @@ case class BasicHeatMap(
           buckets(y) = b
         }
         if (seconds >= 0) b(x) += v.toLong else b(x) += 1
-        if (b(x) > 0 && b(x) > cmax) {
-          cmax = b(x)
+        if (b(x) > 0 && b(x) > maxCount) {
+          maxCount = b(x)
         }
-        if (b(x) > 0 && b(x) < cmin) {
-          cmin = b(x)
+        if (b(x) > 0 && b(x) < minCount) {
+          minCount = b(x)
         }
       } else {
         System.out.println(
