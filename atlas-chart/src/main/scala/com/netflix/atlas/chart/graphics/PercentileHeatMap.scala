@@ -38,12 +38,21 @@ case class PercentileHeatMap(
   leftOffset: Int,
   rightOffset: Int,
   query: String
-) extends HeatMapState {
+) extends HeatMap {
 
   System.out.println("***** Start heatmap")
   val yticks = axis.ticks(y1, chartEnd)
   val yscale = axis.scale(y1, chartEnd)
   val scale = getScale(axis.min, axis.max, y1, chartEnd)
+
+  val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
+  val hCells = xti.size + 1
+
+  var cmin = Double.MaxValue
+  var cmax = Double.MinValue
+  var l: Double = 0
+  var u: Double = 0
+  var firstLine: LineDef = null
 
   case class Bkt(
     counts: Array[Double],
@@ -76,17 +85,6 @@ case class PercentileHeatMap(
 
   def counts: Array[Array[Double]] = buckets.map(_.counts)
 
-  def updateLegendMM(count: Double, scaleIndex: Int): Unit = {
-    if (legendMinMax == null) {
-      legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
-      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
-    }
-    val (n, a, c) = legendMinMax(scaleIndex)
-    val nn = if (count < n) count else n
-    val aa = if (count > a) count else a
-    legendMinMax(scaleIndex) = (nn, aa, c + 1)
-  }
-
   def palette = firstLine.palette.getOrElse {
     // val a = Array(11, 22, 33, 44, 55, 66, 77, 88, 99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF)
     val a = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF)
@@ -113,40 +111,7 @@ case class PercentileHeatMap(
         case Scale.PERCENTILE  => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
       }
     }
-//    Scales.factory()(
-//      l,
-//      u,
-//      0,
-//      palette.uniqueColors.size - 1
-//    )
   }
-
-  def getColor(dp: Double): Color = {
-    val scaled = colorScaler(dp)
-    updateLegendMM(dp, scaled)
-    palette.uniqueColors.reverse(scaled)
-  }
-
-  def colorMap: List[CellColor] = {
-    palette.uniqueColors.reverse
-      .zip(legendMinMax)
-      // get rid of colors that weren't used.
-      .filterNot(t => t._2._1 == Double.MaxValue && t._2._2 == Double.MinValue)
-      // .reverse
-      .map { tuple =>
-        CellColor(tuple._1, 255, tuple._2._1, tuple._2._2)
-      }
-  }
-
-  val xti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
-  val hCells = xti.size + 1
-
-  var cmin = Double.MaxValue
-  var cmax = Double.MinValue
-  var l: Double = 0
-  var u: Double = 0
-  var firstLine: LineDef = null
-  var legendMinMax: Array[(Double, Double, Long)] = null
 
   def addLine(line: LineDef): Unit = {
     // Remember, when we make this call, it's actually the NEXT bucket so we need

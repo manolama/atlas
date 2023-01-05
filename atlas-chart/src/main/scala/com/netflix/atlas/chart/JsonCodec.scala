@@ -25,8 +25,8 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.atlas.chart.graphics.BasicHeatMap
 import com.netflix.atlas.chart.graphics.HeatMap
-import com.netflix.atlas.chart.graphics.HeatMapState
 import com.netflix.atlas.chart.graphics.PercentileHeatMap
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
@@ -198,7 +198,7 @@ private[chart] object JsonCodec {
     plot: PlotDef,
     id: Int
   ): Unit = {
-    var heatmap: HeatMapState = null
+    var heatmap: HeatMap = null
     val graph = TimeSeriesGraph(config)
 
     val y1 = 5 // TODO - follow DefaultGraphEngine L78-L83 to figure out the starting height.
@@ -222,7 +222,7 @@ private[chart] object JsonCodec {
             l.query.getOrElse("")
           )
         } else {
-          heatmap = HeatMap(
+          heatmap = BasicHeatMap(
             config,
             plot,
             graph.yaxes(id),
@@ -248,10 +248,10 @@ private[chart] object JsonCodec {
   }
 
   private def writeHeatMap(
-    gen: JsonGenerator,
-    heatmap: HeatMapState,
-    plotId: Int,
-    id: Int
+                            gen: JsonGenerator,
+                            heatmap: HeatMap,
+                            plotId: Int,
+                            id: Int
   ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", heatmap.`type`)

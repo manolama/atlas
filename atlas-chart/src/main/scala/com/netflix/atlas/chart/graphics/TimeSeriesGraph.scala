@@ -107,7 +107,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       }
   }
 
-  var heatmaps = List.empty[HeatMapState]
+  var heatmaps = List.empty[HeatMap]
 
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     g.setClip(x1, y1, x2 - x1, y2 - y1)
@@ -138,7 +138,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
     graphDef.plots.zip(yaxes).foreach {
       case (plot, axis) =>
-        var heatmap: HeatMapState = null
+        var heatmap: HeatMap = null
         val offsets = TimeSeriesStack.Offsets(timeAxis)
         // heatmaps first
         plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { line =>
@@ -158,7 +158,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                 line.query.getOrElse("")
               )
             } else {
-              heatmap = HeatMap(
+              heatmap = BasicHeatMap(
                 graphDef,
                 plot,
                 axis,
