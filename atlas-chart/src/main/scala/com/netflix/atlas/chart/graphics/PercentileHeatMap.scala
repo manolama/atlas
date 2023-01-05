@@ -202,7 +202,7 @@ case class PercentileHeatMap(
         bi
       }
 
-      if (v > 0) {
+      if (v > 0) { // filters NaNs
         if (x < hCells) {
           val tpb = row.ticksPerBucket
           // TODO - change counts to double now.... confusing as all get out....
