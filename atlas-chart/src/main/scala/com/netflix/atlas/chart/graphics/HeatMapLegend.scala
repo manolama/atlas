@@ -30,11 +30,11 @@ case class HeatMapLegend(
     // even throws an exception printing the last text box.
     val d = ChartSettings.normalFontDims.height - 2
 
-    val colorsAndMinMax = palette.uniqueColors
+    val colorsAndMinMax = palette.uniqueColors.reverse
       .zip(state.legendMinMax)
       // get rid of colors that weren't used.
       .filterNot(t => t._2._3 == 0)
-      .reverse
+    // .reverse
 
     val labelBuilder = List.newBuilder[Text]
     var maxWidth = 0

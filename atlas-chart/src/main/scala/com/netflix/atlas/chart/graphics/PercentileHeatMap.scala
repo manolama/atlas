@@ -101,26 +101,38 @@ case class PercentileHeatMap(
 
   lazy val colorScaler = {
     // TODO - fix scale
-    Scales.factory(plot.heatmapDef.getOrElse(HeatmapDef()).scale)(
-      l,
-      u,
-      0,
-      palette.uniqueColors.size - 1
-    )
+    if (u < 1) {
+      // only linear really makes sense here.
+      Scales.linear(l, u, 0, palette.uniqueColors.size - 1)
+    } else {
+      plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
+        case Scale.LINEAR      => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
+        case Scale.LOGARITHMIC => Scales.logarithmic(l, u + 1, 0, palette.uniqueColors.size)
+        case Scale.POWER_2     => Scales.power(2)(l, u + 1, 0, palette.uniqueColors.size)
+        case Scale.SQRT        => Scales.power(0.5)(l, u + 1, 0, palette.uniqueColors.size)
+        case Scale.PERCENTILE  => Scales.linear(l, u + 1, 0, palette.uniqueColors.size)
+      }
+    }
+//    Scales.factory()(
+//      l,
+//      u,
+//      0,
+//      palette.uniqueColors.size - 1
+//    )
   }
 
   def getColor(dp: Double): Color = {
     val scaled = colorScaler(dp)
     updateLegendMM(dp, scaled)
-    palette.uniqueColors(scaled)
+    palette.uniqueColors.reverse(scaled)
   }
 
   def colorMap: List[CellColor] = {
-    palette.uniqueColors
+    palette.uniqueColors.reverse
       .zip(legendMinMax)
       // get rid of colors that weren't used.
       .filterNot(t => t._2._1 == Double.MaxValue && t._2._2 == Double.MinValue)
-      .reverse
+      // .reverse
       .map { tuple =>
         CellColor(tuple._1, 255, tuple._2._1, tuple._2._2)
       }

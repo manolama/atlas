@@ -85,7 +85,7 @@ class TryHeatMap extends FunSuite {
 
   def getDB(custom: Boolean = false): Database = {
     if (custom) {
-      val f = "/Users/clarsen/Downloads/ptile_data5.json"
+      val f = "/Users/clarsen/Downloads/ptile_data7.json"
       val json = Json.decode[GraphResponse](new FileInputStream(f))
       val w = 3600 * 3
       var time = System.currentTimeMillis() - (w * 1000)
@@ -110,78 +110,76 @@ class TryHeatMap extends FunSuite {
         )
       }
 
-      // StaticDatabase.demo
-
       var ts = timeseries.result()
 
       val keys = List(
-        // "T0001",
-//        "T0036",
-//        "T0037",
-//        "T0038",
-//        "T0039",
-//        "T003A",
-//        "T003B",
-//        "T003C",
-//        "T003D",
-//        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
-//        "T003F",
-//        "T0040",
-//        "T0041",
-//        "T0042",
-//        "T0043",
-//        "T0044",
-//        "T0045",
-//        "T0046",
-//        "T0047",
-//        "T0048",
-//        "T0049",
-//        "T004A",
-//        "T004B",
-//        "T004C",
-//        "T004D",
-//        "T004E",
-//        "T004F",
-//        "T0050",
-//        "T0051",
-//        "T0052",
-//        "T0053",
-//        "T0054",
-//        "T0055",
-//        "T0056",
-//        "T0057",
-//        "T0058",
-//        "T0059",
-//        "T005A",
-//        "T005B",
-//        "T005C",
-//        "T005D",
-//        "T005E",
-//        "T005F",
-//        "T0060",
-//        "T0061",
-//        "T0062",
-//        "T0063",
-//        "T0064",
-//        "T0065",
-//        "T0066",
-//        "T0067",
-//        "T0068",
-//        "T0069",
-//        "T006A",
-//        "T006B",
-//        "T006C",
-//        "T006D",
-//        "T006E",
-//        "T006F",
-//        "T0070",
-//        "T0071",
-//        "T0072",
-//        "T0073",
-//        "T0074",
-//        "T0075",
-//        "T0076",
-//        "T0077",
+        "T0001",
+        "T0036",
+        "T0037",
+        "T0038",
+        "T0039",
+        "T003A",
+        "T003B",
+        "T003C",
+        "T003D",
+        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
+        "T003F",
+        "T0040",
+        "T0041",
+        "T0042",
+        "T0043",
+        "T0044",
+        "T0045",
+        "T0046",
+        "T0047",
+        "T0048",
+        "T0049",
+        "T004A",
+        "T004B",
+        "T004C",
+        "T004D",
+        "T004E",
+        "T004F",
+        "T0050",
+        "T0051",
+        "T0052",
+        "T0053",
+        "T0054",
+        "T0055",
+        "T0056",
+        "T0057",
+        "T0058",
+        "T0059",
+        "T005A",
+        "T005B",
+        "T005C",
+        "T005D",
+        "T005E",
+        "T005F",
+        "T0060",
+        "T0061",
+        "T0062",
+        "T0063",
+        "T0064",
+        "T0065",
+        "T0066",
+        "T0067",
+        "T0068",
+        "T0069",
+        "T006A",
+        "T006B",
+        "T006C",
+        "T006D",
+        "T006E",
+        "T006F",
+        "T0070",
+        "T0071",
+        "T0072",
+        "T0073",
+        "T0074",
+        "T0075",
+        "T0076",
+        "T0077",
         "T0078",
         "T0079",
         "T007A",
@@ -224,12 +222,9 @@ class TryHeatMap extends FunSuite {
         "T009F",
         "T00A0"
       ).asJava
-      if (true) {
+      if (false) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
-//          t.tags("percentile").equals("T0099") ||
-//          t.tags("percentile").equals("T009A") ||
-//          t.tags("percentile").equals("T009B")
         }
       }
 
@@ -239,6 +234,7 @@ class TryHeatMap extends FunSuite {
     }
   }
 
+  // GOOD tests
   imageTest("my histo") {
     db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
@@ -248,7 +244,9 @@ class TryHeatMap extends FunSuite {
 
     // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 
-    "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,My%20Heatmap,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+    // DEBUG PTILES
+    "/api/v1/graph?q=" +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,My%20Heatmap,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
@@ -279,6 +277,36 @@ class TryHeatMap extends FunSuite {
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
   }
+
+  /*imageTest("histos") {
+    db = getDB(false)
+    // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by"
+    // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
+    // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
+    "/api/v1/graph?q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap"
+
+    // "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
+
+    // DEBUG PTILES
+    // woot, works with y axis!
+    // "/api/v1/graph?q=name,ipc.server.call,:eq,:percentile_heatmap,name,ipc.server.call,:eq,4,:lw,1,:axis,&w=1296&h=400"
+
+    // "/api/v1/graph?q=secondOfDay,:time,:heatmap,blues,:palette,secondOfDay,:time,1,:axis,ff0000,:color&w=600&h=400&e=1671137340000&s=e-3h"
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color&w=1296&h=400&no_legend_stats=1"
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&no_legend_stats=1"
+
+    // heatmap, lines, heatmap same axis
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,name,sps,:eq,(,nf.cluster,),:by,ff0000,:color:palette,name,sps,:eq,(,nf.cluster,),:by,:heatmap,greens,:palette&w=1296&h=400"
+
+    // two heatmaps, diff queries back to back
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,10,:mul,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by,:heatmap,greens,:palette&w=1296&h=400"
+
+    // two heatmaps, diff axis. Buggy but users shouldn't do this.
+    // "/api/v1/graph?q=name,sps,:eq,(,nf.cluster,),:by,16,:mul,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by,:heatmap,1,:axis,greens,:palette&w=1296&h=400"
+
+    // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
+    // "/api/v1/graph?q=42,:heatmap"
+  }*/
 
   test("jsonv2 maybe?") {
     db = getDB(true)
@@ -345,6 +373,60 @@ class TryHeatMap extends FunSuite {
     ((x - r1) * pixelSpan) + d1
   }
 
+  test("scale plus 1") {
+    var d1 = 1.0
+    var d2 = 321000.0
+    var r1 = 0
+    var r2 = 3
+    // var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
+    var scale = Scales.logarithmic(d1, d2 + 1, r1, r2)
+
+    val reals = List(20, 40, 200, 3000, 25000, 320000, 320001, 321000 - 1, 321000)
+    reals.foreach { r =>
+      var s = scale(r)
+      if (s >= r2) {
+        System.out.println(s"@@@@@ WARNING! @ ${r} gave ${s}")
+        s -= 1
+      }
+      System.out.println(s"${r} scaled: ${s}")
+    }
+  }
+
+  test("scale plus fraction") {
+    // NOPE - doesn't work without stringifying and man that gets ugly. Just
+    // switch to linear for sub 1 d2s.
+    var d1 = 0.053
+    var d2 = 0.01
+    var r1 = 0
+    var r2 = 3
+    // var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
+    var scale = Scales.logarithmic(d1, d2 + 1, r1, r2)
+
+    val reals = List(0.053, 0.07, 0.08, 0.081)
+    reals.foreach { r =>
+      var s = scale(r)
+      if (s >= r2) {
+        System.out.println(s"@@@@@ WARNING! @ ${r} gave ${s}")
+        s -= 1
+      }
+      System.out.println(s"${r} scaled: ${s}")
+    }
+
+    val exp = Math.getExponent(d2)
+    val mant = d2 / Math.pow(2, exp)
+    val isthisit = mant * Math.pow(2, exp)
+    val shift = d2 * Math.pow(10, Math.abs(exp))
+    System.out.println(
+      s"MAnt for ${d2} is ${mant}  (exp = ${exp}) and ? ${isthisit} or Shift ${shift}"
+    )
+
+    val b = new java.math.BigDecimal(d2)
+    val inc = java.math.BigDecimal.valueOf(1).scaleByPowerOfTen(-b.scale)
+    val out = b.add(inc).stripTrailingZeros().doubleValue()
+    System.out.println(String.format("ORG: %.5f", d2))
+    System.out.println(String.format("INC: %.5f", out))
+  }
+
   test("scale backwards is ___?") {
 //    val d1 = 1.0
 //    val d2 = 4.0
@@ -352,7 +434,7 @@ class TryHeatMap extends FunSuite {
 //    val r2 = 6
 
     var d1 = 1.0
-    var d2 = 14.0
+    var d2 = 321000.0
     var r1 = 0
     var r2 = 6
 
@@ -374,15 +456,18 @@ class TryHeatMap extends FunSuite {
 //    }
 
     System.out.println("----------------------------")
-    val reals = List(20, 200, 3000, 25000, 320000)
+    val reals = List(20, 200, 3000, 25000, 320000, 320001, 321000 - 1, 321000)
     // val reals = List(1, 64200, 64200 * 2, 64200 * 3, 320000)
     d2 = 321000
-    scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
+    scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
     // scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
 
     reals.foreach { r =>
-      val s = scale(r)
-      val sb = d2 - scaleBackLOG(d1, d2, r1, r2, s)
+      var s = scale(r)
+      if (s >= r2) {
+        s -= 1
+      }
+      val sb = d2 - scaleBackLOG(d1, d2 + 1, r1, r2, s)
       // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, s)
       System.out.println(s"${r} scaled: ${s}  Back: ${sb.toInt}")
     }
