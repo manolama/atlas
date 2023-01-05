@@ -18,6 +18,8 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.PlotDef
+import com.netflix.atlas.chart.model.Scale
 
 import java.awt.Color
 import java.awt.Graphics2D
@@ -36,15 +38,17 @@ trait HeatMap {
 
   def upperCellBound: Double
 
-  def enforceBounds: Unit
+  // protected def enforceCellBounds: Unit
 
   def `type`: String
 
   def yticks: List[ValueTick]
 
+  // enforces bounds and updates legend for JSON serialization. Equivalent of draw.
+  // no null buckets.
   def counts: Array[Array[Double]]
 
-  def updateLegend(count: Double, scaleIndex: Int): Unit = {
+  protected def updateLegend(count: Double, scaleIndex: Int): Unit = {
     if (legendMinMax == null) {
       legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
       for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
@@ -102,6 +106,31 @@ object HeatMap {
         )
       }
       Palette.fromArray("HeatMap", colors)
+    }
+  }
+
+  def colorScaler(
+    plot: PlotDef,
+    palette: Palette,
+    lowerCellBound: Double,
+    upperCellBound: Double
+  ): Scales.DoubleScale = {
+    if (upperCellBound < 1) {
+      // only linear really makes sense here.
+      Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
+    } else {
+      plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
+        case Scale.LINEAR =>
+          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.LOGARITHMIC =>
+          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.POWER_2 =>
+          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.SQRT =>
+          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+        case Scale.PERCENTILE =>
+          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+      }
     }
   }
 }

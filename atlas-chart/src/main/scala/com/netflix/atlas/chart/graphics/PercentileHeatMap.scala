@@ -80,33 +80,26 @@ case class PercentileHeatMap(
       lastY = y
     }
 
-    bkts
+    bkts // TODO - still producing null buckets.... crap
   }
 
-  def counts: Array[Array[Double]] = buckets.map(_.counts)
+  def counts: Array[Array[Double]] = {
+    val results = new Array[Array[Double]](buckets.length)
+    buckets.zipWithIndex.foreach { tuple =>
+      val (bkt, idx) = tuple
+      if (bkt == null) {
+        results(idx) = new Array[Double](hCells)
+      } else {
+        results(idx) = bkt.counts
+      }
+    }
+    // TODO - still producing null buckets.... crap
+    results
+  }
 
   lazy val palette = choosePalette(firstLine)
 
-  lazy val colorScaler = {
-    // TODO - fix scale
-    if (upperCellBound < 1) {
-      // only linear really makes sense here.
-      Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
-    } else {
-      plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
-        case Scale.LINEAR =>
-          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.LOGARITHMIC =>
-          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.POWER_2 =>
-          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.SQRT =>
-          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.PERCENTILE =>
-          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-      }
-    }
-  }
+  lazy val colorScaler = HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   def addLine(line: LineDef): Unit = {
     // Remember, when we make this call, it's actually the NEXT bucket so we need
@@ -141,7 +134,7 @@ case class PercentileHeatMap(
     if (bucketIndex >= buckets.length) {
       System.out.println("WTF? Out of range????")
     }
-    System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
+    // System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
 
     // System.out.println(s"*** Row seconds ${seconds} in bkt Boundary ${row.tick.v}")
     if (firstLine == null) {
@@ -199,7 +192,7 @@ case class PercentileHeatMap(
     }
   }
 
-  def enforceBounds: Unit = {
+  private def enforceCellBounds: Unit = {
     lowerCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
     upperCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
     if (lowerCellBound > cmin || upperCellBound < cmax) {
@@ -215,7 +208,7 @@ case class PercentileHeatMap(
   }
 
   def draw(g: Graphics2D): Unit = {
-    enforceBounds
+    enforceCellBounds
     System.out.println("***** Draw heatmap")
     val palette = firstLine.palette.getOrElse(
       Palette.singleColor(firstLine.color)
@@ -234,7 +227,7 @@ case class PercentileHeatMap(
 
         // val yy = (chartEnd - bucket.offset + y1 + bucket.height) - bucket.height
         val yy = bucket.y - bucket.height + 1
-        System.out.println(s"YY ${yy} & H ${bucket.height}")
+        // System.out.println(s"YY ${yy} & H ${bucket.height}")
         lineElement.draw(
           g,
           x1 + leftOffset,

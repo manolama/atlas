@@ -367,14 +367,22 @@ case class Grapher(settings: DefaultSettings) {
                 if (s.offset > 0L) shiftPalette else axisPalette
               }
           }
+
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
               val lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase))
               val color = s.color.getOrElse {
                 val c = lineStyle match {
                   case LineStyle.HEATMAP =>
-                    if (heatmapColor == null) {
-                      heatmapColor = linePalette(s"heatmap${yaxis}")
+                    if (axisCfg.heatmapPalette.nonEmpty) {
+                      // don't consume a color
+                      if (heatmapColor == null) {
+                        heatmapColor = Color.BLACK
+                      }
+                    } else {
+                      if (heatmapColor == null) {
+                        heatmapColor = linePalette(s"heatmap${yaxis}")
+                      }
                     }
                     heatmapColor
                   case _ => linePalette(t.label)

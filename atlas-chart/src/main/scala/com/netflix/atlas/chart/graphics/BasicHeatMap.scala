@@ -54,9 +54,18 @@ case class BasicHeatMap(
   private var maxCount = Double.MinValue
   private var firstLine: LineDef = null
 
-  def counts: Array[Array[Double]] = buckets
+  def counts: Array[Array[Double]] = {
+    enforceCellBounds
+    buckets.foreach { bkt =>
+      bkt.foreach { dp =>
+        val scaled = colorScaler(dp)
+        updateLegend(dp, scaled)
+      }
+    }
+    buckets
+  }
 
-  def enforceBounds: Unit = {
+  private def enforceCellBounds: Unit = {
     lowerCellBound = plot.heatmapDef.getOrElse(defaultDef).lower.lower(false, minCount)
     upperCellBound = plot.heatmapDef.getOrElse(defaultDef).upper.upper(false, maxCount)
     if (lowerCellBound > minCount || upperCellBound < maxCount) {
@@ -73,25 +82,7 @@ case class BasicHeatMap(
 
   lazy val palette = choosePalette(firstLine)
 
-  lazy val colorScaler = {
-    if (upperCellBound < 1) {
-      // only linear really makes sense here.
-      Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
-    } else {
-      plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
-        case Scale.LINEAR =>
-          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.LOGARITHMIC =>
-          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.POWER_2 =>
-          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.SQRT =>
-          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-        case Scale.PERCENTILE =>
-          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
-      }
-    }
-  }
+  lazy val colorScaler = HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   def addLine(line: LineDef): Unit = {
     val seconds = if (isSpectatorPercentile(line)) bktSeconds(line) else -1
@@ -151,7 +142,7 @@ case class BasicHeatMap(
   }
 
   def draw(g: Graphics2D): Unit = {
-    enforceBounds
+    enforceCellBounds
     System.out.println("***** Draw heatmap")
     val yScaler = axis.scale(y1, chartEnd)
     val yi = yticks.iterator

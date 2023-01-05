@@ -217,8 +217,6 @@ private[chart] object JsonCodec {
             y1,
             graph.width,
             chartEnd,
-            0, // leftOffset, TODO - don't think this is needed.
-            0, // rightOffset, TODO - don't think this is needed.
             l.query.getOrElse("")
           )
         } else {
@@ -231,8 +229,6 @@ private[chart] object JsonCodec {
             y1,
             graph.width,
             chartEnd,
-            0,
-            0,
             l.query.getOrElse("")
           )
         }
@@ -248,10 +244,10 @@ private[chart] object JsonCodec {
   }
 
   private def writeHeatMap(
-                            gen: JsonGenerator,
-                            heatmap: HeatMap,
-                            plotId: Int,
-                            id: Int
+    gen: JsonGenerator,
+    heatmap: HeatMap,
+    plotId: Int,
+    id: Int
   ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", heatmap.`type`)
@@ -272,17 +268,10 @@ private[chart] object JsonCodec {
     gen.writeStringField("type", "heatmap")
     gen.writeArrayFieldStart("values")
 
-    heatmap.enforceBounds
-    val scaler = heatmap.colorScaler
     heatmap.counts.foreach { bkt =>
       gen.writeStartArray()
-      if (bkt != null) {
-        bkt.foreach { dp =>
-          if (dp > 0) {
-            heatmap.updateLegend(dp, scaler(dp))
-          }
-          gen.writeNumber(dp)
-        }
+      bkt.foreach { dp =>
+        gen.writeNumber(dp)
       }
       gen.writeEndArray()
     }
