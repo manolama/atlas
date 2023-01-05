@@ -235,7 +235,7 @@ class TryHeatMap extends FunSuite {
   }
 
   // GOOD tests
-  /*  imageTest("my histo") {
+  imageTest("my histo") {
     db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -252,9 +252,9 @@ class TryHeatMap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
       // "&w=1296&h=600" +
       "&scale=percentile" +
-      "&heatmap_scale=log" // +
-    // "&heatmap_legend=My%20Nifty%20Percentile%20map"
-    // "&heatmap_palette=colors:d73027,fc8d59,fee08b,d9ef8b,91cf60,1a9850"
+      "&heatmap_scale=log" +
+      // "&heatmap_legend=My%20Nifty%20Percentile%20map"
+      "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
 
@@ -276,9 +276,9 @@ class TryHeatMap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
-  }*/
+  }
 
-  imageTest("histos") {
+  /*imageTest("histos") {
     db = getDB(false)
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -310,7 +310,7 @@ class TryHeatMap extends FunSuite {
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap"
 
-  }
+  }*/
 
   test("jsonv2 maybe?") {
     db = getDB(true)

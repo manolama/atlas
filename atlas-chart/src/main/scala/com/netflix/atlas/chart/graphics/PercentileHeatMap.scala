@@ -86,15 +86,13 @@ case class PercentileHeatMap(
   def counts: Array[Array[Double]] = buckets.map(_.counts)
 
   def palette = firstLine.palette.getOrElse {
-    // val a = Array(11, 22, 33, 44, 55, 66, 77, 88, 99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF)
     val a = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF)
     val alphas = new Array[Color](a.length)
     for (i <- 0 until alphas.length) {
       alphas(i) =
         new Color(firstLine.color.getRed, firstLine.color.getGreen, firstLine.color.getBlue, a(i))
     }
-    // Palette.singleColor(firstLine.color)
-    Palette.fromArray("HeatMap", alphas.reverse)
+    Palette.fromArray("HeatMap", alphas)
   }
 
   lazy val colorScaler = {
