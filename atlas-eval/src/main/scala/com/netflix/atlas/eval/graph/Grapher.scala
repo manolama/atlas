@@ -396,7 +396,13 @@ case class Grapher(settings: DefaultSettings) {
 
               val p: Option[Palette] = {
                 if (lineStyle == LineStyle.HEATMAP && axisCfg.heatmapPalette.nonEmpty) {
-                  Some(Palette.create(axisCfg.heatmapPalette.get))
+                  val p = axisCfg.heatmapPalette.get
+                  if (p.contains("colors:") || p.contains("("))
+                    Some(
+                      Palette.fromArray("HeatMap", Palette.create(p).uniqueColors.reverse.toArray)
+                    )
+                  else
+                    Some(Palette.create(p))
                 } else if (s.color.nonEmpty) {
                   None
                 } else if (s.palette.nonEmpty) {
