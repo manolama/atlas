@@ -283,11 +283,13 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
-    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
+    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=" +
+      "name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
       // "name,requestLatency,:eq,(,percentile,),:by,:per-step,1,:axis" +
       // "name,requestLatency,:eq,(,50,99.9,),:percentiles" +
-      "name,requestLatency,:eq,1,:axis," +
-//      "&scale=percentile" +
+      "name,requestLatency,:eq," +  "1,:axis," +
+      "&scale=percentile" +
+      "&tick_labels=duration" +
       "&heatmap_scale=log"
 
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
@@ -530,10 +532,11 @@ class TryHeatMap extends FunSuite {
       *  BUCKET IDX: 159  seconds: 91.62596898100001
       *  BUCKET IDX: 160  seconds: 114.532461226
       */
-    val bktMax = 160
-    val seconds = bktSeconds(bktMax)
+    val bktMax = 274
+    var seconds = bktSeconds(bktMax)
     System.out.println(s"SECONDS ${seconds} for ${bktMax}")
 
+    seconds = 5.759865526446057E9
     val idx = PercentileBuckets.indexOf(seconds.toLong * 1000 * 1000 * 1000)
     System.out.println(s"To bkt Idx: ${idx}")
   }

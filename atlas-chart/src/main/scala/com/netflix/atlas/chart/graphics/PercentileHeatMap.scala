@@ -342,7 +342,8 @@ object PercentileHeatMap {
     // aiming for about 10px per tick
     val majorTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
-    val bktRange = Math.max(1, maxBkt - minBkt)
+     val bktRange = Math.max(1, maxBkt - minBkt)
+    //val bktRange = maxBkt - minBkt + 1
     val fillsPerBkt = Math.round((majorTicks * 4) / bktRange.toDouble).toInt
     val avgBktHeight = (y2 - y1).toDouble / bktRange
 
@@ -397,6 +398,7 @@ object PercentileHeatMap {
           i % majorTicks == 0
         }
       } else false
+
       ticks = ticks :+ PtileScale(base, y, h, nextBucket, i, skip, isMajor, subTicks)
       cnt += 1
       prev = nextY
@@ -415,9 +417,18 @@ object PercentileHeatMap {
         minBkt -= 1
       }
     }
+
+    var maxBkt = PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
+    val allBkts = PercentileBuckets.asArray().length
+    if (maxBkt < allBkts && maxBkt > 0) {
+      val seconds = bktSeconds(maxBkt - 1)
+      if (max > seconds) {
+        maxBkt += 1
+      }
+    }
     (
       minBkt,
-      PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
+      maxBkt
     )
   }
 }
