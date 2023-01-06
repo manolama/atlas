@@ -5,7 +5,7 @@ import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getScale
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.ptileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.GraphDef
@@ -45,7 +45,7 @@ case class PercentileHeatMap(
   val yticks = axis.ticks(y1, chartEnd)
 
   private val yscale = axis.scale(y1, chartEnd)
-  private val ptileScale = getScale(axis.min, axis.max, y1, chartEnd)
+  private val ptileScale = ptileScale(axis.min, axis.max, y1, chartEnd)
   private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   private val hCells = xTicks.size + 1
 
@@ -331,19 +331,13 @@ object PercentileHeatMap {
     *
     * So .got is the BOTTOM of the bucket and lines on the tick. Plot to the next
     * tick but NOT inclusive, so we should have a dotted line at the top of the graph
-    * 
-    * @param d1
-    * @param d2
-    * @param y1
-    * @param y2
-    * @return
     */
-  def getScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
+  def ptileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     // aiming for about 10px per tick
     val majorTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
-     val bktRange = Math.max(1, maxBkt - minBkt)
-    //val bktRange = maxBkt - minBkt + 1
+    val bktRange = Math.max(1, maxBkt - minBkt)
+    // val bktRange = maxBkt - minBkt + 1
     val fillsPerBkt = Math.round((majorTicks * 4) / bktRange.toDouble).toInt
     val avgBktHeight = (y2 - y1).toDouble / bktRange
 
@@ -406,6 +400,21 @@ object PercentileHeatMap {
     ticks
   }
 
+  /**
+    * Computes the Spectator bucket indexes for the given min/max values.
+    * Note that since buckets are [lower, upper), the indices returned from {@link indexOf}
+    * for the duration returned from {@link bktSeconds) are for the **NEXT** bucket
+    * instead of the bucket where the value should reside. Thus this method attempts
+    * to detect if the min/max are coming from {@link bktSeconds} or actual values
+    * and adjust min down or max up for a proper range.
+    *
+    * @param min
+    *   The index of the minimum bucket to use in the graph.
+    * @param max
+    *   The index of the upper, exclusive, bucket to use for the graph.
+    * @return
+    *   A tuple with the min and max bucket indices.
+    */
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
     var minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
     // we need to see if we received a match on an exact bucket boundary as we need
@@ -426,9 +435,9 @@ object PercentileHeatMap {
         maxBkt += 1
       }
     }
-    (
-      minBkt,
-      maxBkt
-    )
+
+    // edge case for 0
+    if (minBkt == 0 && maxBkt == 0) maxBkt = 1
+    (minBkt, maxBkt)
   }
 }
