@@ -110,6 +110,27 @@ object HeatMap {
     }
   }
 
+  /**
+    * Returns a scale for the heatmap color range scaled to the cell count against
+    * the number of unique colors in the palette. The requested color scaling is used
+    * for upper cell counts of 1 or more. If the upper cell count is less than 1,
+    * the scale switches to linear to avoid using a single color.
+    *
+    * **NOTE** if the scale is set to PERCENTILE for some odd reason, we switch to
+    * log.
+    * 
+    * @param plot
+    *   The non-null plot used to pull the heat map color scaling type.
+    * @param palette
+    *   The non-null palette with at least 2 colors.
+    * @param lowerCellBound
+    *   The lower cell boundary. Should be greater than zero.
+    * @param upperCellBound
+    *   The upper cell boundary. Must be greater than or equal to the lower cell bound.
+    * @return
+    *   A scaler that returns the index of the color to use in the palette's unique
+    *   color list.
+    */
   def colorScaler(
     plot: PlotDef,
     palette: Palette,
@@ -120,7 +141,7 @@ object HeatMap {
       // only linear really makes sense here.
       Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
     } else {
-      plot.heatmapDef.getOrElse(HeatmapDef()).scale match {
+      plot.heatmapDef.getOrElse(defaultDef).scale match {
         case Scale.LINEAR =>
           Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
         case Scale.LOGARITHMIC =>
@@ -130,6 +151,7 @@ object HeatMap {
         case Scale.SQRT =>
           Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
         case Scale.PERCENTILE =>
+          // Not particularly useful so we'll switch to log.
           Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
       }
     }
