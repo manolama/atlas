@@ -28,7 +28,7 @@ case class HeatMapLegend(
 
     // TODO - e.g. using 24 colors, the legend goes off the canvas. Need to handle that.
     // even throws an exception printing the last text box.
-    val d = ChartSettings.normalFontDims.height - 2
+    val blockHeight = ChartSettings.normalFontDims.height - 2
 
     val colorsAndMinMax = if (state.legendMinMax == null) {
       List.empty[(Color, (Double, Double, Long))]
@@ -88,24 +88,24 @@ case class HeatMapLegend(
       font = ChartSettings.smallFont,
       alignment = TextAlignment.CENTER
     )
-    val width = str.length * txt.dims.width
+    val width = g.getFontMetrics.stringWidth(str)
     if (width > maxWidth) {
       maxWidth = width
     }
     labelBuilder += txt
 
-    val w = Math.max(d, maxWidth) + 2
+    val w = maxWidth + 2
     val halfMax = w / 2
     var blockX = x1 + 2 + halfMax
     val blockY = y1
     val labels = labelBuilder.result()
     colorsAndMinMax.zip(labels).foreach { t =>
       Style(t._1._1).configure(g)
-      g.fillRect(blockX, blockY, w, d)
+      g.fillRect(blockX, blockY, w, blockHeight)
 
       val text = t._2
       val txtH = ChartSettings.smallFontDims.height
-      val txtY = blockY + d + 5
+      val txtY = blockY + blockHeight + 5
       text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
 
       blockX += w
@@ -115,13 +115,13 @@ case class HeatMapLegend(
       {
         val text = labels.last
         val txtH = ChartSettings.smallFontDims.height
-        val txtY = blockY + d + 5
+        val txtY = blockY + blockHeight + 5
         text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
       }
 
       // horizontal black line
       styles.line.configure(g)
-      val lineY = y1 + d
+      val lineY = y1 + blockHeight
       g.drawLine(x1 + 2 + halfMax, lineY, blockX - 1, lineY)
 
       // TICKS

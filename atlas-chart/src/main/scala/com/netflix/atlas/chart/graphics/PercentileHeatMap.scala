@@ -64,23 +64,44 @@ case class PercentileHeatMap(
   )
 
   val buckets = {
-    val bkts = new Array[Bkt](yticks.size - 1)
     // simplify I hope....
-    val tpm =
-      if (yticks.size - 1 >= ptileScale.size) {
-        Math.max(1, (yticks.size - 1) / ptileScale.size)
-      } else
-        1
-    var lastY = y1
-    for (i <- yticks.length - 2 to 0 by -1) {
-      val tick = yticks(i)
-      val y = yscale(tick.v)
-      val nextTick = yticks(i + 1)
-      bkts(i) = Bkt(null, y, y - lastY, tick.v, nextTick.v, tpm)
-      lastY = y
-    }
 
-    bkts // TODO - still producing null buckets.... crap
+    // fun is... if we have a standard tick layout instead of the percentile version,
+    // then we need to join the buckets with the ticks and some may span multiple ticks.
+    // blech.
+    if (plot.scale == Scale.PERCENTILE) {
+      var lastY = y1
+      val bkts = new Array[Bkt](yticks.size - 1)
+      val tpm =
+        if (yticks.size - 1 >= ptileScale.size) {
+          Math.max(1, (yticks.size - 1) / ptileScale.size)
+        } else
+          1
+      for (i <- yticks.length - 2 to 0 by -1) {
+        val tick = yticks(i)
+        val y = yscale(tick.v)
+        val nextTick = yticks(i + 1)
+        bkts(i) = Bkt(null, y, y - lastY, tick.v, nextTick.v, tpm)
+        lastY = y
+      }
+      bkts // TODO - still producing null buckets.... crap
+    } else {
+      val bkts = new Array[Bkt](ptileScale.size)
+      ptileScale.zipWithIndex.foreach { t =>
+        val (s, i) = t
+//        val tickRange = yticks.filter(t => t.v >= s.base && t.v < s.next)
+//        val tick = tickRange.head
+//        val y = yscale(tick.v)
+//        val nextTick = tickRange.last
+//        bkts(i) = Bkt(null, y, y - lastY, tick.v, nextTick.v, tickRange.size)
+//        lastY = y
+
+        val y = yscale(s.base)
+        val h = Math.max(1, y - yscale(s.next))
+        bkts(i) = Bkt(null, y, h, s.base, s.next, 1)
+      }
+      bkts // TODO - still producing null buckets.... crap
+    }
   }
 
   def counts: Array[Array[Double]] = {
@@ -110,9 +131,16 @@ case class PercentileHeatMap(
       bktSeconds(b)
     } else -1
     // bounds check
-    if (seconds > yticks.last.v || seconds < yticks.head.v) {
-      return
+    if (plot.scale == Scale.PERCENTILE) {
+      if (seconds > yticks.last.v || seconds < yticks.head.v) {
+        return
+      }
+    } else {
+      if (seconds > buckets.last.v || seconds < buckets.head.v) {
+        return
+      }
     }
+
     // we need to figure out how many buckets to fill. This is due to the regular
     // ticks scale but exponential bucket size. Higher buckets can spread across
     // cells.
@@ -134,7 +162,7 @@ case class PercentileHeatMap(
     if (bucketIndex >= buckets.length) {
       System.out.println("WTF? Out of range????")
     }
-    // System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
+    System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
 
     // System.out.println(s"*** Row seconds ${seconds} in bkt Boundary ${row.tick.v}")
     if (firstLine == null) {
@@ -210,35 +238,21 @@ case class PercentileHeatMap(
   def draw(g: Graphics2D): Unit = {
     enforceCellBounds
     System.out.println("***** Draw heatmap")
-    val palette = firstLine.palette.getOrElse(
-      Palette.singleColor(firstLine.color)
-    )
-//    legendMinMax = new Array[(Long, Long, Long)](palette.uniqueColors.size)
-//    for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
-//    val colorScaler =
-//      Scales.factory(Scale.LOGARITHMIC)(cmin, cmax, 0, palette.uniqueColors.size - 1)
-    // val yi = yticks.iterator
-    // var lastY = chartEnd
-    buckets.foreach { bucket =>
-      // val ytick = if (yi.hasNext) yi.next() else null
-      // val nextY = if (ytick != null) yscale(ytick.v) else y1
+
+    buckets.zipWithIndex.foreach { t =>
+      val (bucket, i) = t
       if (bucket != null && bucket.counts != null) {
         val lineElement = HeatmapLine(bucket.counts, timeAxis, this)
-
-        // val yy = (chartEnd - bucket.offset + y1 + bucket.height) - bucket.height
         val yy = bucket.y - bucket.height + 1
-        // System.out.println(s"YY ${yy} & H ${bucket.height}")
+        System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
         lineElement.draw(
           g,
           x1 + leftOffset,
-          // lastY,
           yy,
           x2 - rightOffset,
-          // lastY - nextY
           bucket.height
         )
       }
-      // lastY = nextY
     }
   }
 
@@ -320,15 +334,34 @@ object PercentileHeatMap {
     // aiming for about 10px per tick
     val majorTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
-    val bktRange = maxBkt - minBkt
+    val bktRange = Math.max(1, maxBkt - minBkt)
     val fillsPerBkt = Math.round((majorTicks * 4) / bktRange.toDouble).toInt
     val avgBktHeight = (y2 - y1).toDouble / bktRange
 
     var ticks = List.empty[PtileScale]
     var cnt = 0
     var prev = y1.toDouble
-    // var prevI = if (minBkt == 0) 0.0 else bktSeconds(minBkt - 1)
     val skipBuckets = bktRange / majorTicks / 4
+
+    // edge case, one bucket
+    if (minBkt == maxBkt) {
+      val nextY = prev + avgBktHeight
+      val h = (Math.round(nextY) - Math.round(prev)).toInt
+      val y = Math.round(prev).toInt
+      val base = bktSeconds(if (minBkt > 0) minBkt - 1 else minBkt)
+      val nextBucket = bktSeconds(minBkt) // TODO - edge case if we're in bucket 0.
+      val subTicks = if (bktRange < majorTicks) {
+        val list = List.newBuilder[(Double, Boolean, Double)]
+        val delta = (nextBucket - base) / fillsPerBkt
+        for (i <- 1 until fillsPerBkt) {
+          val v = base + (delta * i)
+          val nxt = base + (delta * i + 1)
+          list.addOne((v, v == base, nxt))
+        }
+        list.result()
+      } else List.empty
+      ticks = ticks :+ PtileScale(base, y, h, nextBucket, minBkt, false, true, subTicks)
+    }
 
     for (i <- minBkt until maxBkt) {
       val nextY = prev + avgBktHeight
