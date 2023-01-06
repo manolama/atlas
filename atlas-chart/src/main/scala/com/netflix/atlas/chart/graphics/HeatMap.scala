@@ -57,14 +57,14 @@ trait HeatMap {
 
   def colorScaler: Scales.DoubleScale
 
-  def colorMap: List[CellColor] = {
+  def colorMap: List[HeatMapLegendColor] = {
     palette.uniqueColors.reverse
       .zip(legendMinMax)
       // get rid of colors that weren't used.
-      .filterNot(t => t._2._1 == Double.MaxValue && t._2._2 == Double.MinValue)
+      .filter(t => t._2._3 != 0)
       // .reverse
       .map { tuple =>
-        CellColor(tuple._1, 255, tuple._2._1, tuple._2._2)
+        HeatMapLegendColor(tuple._1, tuple._2._1, tuple._2._2)
       }
   }
 
@@ -75,9 +75,18 @@ trait HeatMap {
   }
 }
 
-case class CellColor(
+/**
+  * A legend color for serialization.
+  *
+  * @param color
+  *   The color used in the heatmap.
+  * @param min
+  *   The minimum count actually used for this color.
+  * @param max
+  *   The maximum count actually used for this color.
+  */
+case class HeatMapLegendColor(
   color: Color,
-  alpha: Int,
   min: Double,
   max: Double
 )

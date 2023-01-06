@@ -30,25 +30,26 @@ case class HeatMapLegend(
     // even throws an exception printing the last text box.
     val blockHeight = ChartSettings.normalFontDims.height - 2
 
-    val colorsAndMinMax = if (state.legendMinMax == null) {
-      List.empty[(Color, (Double, Double, Long))]
-    } else {
-      palette.uniqueColors.reverse
-        .zip(state.legendMinMax)
-        // get rid of colors that weren't used.
-        .filterNot(t => t._2._3 == 0)
-      // .reverse
-    }
+//    val colorsAndMinMax = if (state.legendMinMax == null) {
+//      List.empty[(Color, (Double, Double, Long))]
+//    } else {
+//      palette.uniqueColors.reverse
+//        .zip(state.legendMinMax)
+//        // get rid of colors that weren't used.
+//        .filterNot(t => t._2._3 == 0)
+//      // .reverse
+//    }
+    val legendColors = state.colorMap
 
     val labelBuilder = List.newBuilder[Text]
     var maxWidth = 0
 
     // TODO - check for uniques!
     var format = "%.0f%s"
-    if (colorsAndMinMax.nonEmpty) {
-      var lastLabel = UnitPrefix.format(colorsAndMinMax.head._2._1, format)
-      for (i <- 1 until colorsAndMinMax.size) {
-        val nextLabel = UnitPrefix.format(colorsAndMinMax(i)._2._1, format)
+    if (legendColors.nonEmpty) {
+      var lastLabel = UnitPrefix.format(legendColors.head.min, format)
+      for (i <- 1 until legendColors.size) {
+        val nextLabel = UnitPrefix.format(legendColors(i).min, format)
         // System.out.println(s"next ${nextLabel} prev ${lastLabel}")
         if (lastLabel.equals(nextLabel)) {
           format = "%.1f%s"
@@ -56,8 +57,8 @@ case class HeatMapLegend(
         lastLabel = nextLabel
       }
 
-      colorsAndMinMax.foreach { t =>
-        val str = UnitPrefix.format(t._2._1, format)
+      legendColors.foreach { t =>
+        val str = UnitPrefix.format(t.min, format)
         val txt = Text(
           str,
           font = ChartSettings.smallFont,
@@ -74,11 +75,8 @@ case class HeatMapLegend(
     }
 
     // max
-    val last = if (colorsAndMinMax.nonEmpty) {
-      if (colorsAndMinMax.last._2._2 == 0)
-        colorsAndMinMax.last._2._1
-      else
-        colorsAndMinMax.last._2._2
+    val last = if (legendColors.nonEmpty) {
+      legendColors.last.max
     } else {
       0
     }
@@ -99,11 +97,12 @@ case class HeatMapLegend(
     var blockX = x1 + 2 + halfMax
     val blockY = y1
     val labels = labelBuilder.result()
-    colorsAndMinMax.zip(labels).foreach { t =>
-      Style(t._1._1).configure(g)
+    legendColors.zip(labels).foreach { t =>
+      val (legend, label) = t
+      Style(legend.color).configure(g)
       g.fillRect(blockX, blockY, w, blockHeight)
 
-      val text = t._2
+      val text = label
       val txtH = ChartSettings.smallFontDims.height
       val txtY = blockY + blockHeight + 5
       text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
@@ -111,7 +110,7 @@ case class HeatMapLegend(
       blockX += w
     }
 
-    if (colorsAndMinMax.nonEmpty) {
+    if (legendColors.nonEmpty) {
       {
         val text = labels.last
         val txtH = ChartSettings.smallFontDims.height
@@ -126,8 +125,8 @@ case class HeatMapLegend(
 
       // TICKS
       var vx = x1 + 2 + halfMax
-      for (i <- 0 to colorsAndMinMax.size) {
-        if (i == colorsAndMinMax.size) {
+      for (i <- 0 to legendColors.size) {
+        if (i == legendColors.size) {
           vx -= 1
         }
         g.drawLine(vx, lineY, vx, lineY + 3)
