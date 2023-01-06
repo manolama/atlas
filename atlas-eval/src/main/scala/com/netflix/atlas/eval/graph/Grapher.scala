@@ -21,6 +21,7 @@ import java.time.Duration
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.chart.Colors
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.Layout
 import com.netflix.atlas.chart.model.LineDef
@@ -332,6 +333,7 @@ case class Grapher(settings: DefaultSettings) {
 
         var messages = List.empty[String]
         var heatmapColor: Color = null
+        var hasSpectatorPercentile: Boolean = false
         val lines = exprs.flatMap { s =>
           val result = eval(s)
 
@@ -374,6 +376,7 @@ case class Grapher(settings: DefaultSettings) {
               val color = s.color.getOrElse {
                 val c = lineStyle match {
                   case LineStyle.HEATMAP =>
+                    if (isSpectatorPercentile(t.tags)) hasSpectatorPercentile = true
                     if (axisCfg.heatmapPalette.nonEmpty) {
                       // don't consume a color
                       if (heatmapColor == null) {
@@ -443,7 +446,8 @@ case class Grapher(settings: DefaultSettings) {
 
         axisCfg.newPlotDef(
           sortedLines ::: messages.map(s => MessageDef(s"... $s ...")),
-          multiY
+          multiY,
+          hasSpectatorPercentile
         )
     }
 

@@ -18,6 +18,7 @@ import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
 import java.awt.BasicStroke
@@ -162,7 +163,7 @@ case class PercentileHeatMap(
     if (bucketIndex >= buckets.length) {
       System.out.println("WTF? Out of range????")
     }
-    System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
+    // System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
 
     // System.out.println(s"*** Row seconds ${seconds} in bkt Boundary ${row.tick.v}")
     if (firstLine == null) {
@@ -244,7 +245,7 @@ case class PercentileHeatMap(
       if (bucket != null && bucket.counts != null) {
         val lineElement = HeatmapLine(bucket.counts, timeAxis, this)
         val yy = bucket.y - bucket.height + 1
-        System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
+        // System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
         lineElement.draw(
           g,
           x1 + leftOffset,
@@ -288,6 +289,13 @@ object PercentileHeatMap {
 
   def isSpectatorPercentile(line: LineDef): Boolean = {
     line.data.tags.get("percentile") match {
+      case Some(v) => timerBucketIdPattern.matcher(v).find()
+      case _       => false
+    }
+  }
+
+  def isSpectatorPercentile(tags: Map[String, String]): Boolean = {
+    tags.get("percentile") match {
       case Some(v) => timerBucketIdPattern.matcher(v).find()
       case _       => false
     }

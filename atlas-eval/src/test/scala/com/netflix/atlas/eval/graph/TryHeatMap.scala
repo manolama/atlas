@@ -286,7 +286,7 @@ class TryHeatMap extends FunSuite {
     "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
       // "name,requestLatency,:eq,(,percentile,),:by,:per-step,1,:axis" +
       // "name,requestLatency,:eq,(,50,99.9,),:percentiles" +
-//      "name,requestLatency,:eq,1,:axis," +
+      "name,requestLatency,:eq,1,:axis," +
 //      "&scale=percentile" +
       "&heatmap_scale=log"
 

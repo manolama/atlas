@@ -49,7 +49,7 @@ case class HeatMapLegend(
       var lastLabel = UnitPrefix.format(colorsAndMinMax.head._2._1, format)
       for (i <- 1 until colorsAndMinMax.size) {
         val nextLabel = UnitPrefix.format(colorsAndMinMax(i)._2._1, format)
-        System.out.println(s"next ${nextLabel} prev ${lastLabel}")
+        // System.out.println(s"next ${nextLabel} prev ${lastLabel}")
         if (lastLabel.equals(nextLabel)) {
           format = "%.1f%s"
         }

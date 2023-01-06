@@ -221,8 +221,6 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
 
   import ValueAxis._
 
-  var tickCache = List.empty[PTileBoundary]
-
   protected var skipBuckets = 0
 
   protected def angle: Double = -Math.PI / 2.0
