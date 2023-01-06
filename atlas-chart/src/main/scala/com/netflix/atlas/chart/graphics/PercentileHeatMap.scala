@@ -5,7 +5,7 @@ import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.ptileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.GraphDef
@@ -45,7 +45,7 @@ case class PercentileHeatMap(
   val yticks = axis.ticks(y1, chartEnd)
 
   private val yscale = axis.scale(y1, chartEnd)
-  private val ptileScale = ptileScale(axis.min, axis.max, y1, chartEnd)
+  private val ptileScale = getPtileScale(axis.min, axis.max, y1, chartEnd)
   private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   private val hCells = xTicks.size + 1
 
@@ -276,7 +276,6 @@ case class PtileScale(
   y: Int,
   height: Int,
   next: Double,
-  bktIndex: Int,
   skipTick: Boolean,
   majorTick: Boolean,
   // base, isMajor, next
@@ -326,13 +325,25 @@ object PercentileHeatMap {
   }
 
   /**
-    * Percentiles are bucketed inclusive/exclusive. I.e. the call from
-    * PercentileBuckets.get(bktIdx) is the exclusive boundary of the NEXT bucket.
+    * Computes a list of Spectator buckets in range of the values along with their y
+    * scales and whether or not the ticks should be major or omitted. If a plot has
+    * a small number of buckets relative to the y axis, buckets are split into sub-
+    * ticks to distribute the counts across minor ticks.
     *
-    * So .got is the BOTTOM of the bucket and lines on the tick. Plot to the next
-    * tick but NOT inclusive, so we should have a dotted line at the top of the graph
+    * @param d1
+    *   The min value to be plotted in seconds. Note that it MAY be a bucket boundary
+    *   for the NEXT bucket.
+    * @param d2
+    *   The max value to be plotted in seconds. Note that it MAY be a bucket boundary
+    *   for the NEXT bucket.
+    * @param y1
+    *   The start of the y axis from the top of the graph.
+    * @param y2
+    *   The end of the chart area from the top of the graph.
+    * @return
+    *   A non-empty list of percentile bucket descriptors.
     */
-  def ptileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
+  def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     // aiming for about 10px per tick
     val majorTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
@@ -363,7 +374,7 @@ object PercentileHeatMap {
         }
         list.result()
       } else List.empty
-      ticks = ticks :+ PtileScale(base, y, h, nextBucket, minBkt, false, true, subTicks)
+      ticks = ticks :+ PtileScale(base, y, h, nextBucket, false, true, subTicks)
     }
 
     for (i <- minBkt until maxBkt) {
@@ -393,7 +404,7 @@ object PercentileHeatMap {
         }
       } else false
 
-      ticks = ticks :+ PtileScale(base, y, h, nextBucket, i, skip, isMajor, subTicks)
+      ticks = ticks :+ PtileScale(base, y, h, nextBucket, skip, isMajor, subTicks)
       cnt += 1
       prev = nextY
     }
@@ -409,9 +420,11 @@ object PercentileHeatMap {
     * and adjust min down or max up for a proper range.
     *
     * @param min
-    *   The index of the minimum bucket to use in the graph.
+    *   The min value to be plotted in seconds. Note that it MAY be a bucket boundary
+    *   for the NEXT bucket.
     * @param max
-    *   The index of the upper, exclusive, bucket to use for the graph.
+    *   The max value to be plotted in seconds. Note that it MAY be a bucket boundary
+    *   for the NEXT bucket.
     * @return
     *   A tuple with the min and max bucket indices.
     */

@@ -2,12 +2,13 @@ package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.ptileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.spectator.api.histogram.PercentileBuckets
 import munit.FunSuite
+import org.junit.Assert.assertFalse
 
 class PercentileHeatMapSuite extends FunSuite {
 
@@ -71,7 +72,7 @@ class PercentileHeatMapSuite extends FunSuite {
   }
 
   test("minMaxBuckets bucket to max bucket") {
-    val min = 4.2273788502251053E9
+    val min = 4.2273788502251053e9
     val max = 9.3e9
     val (minBkt, maxBkt) = minMaxBuckets(min, max)
     assertEquals(minBkt, 274)
@@ -94,16 +95,34 @@ class PercentileHeatMapSuite extends FunSuite {
     assertEquals(maxBkt, 1)
   }
 
+  test("getPtileScale aligned normal range") {
+    val min = 0.626349396 // 127 from bktSeconds
+    val max = 2.863311529 // 137 from bktSeconds
+    val buckets = getPtileScale(min, max, 5, 305)
+    assertEquals(buckets.size, 11)
+
+    var bktIdx = 125
+    buckets.foreach { bkt =>
+      assertEquals(bkt.base, bktSeconds(bktIdx))
+      assertEquals(bkt.next, bktSeconds(bktIdx + 1))
+      assertFalse(bkt.skipTick)
+      assert(bkt.majorTick)
+      assert(bkt.subTicks.isEmpty)
+      bktIdx += 1
+    }
+    System.out.println(buckets)
+  }
+
   test("scale") {
     val min = 1.9999999999999997e-9
     val max = 114.532461226
     val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
     val ticks = axis.ticks(5, 405)
     val scale = axis.scale(5, 405)
-    val s = ptileScale(min, max, 5, 405)
+    val s = getPtileScale(min, max, 5, 405)
     s.foreach { e =>
       System.out.println(
-        s"Off: ${e.y} (${405 - e.y + 5}) Height: ${e.height}  Base: ${e.base}  BktIdx: ${e.bktIndex}"
+        s"Off: ${e.y} (${405 - e.y + 5}) Height: ${e.height}  Base: ${e.base}"
       )
     }
     ticks.foreach { t =>
@@ -117,7 +136,7 @@ class PercentileHeatMapSuite extends FunSuite {
     val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
     val ticks = axis.ticks(5, 305)
     val scale = axis.scale(5, 305)
-    val s = ptileScale(min, max, 5, 305)
+    val s = getPtileScale(min, max, 5, 305)
 
     val bi = 92
     System.out.println(s"Bkt IDX: ${bi}")
@@ -146,7 +165,7 @@ class PercentileHeatMapSuite extends FunSuite {
     val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
     val ticks = axis.ticks(5, 305)
     val scale = axis.scale(5, 305)
-    val s = ptileScale(min, max, 5, 305)
+    val s = getPtileScale(min, max, 5, 305)
     s.foreach { e =>
       System.out.println(
         s"Off: ${e.y} (${scale(e.base)}) Height: ${e.height}  Base: ${e.base} "
@@ -158,7 +177,7 @@ class PercentileHeatMapSuite extends FunSuite {
   }
 
   test("scale 1 bucket") {
-    val s = ptileScale(51.53960755, 51.53960755, 5, 405)
+    val s = getPtileScale(51.53960755, 51.53960755, 5, 405)
     s.foreach { e =>
       System.out.println(
         s"Off: ${e.y} (${405 - e.y + 5}) Height: ${e.height}  Base: ${e.base} "

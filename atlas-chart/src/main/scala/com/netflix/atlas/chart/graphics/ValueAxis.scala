@@ -16,7 +16,7 @@
 package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.ptileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
 
 import java.awt.Graphics2D
@@ -238,7 +238,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
   }
 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
-    val scale = ptileScale(min, max, y1, y2)
+    val scale = getPtileScale(min, max, y1, y2)
     val ticks = List.newBuilder[ValueTick]
 
     scale.foreach { s =>
@@ -321,7 +321,7 @@ case class RightHeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Dou
   }
 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
-    val scale = ptileScale(min, max, y1, y2)
+    val scale = getPtileScale(min, max, y1, y2)
     val ticks = List.newBuilder[ValueTick]
 
     scale.foreach { s =>

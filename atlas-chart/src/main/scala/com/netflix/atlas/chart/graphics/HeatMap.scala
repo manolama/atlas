@@ -89,18 +89,24 @@ object HeatMap {
 
   val defaultDef = HeatmapDef()
 
+  /**
+    * Determines the palette to use from a line definition. If the line includes
+    * a palette, that palette takes precedence. If that palette only has one color,
+    * we apply the alpha list to the color.
+    * If no palette is present, we use the line def color and apply the aplha list.
+    *
+    * @param line
+    *   A non-null line with an optional palette applied. The color is required and
+    *   set by default.
+    * @return
+    *   A palette to use for the color scale.
+    */
   def choosePalette(line: LineDef): Palette = {
-    line.palette.getOrElse {
-      val colors = new Array[Color](singleColorAlphas.length)
-      for (i <- 0 until colors.length) {
-        colors(i) = new Color(
-          line.color.getRed,
-          line.color.getGreen,
-          line.color.getBlue,
-          singleColorAlphas(i)
-        )
-      }
-      Palette.fromArray("HeatMap", colors)
+    line.palette match {
+      case Some(p) =>
+        if (p.uniqueColors.length > 1) p
+        else fromSingleColor(p.uniqueColors.head)
+      case None => fromSingleColor(line.color)
     }
   }
 
@@ -127,5 +133,18 @@ object HeatMap {
           Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
       }
     }
+  }
+
+  private def fromSingleColor(color: Color): Palette = {
+    val colors = new Array[Color](singleColorAlphas.length)
+    for (i <- 0 until colors.length) {
+      colors(i) = new Color(
+        color.getRed,
+        color.getGreen,
+        color.getBlue,
+        singleColorAlphas(i)
+      )
+    }
+    Palette.fromArray("HeatMap", colors)
   }
 }
