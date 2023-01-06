@@ -205,9 +205,10 @@ private[chart] object JsonCodec {
     val chartEnd = graph.height // TODO - then figure out th chart end.
     var heatmapIndex = 0
 
-    plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { l =>
-      if (heatmap == null) {
-        if (isSpectatorPercentile(l)) {
+    val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
+    if (heatmapLines.nonEmpty) {
+      heatmapLines.find(isSpectatorPercentile(_)) match {
+        case Some(_) =>
           heatmap = PercentileHeatMap(
             config,
             plot,
@@ -216,10 +217,9 @@ private[chart] object JsonCodec {
             0,
             y1,
             graph.width,
-            chartEnd,
-            l.query.getOrElse("")
+            chartEnd
           )
-        } else {
+        case None =>
           heatmap = BasicHeatMap(
             config,
             plot,
@@ -228,12 +228,9 @@ private[chart] object JsonCodec {
             0,
             y1,
             graph.width,
-            chartEnd,
-            l.query.getOrElse("")
+            chartEnd
           )
-        }
       }
-      heatmap.addLine(l)
     }
 
     if (heatmap != null) {

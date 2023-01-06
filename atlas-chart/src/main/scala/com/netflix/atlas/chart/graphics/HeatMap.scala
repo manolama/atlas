@@ -26,26 +26,11 @@ import java.awt.Graphics2D
 
 /**
   * Represents a heatmap for graphing or serializing.
-  *
-  * Use:
-  * * Call {@link addLine(LineDef)} for each line to add to the heat map.
-  * * After all lines have been added, call {@link draw(Graphics2D)} to plot a
-  *   graph or call {@link rows} to get the counts in each bucket and cell for
-  *   serialization.
   */
 trait HeatMap {
 
   /** Used to track legend min/max values and hits. (min, max, hits) */
   private var legendMinMax: Array[(Double, Double, Long)] = null
-
-  /**
-    * Adds the line to the graph, updating bucket counts. The color palette is
-    * drawn from the first line added.
-    *
-    * @param line
-    *   A non-null line to add to the heatmap.
-    */
-  def addLine(line: LineDef): Unit
 
   /**
     * Plots the heatmap after all of the lines have been added.
@@ -70,39 +55,18 @@ trait HeatMap {
 
   /**
     * @return
-    *   An instance of Yaxis ticks for this heatmap.
-    */
-  def yticks: List[ValueTick]
-
-  /**
-    * @return
     *   The heatmap counts that would be plotted in a graph. Organized by row
     *   (bottom most row first, correlated with the lowest tick value) and time.
     */
   def rows: Array[Array[Double]]
 
   /**
-    * @return
-    *   The palatte used by this heatmap.
-    */
-  def palette: Palette
-
-  /**
-    * @return
-    *   The color scaler used by this heatmap.
-    */
-  def colorScaler: Scales.DoubleScale
-
-  /**
     * Compiles a map of colors with min, max and hits for use in plotting or serializing
     * a color legend.
-    * **NOTE** that for the map to be populated, lines of data must be added to the
-    * heatmap first and either {@link draw} or {@link rows} must be called.
     *
     * @return
-    *   A non-null list of heat map color entries. The list may be empty if no values
-    *   were recorded (data was all NaN or 0) or the mapping was called before lines
-    *   were added to the heatmap.
+    * A non-null list of heat map color entries. The list may be empty if no values
+    * were recorded (data was all NaN or 0).
     */
   def colorMap: List[HeatMapLegendColor] = {
     if (legendMinMax == null) {
@@ -119,6 +83,24 @@ trait HeatMap {
   }
 
   /**
+    * @return
+    *   An instance of Yaxis ticks for this heatmap.
+    */
+  def yticks: List[ValueTick]
+
+  /**
+    * @return
+    *   The palette used by this heatmap.
+    */
+  protected[graphics] def palette: Palette
+
+  /**
+    * @return
+    *   The color scaler used by this heatmap.
+    */
+  protected[graphics] def colorScaler: Scales.DoubleScale
+
+  /**
     * Accepts a count for a bucket and returns the color the count maps to. Also
     * updates the legend min/max array.
     *
@@ -129,7 +111,7 @@ trait HeatMap {
     */
   protected[graphics] def getColor(count: Double): Color = {
     val scaled = colorScaler(count)
-    updateLegend(count, scaled)
+    // updateLegend(count, scaled)
     palette.uniqueColors.reverse(scaled)
   }
 

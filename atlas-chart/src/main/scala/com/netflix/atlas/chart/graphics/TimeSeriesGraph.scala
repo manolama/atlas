@@ -141,12 +141,13 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
     graphDef.plots.zip(yaxes).foreach {
       case (plot, axis) =>
-        var heatmap: HeatMap = null
         val offsets = TimeSeriesStack.Offsets(timeAxis)
         // heatmaps first
-        plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { line =>
-          if (heatmap == null) {
-            if (isSpectatorPercentile(line)) {
+        val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
+        if (heatmapLines.nonEmpty) {
+          var heatmap: HeatMap = null
+          heatmapLines.find(isSpectatorPercentile(_)) match {
+            case Some(_) =>
               heatmap = PercentileHeatMap(
                 graphDef,
                 plot,
@@ -156,11 +157,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                 y1,
                 x2,
                 chartEnd,
-                line.query.getOrElse(""),
+                // line.query.getOrElse(""),
                 leftOffset,
                 rightOffset
               )
-            } else {
+            case None =>
               heatmap = BasicHeatMap(
                 graphDef,
                 plot,
@@ -170,19 +171,25 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
                 y1,
                 x2,
                 chartEnd,
-                line.query.getOrElse(""),
+                // line.query.getOrElse(""),
                 leftOffset,
                 rightOffset
               )
-            }
           }
-          heatmap.addLine(line)
+//        foreach { line =>
+//          if (heatmap == null) {
+//            if (isSpectatorPercentile(line)) {
+//
+//            } else {
+//
+//            }
+//          }
+//          heatmap.addLine(line)
+          if (heatmap != null) {
+            heatmap.draw(g)
+          }
+          heatmaps = heatmaps :+ heatmap
         }
-
-        if (heatmap != null) {
-          heatmap.draw(g)
-        }
-        heatmaps = heatmaps :+ heatmap
 
         plot.lines.filter(_.lineStyle != LineStyle.HEATMAP).foreach { line =>
           val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))

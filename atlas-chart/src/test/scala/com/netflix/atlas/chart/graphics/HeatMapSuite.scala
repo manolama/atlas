@@ -176,8 +176,6 @@ class HeatMapSuite extends FunSuite {
 
   case class MockHeatMap(upperCellBound: Int) extends HeatMap {
 
-    override def addLine(line: LineDef): Unit = ???
-
     override def draw(g: Graphics2D): Unit = ???
 
     override def legendLabel: String = ???

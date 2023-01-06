@@ -37,7 +37,7 @@ case class PercentileHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
-  legendLabel: String,
+  // legendLabel: String,
   leftOffset: Int = 0,
   rightOffset: Int = 0
 ) extends HeatMap {
@@ -54,6 +54,7 @@ case class PercentileHeatMap(
   private var lowerCellBound: Double = 0
   private var upperCellBound: Double = 0
   private var firstLine: LineDef = null
+  private[graphics] var label: String = null
 
   case class Bkt(
     counts: Array[Double],
@@ -105,6 +106,40 @@ case class PercentileHeatMap(
     }
   }
 
+  {
+    plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { line =>
+      if (firstLine == null) {
+        firstLine = line
+        label = line.query.getOrElse("")
+      }
+      addLine(line)
+    }
+    enforceCellBounds
+  }
+
+  def draw(g: Graphics2D): Unit = {
+    enforceCellBounds
+    System.out.println("***** Draw heatmap")
+
+    buckets.zipWithIndex.foreach { t =>
+      val (bucket, i) = t
+      if (bucket != null && bucket.counts != null) {
+        val lineElement = HeatmapLine(bucket.counts, timeAxis, this)
+        val yy = bucket.y - bucket.height + 1
+        // System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
+        lineElement.draw(
+          g,
+          x1 + leftOffset,
+          yy,
+          x2 - rightOffset,
+          bucket.height
+        )
+      }
+    }
+  }
+
+  override def legendLabel: String = label
+
   def rows: Array[Array[Double]] = {
     val results = new Array[Array[Double]](buckets.length)
     buckets.zipWithIndex.foreach { tuple =>
@@ -119,11 +154,14 @@ case class PercentileHeatMap(
     results
   }
 
-  lazy val palette = choosePalette(firstLine)
+  override def `type`: String = "percentile-heatmap"
 
-  lazy val colorScaler = HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
+  protected[graphics] lazy val palette = choosePalette(firstLine)
 
-  def addLine(line: LineDef): Unit = {
+  protected[graphics] lazy val colorScaler =
+    HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
+
+  private def addLine(line: LineDef): Unit = {
     // Remember, when we make this call, it's actually the NEXT bucket so we need
     // to shift down.
     val seconds = if (isSpectatorPercentile(line)) {
@@ -224,40 +262,17 @@ case class PercentileHeatMap(
   private def enforceCellBounds: Unit = {
     lowerCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
     upperCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
-    if (lowerCellBound > cmin || upperCellBound < cmax) {
-      buckets.foreach { row =>
-        for (i <- 0 until row.counts.length) {
-          val count = row.counts(i)
-          if (count < lowerCellBound || count > upperCellBound) {
-            row.counts(i) = 0
-          }
+    buckets.foreach { row =>
+      for (i <- 0 until row.counts.length) {
+        val count = row.counts(i)
+        if (count < lowerCellBound || count > upperCellBound) {
+          row.counts(i) = 0
+        } else {
+          updateLegend(count, colorScaler(count))
         }
       }
     }
   }
-
-  def draw(g: Graphics2D): Unit = {
-    enforceCellBounds
-    System.out.println("***** Draw heatmap")
-
-    buckets.zipWithIndex.foreach { t =>
-      val (bucket, i) = t
-      if (bucket != null && bucket.counts != null) {
-        val lineElement = HeatmapLine(bucket.counts, timeAxis, this)
-        val yy = bucket.y - bucket.height + 1
-        // System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
-        lineElement.draw(
-          g,
-          x1 + leftOffset,
-          yy,
-          x2 - rightOffset,
-          bucket.height
-        )
-      }
-    }
-  }
-
-  override def `type`: String = "percentile-heatmap"
 }
 
 /**
