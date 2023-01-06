@@ -3,6 +3,7 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
 import com.netflix.atlas.chart.graphics.HeatMap.colorScaler
 import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
+import com.netflix.atlas.chart.graphics.Scales.DoubleScale
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
@@ -15,6 +16,7 @@ import com.netflix.atlas.core.util.Strings
 import munit.FunSuite
 
 import java.awt.Color
+import java.awt.Graphics2D
 
 class HeatMapSuite extends FunSuite {
 
@@ -118,4 +120,77 @@ class HeatMapSuite extends FunSuite {
     }
   }
 
+  test("colorMap no real values processed") {
+    val hm = MockHeatMap(palette.uniqueColors.length)
+    assert(hm.colorMap.isEmpty)
+  }
+
+  test("colorMap all used with one value per color") {
+    val hm = MockHeatMap(palette.uniqueColors.length)
+    for (i <- 1 to palette.uniqueColors.length) {
+      hm.updateLegend(i, hm.colorScaler(i))
+    }
+
+    val cm = hm.colorMap
+    for (i <- 0 until cm.size) {
+      assertEquals(cm(i).color, palette.uniqueColors.reverse(i))
+      assertEquals(cm(i).min.toInt, i + 1)
+      assertEquals(cm(i).max.toInt, i + 1)
+    }
+  }
+
+  test("colorMap partial use") {
+    val hm = MockHeatMap(3)
+    for (i <- 1 to 3) {
+      hm.updateLegend(i, hm.colorScaler(i))
+    }
+
+    val cm = hm.colorMap
+    var paletteIndex = 0
+    for (i <- 0 until 3) {
+      val entry = cm(i)
+      assertEquals(entry.color, palette.uniqueColors.reverse(paletteIndex))
+      assertEquals(entry.min.toInt, i + 1)
+      assertEquals(entry.max.toInt, i + 1)
+      paletteIndex += 2
+    }
+  }
+
+  test("colorMap diff min/max") {
+    val hm = MockHeatMap(palette.uniqueColors.length * 2)
+    for (i <- 1 to palette.uniqueColors.length * 2) {
+      hm.updateLegend(i, hm.colorScaler(i))
+    }
+
+    val cm = hm.colorMap
+    var paletteIndex = 0
+    var min = 1
+    cm.foreach { entry =>
+      assertEquals(entry.color, palette.uniqueColors.reverse(paletteIndex))
+      assertEquals(entry.min.toInt, min)
+      assertEquals(entry.max.toInt, min + 1)
+      min += 2
+      paletteIndex += 1
+    }
+  }
+
+  case class MockHeatMap(upperCellBound: Int) extends HeatMap {
+
+    override def addLine(line: LineDef): Unit = ???
+
+    override def draw(g: Graphics2D): Unit = ???
+
+    override def query: String = ???
+
+    override def `type`: String = ???
+
+    override def yticks: List[ValueTick] = ???
+
+    override def counts: Array[Array[Double]] = ???
+
+    override def palette: Palette = HeatMapSuite.this.palette
+
+    override def colorScaler: DoubleScale =
+      HeatMap.colorScaler(PlotDef(List.empty), palette, 1, upperCellBound)
+  }
 }

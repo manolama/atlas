@@ -42,27 +42,19 @@ trait HeatMap {
   // no null buckets.
   def counts: Array[Array[Double]]
 
-  protected def updateLegend(count: Double, scaleIndex: Int): Unit = {
-    if (legendMinMax == null) {
-      legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
-      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
-    }
-    val (n, a, c) = legendMinMax(scaleIndex)
-    val nn = if (count < n) count else n
-    val aa = if (count > a) count else a
-    legendMinMax(scaleIndex) = (nn, aa, c + 1)
-  }
-
   def palette: Palette
 
   def colorScaler: Scales.DoubleScale
 
   def colorMap: List[HeatMapLegendColor] = {
+    if (legendMinMax == null) {
+      return List.empty
+    }
+
     palette.uniqueColors.reverse
       .zip(legendMinMax)
       // get rid of colors that weren't used.
       .filter(t => t._2._3 != 0)
-      // .reverse
       .map { tuple =>
         HeatMapLegendColor(tuple._1, tuple._2._1, tuple._2._2)
       }
@@ -72,6 +64,17 @@ trait HeatMap {
     val scaled = colorScaler(dp)
     updateLegend(dp, scaled)
     palette.uniqueColors.reverse(scaled)
+  }
+
+  private[graphics] def updateLegend(count: Double, scaleIndex: Int): Unit = {
+    if (legendMinMax == null) {
+      legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
+      for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
+    }
+    val (n, a, c) = legendMinMax(scaleIndex)
+    val nn = if (count < n) count else n
+    val aa = if (count > a) count else a
+    legendMinMax(scaleIndex) = (nn, aa, c + 1)
   }
 }
 
