@@ -180,13 +180,13 @@ class HeatMapSuite extends FunSuite {
 
     override def draw(g: Graphics2D): Unit = ???
 
-    override def query: String = ???
+    override def legendLabel: String = ???
 
     override def `type`: String = ???
 
     override def yticks: List[ValueTick] = ???
 
-    override def counts: Array[Array[Double]] = ???
+    override def rows: Array[Array[Double]] = ???
 
     override def palette: Palette = HeatMapSuite.this.palette
 

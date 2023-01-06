@@ -24,28 +24,86 @@ import com.netflix.atlas.chart.model.Scale
 import java.awt.Color
 import java.awt.Graphics2D
 
+/**
+  * Represents a heatmap for graphing or serializing.
+  *
+  * Use:
+  * * Call {@link addLine(LineDef)} for each line to add to the heat map.
+  * * After all lines have been added, call {@link draw(Graphics2D)} to plot a
+  *   graph or call {@link rows} to get the counts in each bucket and cell for
+  *   serialization.
+  */
 trait HeatMap {
 
-  var legendMinMax: Array[(Double, Double, Long)] = null
+  /** Used to track legend min/max values and hits. (min, max, hits) */
+  private var legendMinMax: Array[(Double, Double, Long)] = null
 
+  /**
+    * Adds the line to the graph, updating bucket counts. The color palette is
+    * drawn from the first line added.
+    *
+    * @param line
+    *   A non-null line to add to the heatmap.
+    */
   def addLine(line: LineDef): Unit
 
+  /**
+    * Plots the heatmap after all of the lines have been added.
+    *
+    * @param g
+    *   The non-null graphics context to update.
+    */
   def draw(g: Graphics2D): Unit
 
-  def query: String
+  /**
+    * @return
+    *   A label to use for the legend. May be user provided or fall back to a
+    *   query.
+    */
+  def legendLabel: String
 
+  /**
+    * @return
+    *   The type of heatmap implemented. Use for serialization.
+    */
   def `type`: String
 
+  /**
+    * @return
+    *   An instance of Yaxis ticks for this heatmap.
+    */
   def yticks: List[ValueTick]
 
-  // enforces bounds and updates legend for JSON serialization. Equivalent of draw.
-  // no null buckets.
-  def counts: Array[Array[Double]]
+  /**
+    * @return
+    *   The heatmap counts that would be plotted in a graph. Organized by row
+    *   (bottom most row first, correlated with the lowest tick value) and time.
+    */
+  def rows: Array[Array[Double]]
 
+  /**
+    * @return
+    *   The palatte used by this heatmap.
+    */
   def palette: Palette
 
+  /**
+    * @return
+    *   The color scaler used by this heatmap.
+    */
   def colorScaler: Scales.DoubleScale
 
+  /**
+    * Compiles a map of colors with min, max and hits for use in plotting or serializing
+    * a color legend.
+    * **NOTE** that for the map to be populated, lines of data must be added to the
+    * heatmap first and either {@link draw} or {@link rows} must be called.
+    *
+    * @return
+    *   A non-null list of heat map color entries. The list may be empty if no values
+    *   were recorded (data was all NaN or 0) or the mapping was called before lines
+    *   were added to the heatmap.
+    */
   def colorMap: List[HeatMapLegendColor] = {
     if (legendMinMax == null) {
       return List.empty
@@ -56,13 +114,22 @@ trait HeatMap {
       // get rid of colors that weren't used.
       .filter(t => t._2._3 != 0)
       .map { tuple =>
-        HeatMapLegendColor(tuple._1, tuple._2._1, tuple._2._2)
+        HeatMapLegendColor(tuple._1, tuple._2._1, tuple._2._2, tuple._2._3)
       }
   }
 
-  def getColor(dp: Double): Color = {
-    val scaled = colorScaler(dp)
-    updateLegend(dp, scaled)
+  /**
+    * Accepts a count for a bucket and returns the color the count maps to. Also
+    * updates the legend min/max array.
+    *
+    * @param count
+    *   The datapoint to fetch a color for. Must be finite and greater than 0.
+    * @return
+    *   The color to plot for the count.
+    */
+  protected[graphics] def getColor(count: Double): Color = {
+    val scaled = colorScaler(count)
+    updateLegend(count, scaled)
     palette.uniqueColors.reverse(scaled)
   }
 
@@ -87,11 +154,14 @@ trait HeatMap {
   *   The minimum count actually used for this color.
   * @param max
   *   The maximum count actually used for this color.
+  * @param hits
+  *   The number of data points that mapped to this color.
   */
 case class HeatMapLegendColor(
   color: Color,
   min: Double,
-  max: Double
+  max: Double,
+  hits: Long
 )
 
 object HeatMap {

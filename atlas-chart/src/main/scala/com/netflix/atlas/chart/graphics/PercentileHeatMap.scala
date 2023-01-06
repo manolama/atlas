@@ -37,7 +37,7 @@ case class PercentileHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
-  query: String,
+  legendLabel: String,
   leftOffset: Int = 0,
   rightOffset: Int = 0
 ) extends HeatMap {
@@ -105,7 +105,7 @@ case class PercentileHeatMap(
     }
   }
 
-  def counts: Array[Array[Double]] = {
+  def rows: Array[Array[Double]] = {
     val results = new Array[Array[Double]](buckets.length)
     buckets.zipWithIndex.foreach { tuple =>
       val (bkt, idx) = tuple

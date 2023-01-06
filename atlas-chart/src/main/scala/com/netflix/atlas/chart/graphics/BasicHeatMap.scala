@@ -36,7 +36,7 @@ case class BasicHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
-  query: String,
+  legendLabel: String,
   leftOffset: Int = 0,
   rightOffset: Int = 0
 ) extends HeatMap {
@@ -54,7 +54,7 @@ case class BasicHeatMap(
   private var upperCellBound: Double = 0
   private var firstLine: LineDef = null
 
-  def counts: Array[Array[Double]] = {
+  def rows: Array[Array[Double]] = {
     enforceCellBounds
     buckets.foreach { bkt =>
       bkt.foreach { dp =>

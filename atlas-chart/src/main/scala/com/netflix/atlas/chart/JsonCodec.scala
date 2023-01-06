@@ -268,7 +268,7 @@ private[chart] object JsonCodec {
     gen.writeStringField("type", "heatmap")
     gen.writeArrayFieldStart("values")
 
-    heatmap.counts.foreach { bkt =>
+    heatmap.rows.foreach { bkt =>
       gen.writeStartArray()
       bkt.foreach { dp =>
         gen.writeNumber(dp)
