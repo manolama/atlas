@@ -297,16 +297,89 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     }
   }
 
-  def offsetAdjust(idx: Int, yFudge: Long, dpHeight: Int): Int = {
-    var ctr = idx
-    var offset = 0
-    for (_ <- 0 until skipBuckets) {
-      val h = if (ctr % yFudge == 0) dpHeight + 1 else dpHeight
-      offset += h
-      ctr += 1
+}
+
+case class RightHeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
+    extends ValueAxis {
+
+  import ValueAxis._
+
+  protected var skipBuckets = 0
+
+  protected def angle: Double = -Math.PI / 2.0
+
+  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    style.configure(g)
+    g.drawLine(x2, y1, x2, y2)
+
+    val majorTicks = ticks(y1, y2).filter(_.major)
+    drawNormal(majorTicks, g, x1, y1, x2, y2)
+
+    label.foreach { t =>
+      drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
     }
-    offset
   }
+
+  override def ticks(y1: Int, y2: Int): List[ValueTick] = {
+    val scale = getScale(min, max, y1, y2)
+    val ticks = List.newBuilder[ValueTick]
+
+    scale.foreach { s =>
+      if (!s.skipTick) {
+        val prefix = Ticks.getDurationPrefix(s.base, s.base)
+        val fmt = prefix.format(s.base, "%.1f%s")
+        val label = prefix.format(s.base, fmt)
+        ticks += ValueTick(s.base, 0.0, s.majorTick, Some(label))
+      }
+
+      if (s.subTicks.nonEmpty) {
+        s.subTicks.foreach { tuple =>
+          val (v, isMajor, _) = tuple
+          val prefix = Ticks.getDurationPrefix(v, v)
+          val fmt = prefix.format(v, "%.1f%s")
+          val label = prefix.format(v, fmt)
+          ticks += ValueTick(v, 0.0, isMajor, Some(label))
+        }
+      }
+    }
+
+    // final tick at the top
+    val top = scale.last.next
+    val prefix = Ticks.getDurationPrefix(top, top)
+    val fmt = prefix.format(top, "%.1f%s")
+    val label = prefix.format(top, fmt)
+    ticks += ValueTick(top, 0.0, true, Some(label))
+    ticks.result()
+  }
+
+  private def drawNormal(
+    ticks: List[ValueTick],
+    g: Graphics2D,
+    x1: Int,
+    y1: Int,
+    x2: Int,
+    y2: Int
+  ): Unit = {
+    val yscale = scale(y1, y2)
+    ticks.foreach { tick =>
+      val py = yscale(tick.v)
+      g.drawLine(x1, py, x1 + tickMarkLength, py)
+      System.out.println(s"  Tick line: ${py} for ${tick.label}")
+
+      if (plotDef.showTickLabels) {
+        val txt = Text(
+          tick.label,
+          font = ChartSettings.smallFont,
+          alignment = TextAlignment.LEFT,
+          style = style
+        )
+        val txtH = ChartSettings.smallFontDims.height
+        val ty = py - txtH / 2
+        txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
+      }
+    }
+  }
+
 }
 
 case class RightValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)

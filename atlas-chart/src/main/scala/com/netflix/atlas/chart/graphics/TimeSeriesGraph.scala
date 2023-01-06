@@ -102,8 +102,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
         }
       } else {
-        // TODO - right axis heat maps.... meh
-        RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
+        if (plot.scale == Scale.PERCENTILE) {
+          RightHeatMapTimerValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
+        } else {
+          RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
+        }
       }
   }
 
