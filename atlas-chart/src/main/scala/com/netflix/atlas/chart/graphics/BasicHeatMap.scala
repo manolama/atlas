@@ -85,7 +85,7 @@ case class BasicHeatMap(
       val ytick = if (yi.hasNext) yi.next() else null
       val nextY = if (ytick != null) yScaler(ytick.v) else y1
       if (bucket != null) {
-        val lineElement = HeatmapLine(bucket, timeAxis, this)
+        val lineElement = HeatmapRow(bucket, timeAxis, this)
         lineElement.draw(g, x1 + leftOffset, nextY, x2 - rightOffset, lastY - nextY)
       }
       lastY = nextY

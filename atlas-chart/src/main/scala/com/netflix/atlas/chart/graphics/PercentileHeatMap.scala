@@ -124,7 +124,7 @@ case class PercentileHeatMap(
     buckets.zipWithIndex.foreach { t =>
       val (bucket, i) = t
       if (bucket != null && bucket.counts != null) {
-        val lineElement = HeatmapLine(bucket.counts, timeAxis, this)
+        val lineElement = HeatmapRow(bucket.counts, timeAxis, this)
         val yy = bucket.y - bucket.height + 1
         // System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
         lineElement.draw(
