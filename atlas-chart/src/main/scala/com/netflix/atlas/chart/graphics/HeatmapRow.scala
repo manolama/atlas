@@ -17,6 +17,7 @@ case class HeatmapRow(
       val x = if (ti.hasNext) xscale(ti.next().timestamp) else x2
       if (dp > 0) {
         val c = heatmap.getColor(dp)
+        Style(c).configure(g)
         g.fillRect(last, y1, x - last, y2)
       }
       last = x

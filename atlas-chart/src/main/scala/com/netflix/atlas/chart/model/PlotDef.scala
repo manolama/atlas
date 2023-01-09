@@ -52,7 +52,7 @@ case class PlotDef(
   lower: PlotBound = AutoStyle,
   tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL,
   palette: Option[Palette] = None,
-  heatmapDef: Option[HeatmapDef] = None
+  heatmapDef: Option[HeatMapDef] = None
 ) {
 
   import java.lang.{Double => JDouble}

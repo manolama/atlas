@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.model.HeatmapDef
+import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
@@ -151,7 +151,7 @@ object HeatMap {
   // Used to scale a single color on the alpha axis.
   val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF).reverse
 
-  val defaultDef = HeatmapDef()
+  val defaultDef = HeatMapDef()
 
   /**
     * Determines the palette to use from a line definition. If the line includes
@@ -205,7 +205,7 @@ object HeatMap {
       // only linear really makes sense here.
       Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
     } else {
-      plot.heatmapDef.getOrElse(defaultDef).scale match {
+      plot.heatmapDef.getOrElse(defaultDef).colorScale match {
         case Scale.LINEAR =>
           Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
         case Scale.LOGARITHMIC =>

@@ -41,17 +41,16 @@ case class BasicHeatMap(
 
   val yticks = axis.ticks(y1, chartEnd)
 
-  private[graphics] val buckets = new Array[Array[Double]](yticks.size)
-  private[graphics] val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
-  private[graphics] val hCells = xTicks.size
+  private val buckets = new Array[Array[Double]](yticks.size)
+  private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
+  private val hCells = xTicks.size
 
-  private[graphics] var minCount = Double.MaxValue
-  private[graphics] var maxCount = Double.MinValue
-  private[graphics] var lowerCellBound: Double = 0
-  private[graphics] var upperCellBound: Double = 0
-  private[graphics] var firstLine: LineDef = null
-  private[graphics] var label: String = null
-  private[graphics] var bucketScaler = axis.scale(0, buckets.length - 1)
+  private var minCount = Double.MaxValue
+  private var maxCount = Double.MinValue
+  private var lowerCellBound: Double = 0
+  private var upperCellBound: Double = 0
+  private var firstLine: LineDef = null
+  private var label: String = null
 
   // ctor
   {
@@ -62,14 +61,16 @@ case class BasicHeatMap(
       val (line, data) = tuple
       if (firstLine == null) {
         firstLine = line
-        // TODO - if the user explicitly provides a label via :legend, naturally
-        // we'll use that. But it will only grab the FIRST of the expressions in the
-        // heatmap. If there is no label, we can try falling back to the first query.
+        // TODO - if the user explicitly provides a label via heatmap options or :legend,
+        // naturally we'll use that. But it will only grab the FIRST of the expressions in
+        // the heatmap. If there is no label, we can try falling back to the first query.
         // Failing that, the ylabel then just the string "Heatmap".
-        if (data.label != null && data.label.nonEmpty) {
-          label = data.label
-        } else {
-          label = line.query.getOrElse(plot.ylabel.getOrElse("Heatmap"))
+        label = plot.heatmapDef.getOrElse(defaultDef).legend.getOrElse {
+          if (data.label != null && data.label.nonEmpty) {
+            data.label
+          } else {
+            line.query.getOrElse(plot.ylabel.getOrElse("Heatmap"))
+          }
         }
       }
       addLine(line)
@@ -111,7 +112,23 @@ case class BasicHeatMap(
     while (t < graphDef.endTime.toEpochMilli) {
       val v = line.data.data(t)
       if (v.isFinite) {
-        val y = (buckets.length - 1) - bucketScaler(v)
+        // TODO - revisit with some maths instead of iterating. The existing scalers
+        // don't quite work for finding the proper bucket. The iterative approach
+        // should be fast enough for now due to the small # of ticks and limit on series.
+        var y = 0
+        val yi = yticks.iterator
+        var found = false
+        while (yi.hasNext && !found) {
+          val ti = yi.next()
+          if (v <= ti.v) {
+            found = true
+          } else {
+            y += 1
+          }
+        }
+        if (!found) {
+          y = buckets.length - 1
+        }
         val x = if (t <= lastTick.timestamp) {
           bi
         } else {

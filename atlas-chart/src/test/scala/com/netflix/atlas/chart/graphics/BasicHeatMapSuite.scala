@@ -4,7 +4,7 @@ import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.HeatmapDef
+import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.PlotDef
@@ -36,7 +36,7 @@ class BasicHeatMapSuite extends FunSuite {
         (singleColorAlphas(3), 2, 2)
       )
     )
-    assertEquals(heatmap.label, "query")
+    assertEquals(heatmap.legendLabel, "query")
   }
 
   test("1 series negative value") {
@@ -153,7 +153,7 @@ class BasicHeatMapSuite extends FunSuite {
         (singleColorAlphas(3), 2, 2)
       )
     )
-    assertEquals(heatmap.label, "My Heatmap")
+    assertEquals(heatmap.legendLabel, "My Heatmap")
   }
 
   def generateHeatmap(
@@ -199,7 +199,7 @@ class BasicHeatMapSuite extends FunSuite {
       PlotDef(
         timeseries,
         heatmapDef = Some(
-          HeatmapDef(
+          HeatMapDef(
             lower = if (lowerBound.nonEmpty) Explicit(lowerBound.get) else AutoStyle,
             upper = if (upperBound.nonEmpty) Explicit(upperBound.get) else AutoStyle
           )

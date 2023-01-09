@@ -485,7 +485,7 @@ private[chart] object JsonCodec {
       lower         = PlotBound(node.get("lower").asText()),
       tickLabelMode = TickLabelMode.valueOf(node.get("tickLabelMode").asText()),
       // TODO - populate
-      heatmapDef = Some(HeatmapDef())
+      heatmapDef = Some(HeatMapDef())
     )
     // format: on
   }

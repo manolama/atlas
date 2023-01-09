@@ -2,6 +2,7 @@ package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
+import com.netflix.atlas.chart.graphics.HeatMap.defaultDef
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
@@ -9,7 +10,7 @@ import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.HeatmapDef
+import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
@@ -37,7 +38,6 @@ case class PercentileHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
-  // legendLabel: String,
   leftOffset: Int = 0,
   rightOffset: Int = 0
 ) extends HeatMap {
@@ -54,7 +54,7 @@ case class PercentileHeatMap(
   private var lowerCellBound: Double = 0
   private var upperCellBound: Double = 0
   private var firstLine: LineDef = null
-  private[graphics] var label: String = null
+  private var label: String = null
 
   case class Bkt(
     counts: Array[Double],
@@ -107,10 +107,21 @@ case class PercentileHeatMap(
   }
 
   {
-    plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { line =>
+    plot.lines.zip(plot.data).filter(_._1.lineStyle == LineStyle.HEATMAP).foreach { tuple =>
+      val (line, data) = tuple
       if (firstLine == null) {
         firstLine = line
-        label = line.query.getOrElse("")
+        // TODO - if the user explicitly provides a label via heatmap options or :legend,
+        // naturally we'll use that. But it will only grab the FIRST of the expressions in
+        // the heatmap. If there is no label, we can try falling back to the first query.
+        // Failing that, the ylabel then just the string "Heatmap".
+        label = plot.heatmapDef.getOrElse(defaultDef).legend.getOrElse {
+          if (data.label != null && data.label.nonEmpty) {
+            data.label
+          } else {
+            line.query.getOrElse(plot.ylabel.getOrElse("Heatmap"))
+          }
+        }
       }
       addLine(line)
     }
@@ -260,8 +271,8 @@ case class PercentileHeatMap(
   }
 
   private def enforceCellBounds: Unit = {
-    lowerCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
-    upperCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
+    lowerCellBound = plot.heatmapDef.getOrElse(HeatMapDef()).lower.lower(false, cmin)
+    upperCellBound = plot.heatmapDef.getOrElse(HeatMapDef()).upper.upper(false, cmax)
     buckets.foreach { row =>
       for (i <- 0 until row.counts.length) {
         val count = row.counts(i)
