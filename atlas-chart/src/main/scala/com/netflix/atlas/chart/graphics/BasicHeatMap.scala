@@ -41,10 +41,9 @@ case class BasicHeatMap(
 
   val yticks = axis.ticks(y1, chartEnd)
 
-  private[graphics] val buckets =
-    new Array[Array[Double]](yticks.size + 1) // plus 1 for the data above the final tick
+  private[graphics] val buckets = new Array[Array[Double]](yticks.size)
   private[graphics] val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
-  private[graphics] val hCells = xTicks.size + 1
+  private[graphics] val hCells = xTicks.size
 
   private[graphics] var minCount = Double.MaxValue
   private[graphics] var maxCount = Double.MinValue
@@ -52,12 +51,26 @@ case class BasicHeatMap(
   private[graphics] var upperCellBound: Double = 0
   private[graphics] var firstLine: LineDef = null
   private[graphics] var label: String = null
+  private[graphics] var bucketScaler = axis.scale(0, buckets.length - 1)
 
+  // ctor
   {
-    plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).foreach { line =>
+    for (i <- 0 until buckets.length) {
+      buckets(i) = new Array[Double](hCells)
+    }
+    plot.lines.zip(plot.data).filter(_._1.lineStyle == LineStyle.HEATMAP).foreach { tuple =>
+      val (line, data) = tuple
       if (firstLine == null) {
         firstLine = line
-        label = line.query.getOrElse("")
+        // TODO - if the user explicitly provides a label via :legend, naturally
+        // we'll use that. But it will only grab the FIRST of the expressions in the
+        // heatmap. If there is no label, we can try falling back to the first query.
+        // Failing that, the ylabel then just the string "Heatmap".
+        if (data.label != null && data.label.nonEmpty) {
+          label = data.label
+        } else {
+          label = line.query.getOrElse(plot.ylabel.getOrElse("Heatmap"))
+        }
       }
       addLine(line)
     }
@@ -91,57 +104,29 @@ case class BasicHeatMap(
     HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   private def addLine(line: LineDef): Unit = {
-    val seconds = if (isSpectatorPercentile(line)) bktSeconds(line) else -1
-    if (firstLine == null) {
-      firstLine = line
-    }
     var t = graphDef.startTime.toEpochMilli
     val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
     var lastTick = ti.next()
     var bi = 0
     while (t < graphDef.endTime.toEpochMilli) {
       val v = line.data.data(t)
-      val cmp = if (seconds >= 0) seconds else v
-      var y = 0
-      val yi = yticks.iterator
-      var found = false
-      while (yi.hasNext && !found) {
-        val ti = yi.next()
-        if (cmp <= ti.v) {
-          found = true
+      if (v.isFinite) {
+        val y = (buckets.length - 1) - bucketScaler(v)
+        val x = if (t <= lastTick.timestamp) {
+          bi
         } else {
-          y += 1
+          if (ti.hasNext) lastTick = ti.next()
+          bi += 1
+          bi
         }
-      }
-      if (!found) {
-        y = buckets.length - 1
-      }
 
-      val x = if (t <= lastTick.timestamp) {
-        bi
-      } else {
-        if (ti.hasNext) lastTick = ti.next()
-        bi += 1
-        bi
-      }
-
-      if (x < hCells && y < buckets.length) {
-        var b = buckets(y)
-        if (b == null) {
-          b = new Array[Double](hCells)
-          buckets(y) = b
+        // safety check
+        if (x < hCells && y < buckets.length) {
+          val b = buckets(y)
+          b(x) += 1
+          if (b(x) > maxCount) maxCount = b(x)
+          if (b(x) < minCount) minCount = b(x)
         }
-        if (seconds >= 0) b(x) += v.toLong else b(x) += 1
-        if (b(x) > 0 && b(x) > maxCount) {
-          maxCount = b(x)
-        }
-        if (b(x) > 0 && b(x) < minCount) {
-          minCount = b(x)
-        }
-      } else {
-        System.out.println(
-          s"************** WTF? X ${x} vs ${hCells}, Y ${y} vs ${buckets.length} @ ${t}"
-        )
       }
       t += graphDef.step
     }

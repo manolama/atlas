@@ -283,14 +283,14 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400&tz=UTC&tz=US/Pacific&title=IPC%20Server%20Call%20Time"
-    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=" +
-      "name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
-      // "name,requestLatency,:eq,(,percentile,),:by,:per-step,1,:axis" +
-      // "name,requestLatency,:eq,(,50,99.9,),:percentiles" +
-      "name,requestLatency,:eq," +  "1,:axis," +
-      "&scale=percentile" +
-      "&tick_labels=duration" +
-      "&heatmap_scale=log"
+//    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=" +
+//      "name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
+//      // "name,requestLatency,:eq,(,percentile,),:by,:per-step,1,:axis" +
+//      // "name,requestLatency,:eq,(,50,99.9,),:percentiles" +
+//      "name,requestLatency,:eq," + "1,:axis," +
+//      "&scale=percentile" +
+//      "&tick_labels=duration" +
+//      "&heatmap_scale=log"
 
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette&scale=log&w=1296&h=400"
 
@@ -308,8 +308,11 @@ class TryHeatMap extends FunSuite {
 //      "&scale=percentile"
 
     // heatmap, lines, heatmap same axis
-//    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap," +
-//      "name,sps,:eq,(,nf.cluster,),:by,"
+    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,Whohohohoh,:legend," +
+      "name,sps,:eq,(,nf.cluster,),:by,"
+
+    // line
+    // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap,45,:heatmap,48,:heatmap,99,:heatmap"
 
     // two heatmaps, diff queries back to back
 //    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,10,:mul,:heatmap,bluegreen,:palette," +
@@ -536,7 +539,7 @@ class TryHeatMap extends FunSuite {
     var seconds = bktSeconds(bktMax)
     System.out.println(s"SECONDS ${seconds} for ${bktMax}")
 
-    seconds = 5.759865526446057E9
+    seconds = 5.759865526446057e9
     val idx = PercentileBuckets.indexOf(seconds.toLong * 1000 * 1000 * 1000)
     System.out.println(s"To bkt Idx: ${idx}")
   }
