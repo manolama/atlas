@@ -255,7 +255,7 @@ class TryHeatMap extends FunSuite {
       "&heatmap_scale=log" +
       // "&heatmap_legend=My%20Nifty%20Percentile%20map"
       // "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
-      "&heatmap_palette=armytage" +
+//      "&heatmap_palette=armytage" +
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
       ""
