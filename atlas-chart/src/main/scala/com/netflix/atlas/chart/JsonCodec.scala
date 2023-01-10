@@ -183,6 +183,16 @@ private[chart] object JsonCodec {
     gen.writeStringField("upper", plot.upper.toString)
     gen.writeStringField("lower", plot.lower.toString)
     gen.writeStringField("tickLabelMode", plot.tickLabelMode.name())
+    if (plot.heatmapDef.nonEmpty) {
+      val heatMapDef = plot.heatmapDef.get
+      gen.writeObjectFieldStart("heatMapDef")
+      gen.writeStringField("colorScale", heatMapDef.colorScale.name())
+      gen.writeStringField("upper", heatMapDef.upper.toString)
+      gen.writeStringField("lower", heatMapDef.lower.toString)
+      // TODO - palette
+      gen.writeStringField("legend", heatMapDef.legend.getOrElse(""))
+      gen.writeEndObject()
+    }
     gen.writeEndObject()
 
     plot.lines.find(_.lineStyle == LineStyle.HEATMAP) match {
@@ -249,7 +259,6 @@ private[chart] object JsonCodec {
     gen.writeStartObject()
     gen.writeStringField("type", heatmap.`type`)
     gen.writeNumberField("plot", plotId)
-    gen.writeNumberField("id", id)
 
     gen.writeArrayFieldStart("yticks")
     heatmap.yticks.foreach { tick =>
@@ -274,6 +283,7 @@ private[chart] object JsonCodec {
     }
     gen.writeEndArray()
 
+    gen.writeStringField("label", heatmap.legendLabel)
     gen.writeArrayFieldStart("colorLegend")
     heatmap.colorMap.foreach { cm =>
       gen.writeStartObject()

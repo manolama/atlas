@@ -113,116 +113,116 @@ class TryHeatMap extends FunSuite {
       var ts = timeseries.result()
 
       val keys = List(
-        "T0001",
-        "T0036",
-        "T0037",
-        "T0038",
-        "T0039",
-        "T003A",
-        "T003B",
-        "T003C",
-        "T003D",
-        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
-        "T003F",
-        "T0040",
-        "T0041",
+//        "T0001",
+//        "T0036",
+//        "T0037",
+//        "T0038",
+//        "T0039",
+//        "T003A",
+//        "T003B",
+//        "T003C",
+//        "T003D",
+//        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
+//        "T003F",
+//        "T0040",
+//        "T0041",
         "T0042",
-        "T0043",
-        "T0044",
-        "T0045",
-        "T0046",
-        "T0047",
-        "T0048",
-        "T0049",
-        "T004A",
-        "T004B",
-        "T004C",
-        "T004D",
-        "T004E",
-        "T004F",
-        "T0050",
-        "T0051",
-        "T0052",
-        "T0053",
-        "T0054",
-        "T0055",
-        "T0056",
-        "T0057",
-        "T0058",
-        "T0059",
-        "T005A",
-        "T005B",
-        "T005C",
-        "T005D",
-        "T005E",
-        "T005F",
-        "T0060",
-        "T0061",
-        "T0062",
-        "T0063",
-        "T0064",
-        "T0065",
-        "T0066",
-        "T0067",
-        "T0068",
-        "T0069",
-        "T006A",
-        "T006B",
-        "T006C",
-        "T006D",
-        "T006E",
-        "T006F",
-        "T0070",
-        "T0071",
-        "T0072",
-        "T0073",
-        "T0074",
-        "T0075",
-        "T0076",
-        "T0077",
-        "T0078",
-        "T0079",
-        "T007A",
-        "T007B",
-        "T007C",
-        "T007D",
-        "T007E",
-        "T007F",
-        "T0080",
-        "T0081",
-        "T0082",
-        "T0083",
-        "T0084",
-        "T0085",
-        "T0086",
-        "T0087",
-        "T0088",
-        "T0089",
-        "T008A",
-        "T008B",
-        "T008C",
-        "T008D",
-        "T008E",
-        "T008F",
-        "T0090",
-        "T0091",
-        "T0092",
-        "T0093",
-        "T0094",
-        "T0095",
-        "T0096",
-        "T0097",
-        "T0098",
-        "T0099",
-        "T009A",
-        "T009B",
-        "T009C",
-        "T009D",
-        "T009E",
-        "T009F",
-        "T00A0"
+//        "T0043",
+//        "T0044",
+//        "T0045",
+//        "T0046",
+//        "T0047",
+//        "T0048",
+//        "T0049",
+//        "T004A",
+//        "T004B",
+//        "T004C",
+//        "T004D",
+//        "T004E",
+//        "T004F",
+//        "T0050",
+//        "T0051",
+//        "T0052",
+//        "T0053",
+//        "T0054",
+//        "T0055",
+//        "T0056",
+//        "T0057",
+//        "T0058",
+//        "T0059",
+//        "T005A",
+//        "T005B",
+//        "T005C",
+//        "T005D",
+//        "T005E",
+//        "T005F",
+//        "T0060",
+//        "T0061",
+//        "T0062",
+//        "T0063",
+//        "T0064",
+//        "T0065",
+//        "T0066",
+//        "T0067",
+//        "T0068",
+//        "T0069",
+//        "T006A",
+//        "T006B",
+//        "T006C",
+//        "T006D",
+//        "T006E",
+//        "T006F",
+//        "T0070",
+//        "T0071",
+//        "T0072",
+//        "T0073",
+//        "T0074",
+//        "T0075",
+//        "T0076",
+//        "T0077",
+//        "T0078",
+//        "T0079",
+//        "T007A",
+//        "T007B",
+//        "T007C",
+//        "T007D",
+//        "T007E",
+//        "T007F",
+//        "T0080",
+//        "T0081",
+//        "T0082",
+//        "T0083",
+//        "T0084",
+//        "T0085",
+//        "T0086",
+//        "T0087",
+//        "T0088",
+//        "T0089",
+//        "T008A",
+//        "T008B",
+//        "T008C",
+//        "T008D",
+//        "T008E",
+//        "T008F",
+//        "T0090",
+//        "T0091",
+//        "T0092",
+//        "T0093",
+//        "T0094",
+//        "T0095",
+//        "T0096",
+//        "T0097",
+//        "T0098",
+//        "T0099",
+//        "T009A",
+//        "T009B",
+//        "T009C",
+//        "T009D",
+//        "T009E",
+//        "T009F",
+//        "T00A0"
       ).asJava
-      if (false) {
+      if (true) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -235,7 +235,7 @@ class TryHeatMap extends FunSuite {
   }
 
   // GOOD tests
-  /*imageTest("my histo") {
+  imageTest("my histo") {
     db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -247,11 +247,11 @@ class TryHeatMap extends FunSuite {
     // DEBUG PTILES
     "/api/v1/graph?q=" +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,My%20Heatmap,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
-      "&w=1296&h=600" +
-      "&scale=percentile" +
+//      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
+//      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
+//      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
+      //"&w=1296&h=600" +
+//      "&scale=percentile" +
       "&heatmap_scale=log" +
       // "&heatmap_legend=My%20Nifty%20Percentile%20map"
       "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
@@ -276,9 +276,9 @@ class TryHeatMap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
-  }*/
+  }
 
-  imageTest("histos") {
+  /*imageTest("histos") {
     db = getDB(false)
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -304,7 +304,7 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&scale=percentile"
 
     // ptile scale
-//    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq," +
+//    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,:heatmap," +
 //      "&scale=percentile"
 
     // heatmap, lines, heatmap same axis
@@ -328,10 +328,10 @@ class TryHeatMap extends FunSuite {
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap"
 
-  }
+  }*/
 
   test("jsonv2 maybe?") {
-    db = getDB(true)
+    db = getDB(false)
     val uri =
 //      "/api/v1/graph?q=name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,bluegreen,:palette," +
 //        "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles,ff0000,:color,2,:lw," +
@@ -339,9 +339,13 @@ class TryHeatMap extends FunSuite {
 //        "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles,033dfc,:color,2,:lw," +
 //        "&w=1296&h=600" +
 //        "&scale=percentile" +
-//        "&hints=no-image" +
-      "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,Whohohohoh,:legend," +
-        "name,sps,:eq,(,nf.cluster,),:by," +
+
+//      "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,Whohohohoh,:legend," +
+//        "name,sps,:eq,(,nf.cluster,),:by," +
+
+      "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,:heatmap," +
+        "&scale=percentile" +
+        "&hints=no-image" +
         "&format=v2.json"
     val result = grapher.evalAndRender(Uri(uri), db)
     System.out.println(result.dataString)

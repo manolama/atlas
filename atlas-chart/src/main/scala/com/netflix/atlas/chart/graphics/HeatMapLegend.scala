@@ -30,15 +30,6 @@ case class HeatMapLegend(
     // even throws an exception printing the last text box.
     val blockHeight = ChartSettings.normalFontDims.height - 2
 
-//    val colorsAndMinMax = if (state.legendMinMax == null) {
-//      List.empty[(Color, (Double, Double, Long))]
-//    } else {
-//      palette.uniqueColors.reverse
-//        .zip(state.legendMinMax)
-//        // get rid of colors that weren't used.
-//        .filterNot(t => t._2._3 == 0)
-//      // .reverse
-//    }
     val legendColors = state.colorMap
 
     val labelBuilder = List.newBuilder[Text]
@@ -92,7 +83,7 @@ case class HeatMapLegend(
     }
     labelBuilder += txt
 
-    val w = maxWidth + 2
+    val w = maxWidth + 4
     val halfMax = w / 2
     var blockX = x1 + 2 + halfMax
     val blockY = y1
@@ -107,16 +98,19 @@ case class HeatMapLegend(
       val txtY = blockY + blockHeight + 5
       text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
 
+//      Style(Color.GREEN).configure(g)
+//      g.drawLine(blockX - halfMax, txtY, blockX - halfMax, txtY + 10)
+//      Style(Color.RED).configure(g)
+//      g.drawLine(blockX + halfMax, txtY, blockX + halfMax, txtY + 10)
+//      Style(Color.BLACK).configure(g)
       blockX += w
     }
 
     if (legendColors.nonEmpty) {
-      {
-        val text = labels.last
-        val txtH = ChartSettings.smallFontDims.height
-        val txtY = blockY + blockHeight + 5
-        text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
-      }
+      val text = labels.last
+      val txtH = ChartSettings.smallFontDims.height
+      val txtY = blockY + blockHeight + 5
+      text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
 
       // horizontal black line
       styles.line.configure(g)

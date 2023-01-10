@@ -3,9 +3,16 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
 import com.netflix.atlas.chart.graphics.HeatMap.colorScaler
 import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
+import com.netflix.atlas.chart.graphics.HeatMapSuite.start
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.Scales.DoubleScale
+import com.netflix.atlas.chart.model.PlotBound.AutoStyle
+import com.netflix.atlas.chart.model.PlotBound.Explicit
+import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
@@ -13,16 +20,18 @@ import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Strings
+import munit.Assertions.assertEquals
 import munit.FunSuite
 
 import java.awt.Color
 import java.awt.Graphics2D
+import java.time.Instant
 
 class HeatMapSuite extends FunSuite {
 
   private val ts = TimeSeries(
     Map.empty,
-    new ArrayTimeSeq(DsType.Gauge, 1672819200000L, 60_000, new Array[Double](59))
+    new ArrayTimeSeq(DsType.Gauge, start, 60_000, new Array[Double](59))
   )
   private val palette = Palette.create("blues")
 
@@ -191,4 +200,138 @@ class HeatMapSuite extends FunSuite {
     override def colorScaler: DoubleScale =
       HeatMap.colorScaler(PlotDef(List.empty), palette, 1, upperCellBound)
   }
+}
+
+object HeatMapSuite {
+
+  val start = 1672819200000L
+  val end = start + (60_000 * 60)
+
+  def generateHeatmap(
+    data: List[Array[Double]],
+    lowerBound: Option[Double] = None,
+    upperBound: Option[Double] = None,
+    label: String = "query"
+  ): HeatMap = {
+    var idx = 0
+    val timeseries = data.map { dps =>
+      idx += 1
+      TimeSeries(
+        Map("series" -> idx.toString),
+        label,
+        new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
+      )
+    }
+    generateHeatmapSeries(timeseries, lowerBound, upperBound)
+  }
+
+  def generateHeatmapSeries(
+    data: List[TimeSeries],
+    lowerBound: Option[Double] = None,
+    upperBound: Option[Double] = None
+  ): HeatMap = {
+    var min = Double.MaxValue
+    var max = Double.MinValue
+    var isPercentile = false
+    var idx = 0
+    val timeseries = data.map { ts =>
+      if (isSpectatorPercentile(ts.tags)) {
+        isPercentile = true
+        val seconds = bktSeconds(LineDef(ts))
+        if (seconds < min) min = seconds
+        if (seconds > max) max = seconds
+      } else {
+        ts.data.foreach(start, end) { (_, dp) =>
+          if (dp < min) min = dp
+          if (dp > max) max = dp
+        }
+      }
+
+      idx += 1
+      LineDef(
+        ts,
+        lineStyle = LineStyle.HEATMAP
+      )
+    }
+
+    val plotDef = if (lowerBound.nonEmpty || upperBound.nonEmpty) {
+      PlotDef(
+        timeseries,
+        scale = if (isPercentile) Scale.PERCENTILE else PlotDef(List.empty).scale,
+        heatmapDef = Some(
+          HeatMapDef(
+            lower = if (lowerBound.nonEmpty) Explicit(lowerBound.get) else AutoStyle,
+            upper = if (upperBound.nonEmpty) Explicit(upperBound.get) else AutoStyle
+          )
+        )
+      )
+    } else {
+      PlotDef(
+        timeseries,
+        scale = if (isPercentile) Scale.PERCENTILE else PlotDef(List.empty).scale
+      )
+    }
+    val graphDef = GraphDef(
+      List(plotDef),
+      Instant.ofEpochMilli(start),
+      Instant.ofEpochMilli(end)
+    )
+    val yaxis =
+      if (isPercentile) HeatMapTimerValueAxis(plotDef, graphDef.theme.axis, min, max)
+      else LeftValueAxis(plotDef, graphDef.theme.axis, min, max)
+    val timeAxis = TimeAxis(
+      Style(color = graphDef.theme.axis.line.color),
+      graphDef.startTime.toEpochMilli,
+      graphDef.endTime.toEpochMilli,
+      graphDef.step,
+      graphDef.timezone
+    )
+
+    if (timeseries.filter(isSpectatorPercentile(_)).nonEmpty) {
+      PercentileHeatMap(
+        graphDef,
+        plotDef,
+        yaxis,
+        timeAxis,
+        x1 = 0,
+        y1 = 0,
+        x2 = 400,
+        chartEnd = 200
+      )
+    } else {
+      BasicHeatMap(
+        graphDef,
+        plotDef,
+        yaxis,
+        timeAxis,
+        x1 = 0,
+        y1 = 0,
+        x2 = 400,
+        chartEnd = 200
+      )
+    }
+
+  }
+
+  def assertColorMap(
+    obtained: List[HeatMapLegendColor],
+    expected: List[(Int, Double, Double)]
+  ): Unit = {
+    assertEquals(obtained.size, expected.size)
+    var idx = 0
+    obtained.zip(expected).foreach { oe =>
+      val (c, (alpha, min, max)) = oe
+      assertEquals(c.color.getAlpha, alpha, s"Incorrect alpha at ${idx}")
+      assertEquals(c.min, min, s"Incorrect min at ${idx}")
+      assertEquals(c.max, max, s"Incorrect max at ${idx}")
+      idx += 1
+    }
+  }
+
+  def assertRowCounts(v: Double, min: Double, row: Array[Double]): Unit = {
+    assertEquals(row.head, min)
+    for (i <- 1 until row.length - 1) assertEquals(row(i), v)
+    assertEquals(row.last, min)
+  }
+
 }

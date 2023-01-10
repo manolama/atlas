@@ -243,10 +243,10 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
 
     scale.foreach { s =>
       if (!s.skipTick) {
-        val prefix = Ticks.getDurationPrefix(s.base, s.base)
-        val fmt = prefix.format(s.base, "%.1f%s")
-        val label = prefix.format(s.base, fmt)
-        ticks += ValueTick(s.base, 0.0, s.majorTick, Some(label))
+        val prefix = Ticks.getDurationPrefix(s.baseDuration, s.baseDuration)
+        val fmt = prefix.format(s.baseDuration, "%.1f%s")
+        val label = prefix.format(s.baseDuration, fmt)
+        ticks += ValueTick(s.baseDuration, 0.0, s.majorTick, Some(label))
       }
 
       if (s.subTicks.nonEmpty) {
@@ -261,7 +261,7 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     }
 
     // final tick at the top
-    val top = scale.last.next
+    val top = scale.last.nextDuration
     val prefix = Ticks.getDurationPrefix(top, top)
     val fmt = prefix.format(top, "%.1f%s")
     val label = prefix.format(top, fmt)
@@ -326,10 +326,10 @@ case class RightHeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Dou
 
     scale.foreach { s =>
       if (!s.skipTick) {
-        val prefix = Ticks.getDurationPrefix(s.base, s.base)
-        val fmt = prefix.format(s.base, "%.1f%s")
-        val label = prefix.format(s.base, fmt)
-        ticks += ValueTick(s.base, 0.0, s.majorTick, Some(label))
+        val prefix = Ticks.getDurationPrefix(s.baseDuration, s.baseDuration)
+        val fmt = prefix.format(s.baseDuration, "%.1f%s")
+        val label = prefix.format(s.baseDuration, fmt)
+        ticks += ValueTick(s.baseDuration, 0.0, s.majorTick, Some(label))
       }
 
       if (s.subTicks.nonEmpty) {
@@ -344,7 +344,7 @@ case class RightHeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Dou
     }
 
     // final tick at the top
-    val top = scale.last.next
+    val top = scale.last.nextDuration
     val prefix = Ticks.getDurationPrefix(top, top)
     val fmt = prefix.format(top, "%.1f%s")
     val label = prefix.format(top, fmt)

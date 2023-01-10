@@ -1,14 +1,24 @@
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
+import com.netflix.atlas.chart.graphics.HeatMapSuite.assertColorMap
+import com.netflix.atlas.chart.graphics.HeatMapSuite.assertRowCounts
+import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmap
+import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmapSeries
+import com.netflix.atlas.chart.graphics.HeatMapSuite.start
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
-import com.netflix.spectator.api.histogram.PercentileBuckets
+import com.netflix.atlas.core.model.ArrayTimeSeq
+import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.TimeSeries
 import munit.FunSuite
 import org.junit.Assert.assertFalse
+
+import java.util
 
 class PercentileHeatMapSuite extends FunSuite {
 
@@ -103,8 +113,8 @@ class PercentileHeatMapSuite extends FunSuite {
 
     var bktIdx = 125
     buckets.foreach { bkt =>
-      assertEquals(bkt.base, bktSeconds(bktIdx))
-      assertEquals(bkt.next, bktSeconds(bktIdx + 1))
+      assertEquals(bkt.baseDuration, bktSeconds(bktIdx))
+      assertEquals(bkt.nextDuration, bktSeconds(bktIdx + 1))
       assertFalse(bkt.skipTick)
       assert(bkt.majorTick)
       assert(bkt.subTicks.isEmpty)
@@ -113,82 +123,121 @@ class PercentileHeatMapSuite extends FunSuite {
     System.out.println(buckets)
   }
 
-  test("scale") {
-    val min = 1.9999999999999997e-9
-    val max = 114.532461226
-    val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
-    val ticks = axis.ticks(5, 405)
-    val scale = axis.scale(5, 405)
-    val s = getPtileScale(min, max, 5, 405)
-    s.foreach { e =>
-      System.out.println(
-        s"Off: ${e.y} (${405 - e.y + 5}) Height: ${e.height}  Base: ${e.base}"
-      )
-    }
-    ticks.foreach { t =>
-      System.out.println(s"Tick ${t.label} Y: ${scale(t.v)}")
-    }
-  }
-
-  test("scale x2 buckets") {
-    val min = 0.002796201
-    val max = 0.002796201
-    val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
-    val ticks = axis.ticks(5, 305)
-    val scale = axis.scale(5, 305)
-    val s = getPtileScale(min, max, 5, 305)
-
-    val bi = 92
-    System.out.println(s"Bkt IDX: ${bi}")
-    System.out.println(s"Nanos: ${PercentileBuckets.get(bi)}")
-    System.out.println(
-      s"Idx for those nanos: ${PercentileBuckets.indexOf(PercentileBuckets.get(bi))}"
+  test("1 bucket") {
+    val dps = new Array[Double](60)
+    util.Arrays.fill(dps, 1)
+    val ts = TimeSeries(
+      Map("percentile" -> "T0042"),
+      "query",
+      new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
     )
-    System.out.println(s"Idx for 126: ${PercentileBuckets.indexOf(126)}")
-    System.out.println(s"Idx for 128: ${PercentileBuckets.indexOf(128)}")
+    val heatmap = generateHeatmapSeries(List(ts))
+    assertEquals(heatmap.rows.size, 20)
+    for (i <- 0 until heatmap.rows.size) {
+      assertRowCounts(0.1, 0.05, heatmap.rows(i))
+    }
+    assertEquals(heatmap.yticks.head.label, "49.2μs")
+    assertEquals(heatmap.yticks.last.label, "54.6μs")
 
-    System.out.println("---------------")
-    s.foreach { e =>
-      System.out.println(
-        s"Base: ${e.base} Off: ${e.y} (${scale(e.base)}) Height: ${e.height} to ${e.next} (${scale(e.next)})"
+    assertColorMap(
+      heatmap.colorMap,
+      List(
+        (singleColorAlphas.last, 0.05, 0.05),
+        (singleColorAlphas(0), 0.1, 0.1)
       )
-    }
-    System.out.println("----------------")
-    ticks.foreach { t =>
-      System.out.println(s"Tick ${t.label} Y : ${scale(t.v)} Val: ${t.v} Maj: ${t.major} ")
-    }
+    )
+    assertEquals(heatmap.legendLabel, "query")
   }
 
-  test("scale x buckets") {
-    val min = 51.53960755
-    val max = 114.532461226
-    val axis = HeatMapTimerValueAxis(plotDef, styles, min, max)
-    val ticks = axis.ticks(5, 305)
-    val scale = axis.scale(5, 305)
-    val s = getPtileScale(min, max, 5, 305)
-    s.foreach { e =>
-      System.out.println(
-        s"Off: ${e.y} (${scale(e.base)}) Height: ${e.height}  Base: ${e.base} "
+  test("2 buckets") {
+    val dps = new Array[Double](60)
+    util.Arrays.fill(dps, 1)
+    val ts1 = TimeSeries(
+      Map("percentile" -> "T0042"),
+      "query",
+      new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
+    )
+    val ts2 = TimeSeries(
+      Map("percentile" -> "T0043"),
+      "query",
+      new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
+    )
+    val heatmap = generateHeatmapSeries(List(ts1, ts2))
+    assertEquals(heatmap.rows.size, 20)
+    for (i <- 0 until heatmap.rows.size) {
+      assertRowCounts(0.2, 0.1, heatmap.rows(i))
+    }
+    assertEquals(heatmap.yticks.head.label, "49.2μs")
+    assertEquals(heatmap.yticks.last.label, "60.1μs")
+
+    assertColorMap(
+      heatmap.colorMap,
+      List(
+        (singleColorAlphas.last, 0.1, 0.1),
+        (singleColorAlphas(0), 0.2, 0.2)
       )
-    }
-    ticks.foreach { t =>
-      System.out.println(s"Tick ${t.label} Y: ${scale(t.v)}")
-    }
+    )
+    assertEquals(heatmap.legendLabel, "query")
   }
 
-  test("scale 1 bucket") {
-    val s = getPtileScale(51.53960755, 51.53960755, 5, 405)
-    s.foreach { e =>
-      System.out.println(
-        s"Off: ${e.y} (${405 - e.y + 5}) Height: ${e.height}  Base: ${e.base} "
+  test("more buckets than ticks") {
+    val dps = new Array[Double](60)
+    util.Arrays.fill(dps, 1)
+    val series = List.newBuilder[TimeSeries]
+    var bkt = Integer.parseInt("0042", 16)
+    for (_ <- 0 until 75) {
+      series += TimeSeries(
+        Map("percentile" -> s"T00${bkt.toHexString.toUpperCase()}"),
+        "query",
+        new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
       )
+      bkt += 1
     }
+    val heatmap = generateHeatmapSeries(series.result())
+    assertEquals(heatmap.rows.size, 25)
+    for (i <- 0 until heatmap.rows.size) {
+      assertRowCounts(6, 3, heatmap.rows(i))
+    }
+    assertEquals(heatmap.yticks.head.label, "49.2μs")
+    assertEquals(heatmap.yticks.last.label, "4.3s")
+
+    assertColorMap(
+      heatmap.colorMap,
+      List(
+        (singleColorAlphas(4), 3, 3),
+        (singleColorAlphas(1), 6, 6)
+      )
+    )
+    assertEquals(heatmap.legendLabel, "query")
   }
 
-  test("Foo") {
-    System.out.println(PercentileBuckets.asArray().length)
-    System.out.println(bktSeconds(274))
-    System.out.println(bktSeconds(275))
+  test("explicit bounds") {
+    val dps = new Array[Double](60)
+    util.Arrays.fill(dps, 1)
+    val series = List.newBuilder[TimeSeries]
+    var bkt = Integer.parseInt("0042", 16)
+    for (_ <- 0 until 75) {
+      series += TimeSeries(
+        Map("percentile" -> s"T00${bkt.toHexString.toUpperCase()}"),
+        "query",
+        new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
+      )
+      bkt += 1
+    }
+    val heatmap = generateHeatmapSeries(series.result(), Some(4))
+    assertEquals(heatmap.rows.size, 25)
+    for (i <- 0 until heatmap.rows.size) {
+      assertRowCounts(6, 0, heatmap.rows(i))
+    }
+    assertEquals(heatmap.yticks.head.label, "49.2μs")
+    assertEquals(heatmap.yticks.last.label, "4.3s")
 
+    assertColorMap(
+      heatmap.colorMap,
+      List(
+        (singleColorAlphas(2), 6, 6)
+      )
+    )
+    assertEquals(heatmap.legendLabel, "query")
   }
 }

@@ -91,12 +91,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
       if (i == 0) {
-        if (
-          plot.scale == Scale.PERCENTILE
-//          plot.lines
-//            .find(l => l.lineStyle == LineStyle.HEATMAP && isSpectatorPercentile(l))
-//            .nonEmpty
-        ) {
+        if (plot.scale == Scale.PERCENTILE) {
           HeatMapTimerValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
         } else {
           LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)

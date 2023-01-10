@@ -1,10 +1,8 @@
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
 import com.netflix.atlas.chart.graphics.HeatMap.defaultDef
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
@@ -13,21 +11,12 @@ import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
-import com.netflix.atlas.chart.model.MessageDef
-import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
-import com.netflix.atlas.core.model.ArrayTimeSeq
-import com.netflix.atlas.core.model.DsType
-import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
-import java.awt.BasicStroke
-import java.awt.Color
 import java.awt.Graphics2D
-import java.util
 import java.util.regex.Pattern
-import scala.collection.mutable
 
 case class PercentileHeatMap(
   graphDef: GraphDef,
@@ -47,7 +36,7 @@ case class PercentileHeatMap(
   private val yscale = axis.scale(y1, chartEnd)
   private val ptileScale = getPtileScale(axis.min, axis.max, y1, chartEnd)
   private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
-  private val hCells = xTicks.size + 1
+  private val hCells = xTicks.size
 
   private var cmin = Double.MaxValue
   private var cmax = Double.MinValue
@@ -66,44 +55,25 @@ case class PercentileHeatMap(
   )
 
   val buckets = {
-    // simplify I hope....
-
-    // fun is... if we have a standard tick layout instead of the percentile version,
-    // then we need to join the buckets with the ticks and some may span multiple ticks.
-    // blech.
-    if (plot.scale == Scale.PERCENTILE) {
-      var lastY = y1
-      val bkts = new Array[Bkt](yticks.size - 1)
-      val tpm =
-        if (yticks.size - 1 >= ptileScale.size) {
-          Math.max(1, (yticks.size - 1) / ptileScale.size)
-        } else
-          1
-      for (i <- yticks.length - 2 to 0 by -1) {
-        val tick = yticks(i)
-        val y = yscale(tick.v)
-        val nextTick = yticks(i + 1)
-        bkts(i) = Bkt(null, y, y - lastY, tick.v, nextTick.v, tpm)
-        lastY = y
-      }
-      bkts // TODO - still producing null buckets.... crap
-    } else {
-      val bkts = new Array[Bkt](ptileScale.size)
-      ptileScale.zipWithIndex.foreach { t =>
-        val (s, i) = t
-//        val tickRange = yticks.filter(t => t.v >= s.base && t.v < s.next)
-//        val tick = tickRange.head
-//        val y = yscale(tick.v)
-//        val nextTick = tickRange.last
-//        bkts(i) = Bkt(null, y, y - lastY, tick.v, nextTick.v, tickRange.size)
-//        lastY = y
-
-        val y = yscale(s.base)
-        val h = Math.max(1, y - yscale(s.next))
-        bkts(i) = Bkt(null, y, h, s.base, s.next, 1)
-      }
-      bkts // TODO - still producing null buckets.... crap
+    // NOTE: It is expected that the scale will ALWAYS be PERCENTILE if we get here.
+    // If we desire supporting other scales, we need to handle alignment and the
+    // single bucket (same min/max on the axis. 0 yticks in that case) use case.
+    var lastY = y1
+    val bkts = new Array[Bkt](yticks.size - 1)
+    // if we only have a small number of buckets to plot, we need to distribute the
+    // counts across ticks.
+    val ticksPerBucket =
+      if (yticks.size - 1 >= ptileScale.size) {
+        Math.max(1, (yticks.size - 1) / ptileScale.size)
+      } else 1
+    for (i <- yticks.length - 2 to 0 by -1) {
+      val tick = yticks(i)
+      val y = yscale(tick.v)
+      val nextTick = yticks(i + 1)
+      bkts(i) = Bkt(new Array[Double](hCells), y, y - lastY, tick.v, nextTick.v, ticksPerBucket)
+      lastY = y
     }
+    bkts
   }
 
   {
@@ -129,15 +99,10 @@ case class PercentileHeatMap(
   }
 
   def draw(g: Graphics2D): Unit = {
-    enforceCellBounds
-    System.out.println("***** Draw heatmap")
-
-    buckets.zipWithIndex.foreach { t =>
-      val (bucket, i) = t
+    buckets.foreach { bucket =>
       if (bucket != null && bucket.counts != null) {
         val lineElement = HeatmapRow(bucket.counts, timeAxis, this)
         val yy = bucket.y - bucket.height + 1
-        // System.out.println(s"${i}: YY ${yy} & H ${bucket.height}")
         lineElement.draw(
           g,
           x1 + leftOffset,
@@ -155,13 +120,8 @@ case class PercentileHeatMap(
     val results = new Array[Array[Double]](buckets.length)
     buckets.zipWithIndex.foreach { tuple =>
       val (bkt, idx) = tuple
-      if (bkt == null) {
-        results(idx) = new Array[Double](hCells)
-      } else {
-        results(idx) = bkt.counts
-      }
+      results(idx) = bkt.counts
     }
-    // TODO - still producing null buckets.... crap
     results
   }
 
@@ -173,28 +133,21 @@ case class PercentileHeatMap(
     HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   private def addLine(line: LineDef): Unit = {
-    // Remember, when we make this call, it's actually the NEXT bucket so we need
-    // to shift down.
-    val seconds = if (isSpectatorPercentile(line)) {
+    val seconds = {
+      // Remember, when we make this call, it's actually the NEXT bucket so we need
+      // to shift down.
       var b = bktIdx(line)
       b = if (b > 0) b - 1 else b
       bktSeconds(b)
-    } else -1
-    // bounds check
-    if (plot.scale == Scale.PERCENTILE) {
-      if (seconds > yticks.last.v || seconds < yticks.head.v) {
-        return
-      }
-    } else {
-      if (seconds > buckets.last.v || seconds < buckets.head.v) {
-        return
-      }
+    }
+    // axis bounds check
+    if (seconds > yticks.last.v || seconds < yticks.head.v) {
+      return
     }
 
     // we need to figure out how many buckets to fill. This is due to the regular
     // ticks scale but exponential bucket size. Higher buckets can spread across
     // cells.
-    // var i = 0
     var bucketIndex = 0
     var found = false
     buckets.zipWithIndex.foreach { tuple =>
@@ -205,20 +158,9 @@ case class PercentileHeatMap(
       }
     }
     if (!found) {
-      System.out.println(s"********** WTF? Nothing found for ${seconds}????")
       bucketIndex = 0
     }
     var row = buckets(bucketIndex)
-    if (bucketIndex >= buckets.length) {
-      System.out.println("WTF? Out of range????")
-    }
-    // System.out.println(s"ROW: ${bucketIndex} for ${seconds}")
-
-    // System.out.println(s"*** Row seconds ${seconds} in bkt Boundary ${row.tick.v}")
-    if (firstLine == null) {
-      firstLine = line
-    }
-
     var t = graphDef.startTime.toEpochMilli
     val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
     var lastTick = ti.next()
@@ -236,17 +178,10 @@ case class PercentileHeatMap(
       if (v > 0) { // filters NaNs
         if (x < hCells) {
           val tpb = row.ticksPerBucket
-          // TODO - change counts to double now.... confusing as all get out....
-          // val count = Math.max(1, (v / tpb).toInt)
           val count = v / tpb
           for (i <- 0 until tpb) {
             if (bucketIndex + i < buckets.length) { // edge case if there is only a single bucket.
               row = buckets(bucketIndex + i)
-              if (row.counts == null) {
-                row = row.copy(counts = new Array[Double](hCells))
-                buckets(bucketIndex + i) = row
-              }
-
               if (seconds >= 0) row.counts(x) += count else row.counts(x) += 1
 
               if (row.counts(x) > 0 && row.counts(x) > cmax) {
@@ -255,15 +190,8 @@ case class PercentileHeatMap(
               if (row.counts(x) > 0 && row.counts(x) < cmin) {
                 cmin = row.counts(x)
               }
-            } else {
-              System.out.println("WTF??????????? Trying to inc in bucket OVER what we want!")
             }
           }
-          //        }
-        } else {
-          System.out.println(
-            s"************** WTF? X ${x} vs ${hCells}, Y ${bucketIndex} vs ${buckets.length} @ ${t}"
-          )
         }
       }
       t += graphDef.step
@@ -287,24 +215,32 @@ case class PercentileHeatMap(
 }
 
 /**
+  * An entry aligned to a Spectator percentile bucket.
   *
-  * @param boundary
+  * @param baseDuration
+  *   The inclusive base duration in seconds.
   * @param y
   *   Tick line, top of the bucket. To plot the cell, add the height offset then
   *   it will plot UP from that line.
   * @param height
-  * @param prevBoundary
-  * @param bktIndex
-  * @param split
+  *   The height of the bucket for plotting.
+  * @param nextDuration
+  *   The next, exclusive bucket duration in seconds.
+  * @param skipTick
+  *   Whether or not to skip plotting a tick for this bucket.
+  * @param majorTick
+  *   Whether or not the tick is a major tick.
+  * @param subTicks
+  *   An optional list of sub ticks if there are few buckets for the plot.
+  *   Tuple is (baseDuration, isMajor, nextDuration)
   */
 case class PtileScale(
-  base: Double,
+  baseDuration: Double,
   y: Int,
   height: Int,
-  next: Double,
+  nextDuration: Double,
   skipTick: Boolean,
   majorTick: Boolean,
-  // base, isMajor, next
   subTicks: List[(Double, Boolean, Double)] = List.empty
 )
 
@@ -312,6 +248,15 @@ object PercentileHeatMap {
 
   private val timerBucketIdPattern = Pattern.compile("^T[0-9A-F]{4}$")
 
+  /**
+    * Determines if the line is a Spectator percentile timer by looking to see if
+    * the line is grouped on the `percentile` tag and has a `T####` value.
+    *
+    * @param line
+    *   A non-null line to parse.
+    * @return
+    *   True if the line is a spectator percentile, false if not.
+    */
   def isSpectatorPercentile(line: LineDef): Boolean = {
     line.data.tags.get("percentile") match {
       case Some(v) => timerBucketIdPattern.matcher(v).find()
@@ -319,6 +264,15 @@ object PercentileHeatMap {
     }
   }
 
+  /**
+    * Determines if the line is a Spectator percentile timer by looking to see if
+    * the line is grouped on the `percentile` tag and has a `T####` value.
+    *
+    * @param tags
+    *   A non-null map of tags for the time series.
+    * @return
+    *   True if the line is a spectator percentile, false if not.
+    */
   def isSpectatorPercentile(tags: Map[String, String]): Boolean = {
     tags.get("percentile") match {
       case Some(v) => timerBucketIdPattern.matcher(v).find()
@@ -326,26 +280,78 @@ object PercentileHeatMap {
     }
   }
 
+  /**
+    * Returns the inclusive nanoseconds duration for the given percentile bucket.
+    *
+    * @param line
+    *   A non-null line where the `percentile` tag value is parsed.
+    * @return
+    *   A nanoseconds value matching the Spectator percentile bucket lower boundary.
+    */
   def bktNanos(line: LineDef): Long = {
     PercentileBuckets.get(bktIdx(line))
   }
 
+  /**
+    * Returns the inclusive nanoseconds duration for the given percentile bucket.
+    *
+    * @param index
+    *   An index into the {@link PercentileBuckets.asArray()} array.
+    * @return
+    *   A nanoseconds value matching the Spectator percentile bucket lower boundary.
+    */
   def bktNanos(index: Int): Long = {
     PercentileBuckets.get(index)
   }
 
+  /**
+    * Returns the inclusive seconds duration for the given percentile bucket.
+    *
+    * @param line
+    *   A non-null line where the `percentile` tag value is parsed.
+    * @return
+    *   A seconds value matching the Spectator percentile bucket lower boundary.
+    */
   def bktSeconds(line: LineDef): Double = {
     PercentileBuckets.get(bktIdx(line)) / 1000.0 / 1000.0 / 1000.0
   }
 
+  /**
+    * Returns the inclusive seconds duration for the given percentile bucket.
+    *
+    * @param bkt
+    *   An index into the {@link PercentileBuckets.asArray()} array.
+    * @return
+    *   A seconds value matching the Spectator percentile bucket lower boundary.
+    */
   def bktSeconds(bkt: Int): Double = {
     PercentileBuckets.get(bkt) / 1000.0 / 1000.0 / 1000.0
   }
 
+  /**
+    * Returns the index for the given percentile bucket in
+    * {@link PercentileBuckets.asArray()}
+    *
+    * @param line
+    *   A non-null line def to pull the `percentile` tag value from.
+    * @return
+    *   The index of the bucket.
+    */
   def bktIdx(line: LineDef): Int = {
     Integer.parseInt(line.data.tags("percentile").substring(1), 16)
   }
 
+  /**
+    * Returns the index of a bucket the value should fall into.
+    * **WARNING** Note that calling this method with the duration returned from a
+    * {@link bktNanos} call will return the **NEXT** bucket index instead of the
+    * expected index.
+    *
+    * @param v
+    *   The measurement in nanoseconds.
+    * @return
+    *   The index of a bucket from {@link PercentileBuckets.asArray()}.
+    */
   def bktIdx(v: Long): Int = {
     PercentileBuckets.indexOf(v)
   }
@@ -382,26 +388,6 @@ object PercentileHeatMap {
     var cnt = 0
     var prev = y1.toDouble
     val skipBuckets = bktRange / majorTicks / 4
-
-    // edge case, one bucket
-    if (minBkt == maxBkt) {
-      val nextY = prev + avgBktHeight
-      val h = (Math.round(nextY) - Math.round(prev)).toInt
-      val y = Math.round(prev).toInt
-      val base = bktSeconds(if (minBkt > 0) minBkt - 1 else minBkt)
-      val nextBucket = bktSeconds(minBkt) // TODO - edge case if we're in bucket 0.
-      val subTicks = if (bktRange < majorTicks) {
-        val list = List.newBuilder[(Double, Boolean, Double)]
-        val delta = (nextBucket - base) / fillsPerBkt
-        for (i <- 1 until fillsPerBkt) {
-          val v = base + (delta * i)
-          val nxt = base + (delta * i + 1)
-          list.addOne((v, v == base, nxt))
-        }
-        list.result()
-      } else List.empty
-      ticks = ticks :+ PtileScale(base, y, h, nextBucket, false, true, subTicks)
-    }
 
     for (i <- minBkt until maxBkt) {
       val nextY = prev + avgBktHeight

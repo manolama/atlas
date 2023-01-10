@@ -97,9 +97,9 @@ object Scales {
       var value = -1
       while (value < 0 && idx < ticks.size) {
         val tick = ticks(idx)
-        if (v >= tick.base && v < tick.next) {
-          val vpt = (tick.next - tick.base) / tick.height
-          var offset = tick.base + vpt
+        if (v >= tick.baseDuration && v < tick.nextDuration) {
+          val vpt = (tick.nextDuration - tick.baseDuration) / tick.height
+          var offset = tick.baseDuration + vpt
           var cnt = 0
           while (v > offset && cnt + 1 < tick.height) {
             offset += vpt
@@ -112,7 +112,7 @@ object Scales {
 
       // TODO - shouldn't need these if we're returning the proper ptile buckets!!!!!!!!!!!
       if (value < 0) {
-        if (Math.abs(v - ticks.last.next) < 1e-9) value = r2 // hack for last tick
+        if (Math.abs(v - ticks.last.nextDuration) < 1e-9) value = r2 // hack for last tick
         else value = Int.MaxValue // write off the canvas. Probably a cleaner way.
       }
 //      if (value > r2) {
