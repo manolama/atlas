@@ -19,6 +19,7 @@ import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
 import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.graphics.HeatMap.computeGraphY
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktIdx
@@ -39,7 +40,10 @@ import scala.collection.mutable
 /**
   * Draws a time series graph.
   */
-case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
+case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
+    extends Element
+    with FixedHeight
+    with FixedWidth {
 
   override def height: Int = {
     val max = GraphConstants.MaxHeight
@@ -105,7 +109,62 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       }
   }
 
-  var heatmaps = List.empty[HeatMap]
+  val heatmaps: List[Option[HeatMap]] = {
+    graphDef.plots.zip(yaxes).map {
+      case (plot, axis) =>
+        val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
+        if (heatmapLines.nonEmpty) {
+          val showAxes = !graphDef.onlyGraph && width >= GraphConstants.MinCanvasWidth
+          val leftAxisW = yaxes.head.width
+          val rightAxisW = yaxes.tail.foldLeft(0) { (acc, axis) =>
+            acc + axis.width
+          }
+          val rightSideW = if (rightAxisW > 0) rightAxisW else TimeSeriesGraph.minRightSidePadding
+          val leftOffset = if (showAxes) leftAxisW else TimeSeriesGraph.minRightSidePadding
+          val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
+
+          val y1 = aboveCanvas
+            .map(_.getHeight(ChartSettings.refGraphics, width))
+            .sum
+          val timeAxisH = if (graphDef.onlyGraph) 10 else timeAxis.height
+
+          val chartEnd =
+            (y1 + getHeight(ChartSettings.refGraphics, width)) - timeAxisH * timeAxes.size
+
+          val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
+            case Some(_) =>
+              PercentileHeatMap(
+                graphDef,
+                plot,
+                axis,
+                timeAxis,
+                0,
+                y1,
+                width,
+                chartEnd,
+                leftOffset,
+                rightOffset
+              )
+            case None =>
+              BasicHeatMap(
+                graphDef,
+                plot,
+                axis,
+                timeAxis,
+                0,
+                y1,
+                width,
+                chartEnd,
+                leftOffset,
+                rightOffset
+              )
+          }
+          Some(heatmap)
+        } else {
+          None
+        }
+    }
+  }
 
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     g.setClip(x1, y1, x2 - x1, y2 - y1)
@@ -134,62 +193,53 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
     val prevClip = g.getClip
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
-    graphDef.plots.zip(yaxes).foreach {
-      case (plot, axis) =>
+    graphDef.plots.zip(yaxes).zipWithIndex.foreach {
+      case ((plot, axis), plotIdx) =>
         val offsets = TimeSeriesStack.Offsets(timeAxis)
+        heatmaps(plotIdx).map(_.draw(g))
         // heatmaps first
-        val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
-        if (heatmapLines.nonEmpty) {
-          var heatmap: HeatMap = null
-          heatmapLines.find(isSpectatorPercentile(_)) match {
-            case Some(_) =>
-              heatmap = PercentileHeatMap(
-                graphDef,
-                plot,
-                axis,
-                timeAxis,
-                x1,
-                y1,
-                x2,
-                chartEnd,
-                // line.query.getOrElse(""),
-                leftOffset,
-                rightOffset
-              )
-            case None =>
-              heatmap = BasicHeatMap(
-                graphDef,
-                plot,
-                axis,
-                timeAxis,
-                x1,
-                y1,
-                x2,
-                chartEnd,
-                // line.query.getOrElse(""),
-                leftOffset,
-                rightOffset
-              )
-          }
-//        foreach { line =>
-//          if (heatmap == null) {
-//            if (isSpectatorPercentile(line)) {
-//
-//            } else {
-//
-//            }
+//        val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
+//        if (heatmapLines.nonEmpty) {
+//          var heatmap: HeatMap = null
+//          heatmapLines.find(isSpectatorPercentile(_)) match {
+//            case Some(_) =>
+//              heatmap = PercentileHeatMap(
+//                graphDef,
+//                plot,
+//                axis,
+//                timeAxis,
+//                x1,
+//                y1,
+//                x2,
+//                chartEnd,
+//                leftOffset,
+//                rightOffset
+//              )
+//            case None =>
+//              heatmap = BasicHeatMap(
+//                graphDef,
+//                plot,
+//                axis,
+//                timeAxis,
+//                x1,
+//                y1,
+//                x2,
+//                chartEnd,
+//                leftOffset,
+//                rightOffset
+//              )
 //          }
-//          heatmap.addLine(line)
-          if (heatmap != null) {
-            heatmap.draw(g)
-          }
-          heatmaps = heatmaps :+ heatmap
-        }
+//          if (heatmap != null) {
+//            heatmap.draw(g)
+//          }
+//          heatmaps(plotIdx) = heatmap
+//        }
 
+        val yscale = axis.scale(y1, y2)
         plot.lines.filter(_.lineStyle != LineStyle.HEATMAP).foreach { line =>
           val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
           val lineElement = line.lineStyle match {
-            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
+            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, yscale)
             case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
             case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
             case LineStyle.STACK =>

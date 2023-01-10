@@ -68,68 +68,15 @@ case class Legend(
   }
 
   private val entries = {
-//    plot.data.take(maxEntries).flatMap { data =>
-//      List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
-//    }
-    // nuts, can't use this since it's unordered.
-    // plot.data.groupBy()
-    val heatMapLabel: String = if (numHeatMaps > 0) {
-      if (plot.heatmapDef.nonEmpty && plot.heatmapDef.get.legend.nonEmpty) {
-        plot.heatmapDef.get.legend.get
-      } else if (
-        plot.data
-          .zip(plot.lines)
-          .filter(_._2.lineStyle == LineStyle.HEATMAP)
-          .groupBy(_._1.label)
-          .size == 1
-      ) {
-        plot.data
-          .zip(plot.lines)
-          .filter(_._2.lineStyle == LineStyle.HEATMAP)
-          .groupBy(_._1.label)
-          .head
-          ._1
-      } else if (
-        plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).groupBy(_.query.getOrElse("")).size == 1
-      ) {
-        plot.lines.filter(_.lineStyle == LineStyle.HEATMAP).head.query.getOrElse("")
-      } else {
-        ""
-      }
-    } else {
-      ""
-    }
-
     val results = List.newBuilder[Element with Product]
-    var lastHeatmapLegend: HeatMapLegend = null
-    plot.lines.zip(plot.data).foreach { tuple =>
-      val (line, data) = tuple
-      line.lineStyle match {
-        case LineStyle.HEATMAP =>
-          val k = heatMapLabel // line.query.getOrElse("")
-          if (
-            lastHeatmapLegend == null ||
-            !lastHeatmapLegend.query.equals(k)
-          ) {
-            if (lastHeatmapLegend != null) {
-              results += HorizontalPadding(2)
-              results += lastHeatmapLegend
-            }
-            lastHeatmapLegend = HeatMapLegend(styles, plot, plotId, showStats, k, graph)
-          }
-        case _ =>
-          if (lastHeatmapLegend != null) {
-            results += lastHeatmapLegend
-            lastHeatmapLegend = null
-          }
-          results += HorizontalPadding(2)
-          results += LegendEntry(styles, plot, data, showStats)
-      }
+    if (plot.lines.find(_.lineStyle == LineStyle.HEATMAP).nonEmpty) {
+      results += HeatMapLegend(styles, plot, plotId, showStats, graph)
     }
-    if (lastHeatmapLegend != null) {
-      results += lastHeatmapLegend
+    plot.lines.zip(plot.data).filter(_._1.lineStyle != LineStyle.HEATMAP).foreach { tuple =>
+      val (_, data) = tuple
+      results += HorizontalPadding(2)
+      results += LegendEntry(styles, plot, data, showStats)
     }
-
     results.result()
   }
 

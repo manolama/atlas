@@ -215,40 +215,34 @@ private[chart] object JsonCodec {
     plot: PlotDef,
     id: Int
   ): Unit = {
-    var heatmap: HeatMap = null
-    val graph = TimeSeriesGraph(config)
+    val offset = computeGraphY(config)
+    val graph = TimeSeriesGraph(config, List.empty)
     val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
-    if (heatmapLines.nonEmpty) {
-      heatmapLines.find(isSpectatorPercentile(_)) match {
-        case Some(_) =>
-          heatmap = PercentileHeatMap(
-            config,
-            plot,
-            graph.yaxes(id),
-            graph.timeAxis,
-            0,
-            computeGraphY(config),
-            graph.width,
-            graph.height
-          )
-        case None =>
-          heatmap = BasicHeatMap(
-            config,
-            plot,
-            graph.yaxes(id),
-            graph.timeAxis,
-            0,
-            computeGraphY(config),
-            graph.width,
-            graph.height
-          )
-      }
+    val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
+      case Some(_) =>
+        PercentileHeatMap(
+          config,
+          plot,
+          graph.yaxes(id),
+          graph.timeAxis,
+          0,
+          offset,
+          graph.width,
+          graph.height
+        )
+      case None =>
+        BasicHeatMap(
+          config,
+          plot,
+          graph.yaxes(id),
+          graph.timeAxis,
+          0,
+          offset,
+          graph.width,
+          graph.height
+        )
     }
-
-    if (heatmap != null) {
-      writeHeatMap(gen, heatmap, id)
-      heatmap = null
-    }
+    writeHeatMap(gen, heatmap, id)
   }
 
   private def writeHeatMap(

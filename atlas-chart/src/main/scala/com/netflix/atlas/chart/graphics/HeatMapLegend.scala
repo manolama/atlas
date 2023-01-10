@@ -1,12 +1,8 @@
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.model.LineDef
-import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
-import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.util.UnitPrefix
 
-import java.awt.Color
 import java.awt.Graphics2D
 
 case class HeatMapLegend(
@@ -14,34 +10,35 @@ case class HeatMapLegend(
   plot: PlotDef,
   plotId: Int,
   showStats: Boolean,
-  query: String,
   graph: TimeSeriesGraph
 ) extends Element
     with VariableHeight {
 
-  override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    val state = graph.heatmaps(plotId)
-//    val palette = state.firstLine.palette.getOrElse(
-//      Palette.singleColor(state.firstLine.color)
-//    )
-    val palette = state.palette
+  private val state = graph.heatmaps(plotId).getOrElse(null)
+  private val legendColors =  {
+    if (state == null) List.empty
+    else {
+      // see if we need to split the rows
+      val colorMap = state.colorMap
+      
+      colorMap
+    }
+  }
 
+
+
+  override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     // TODO - e.g. using 24 colors, the legend goes off the canvas. Need to handle that.
     // even throws an exception printing the last text box.
     val blockHeight = ChartSettings.normalFontDims.height - 2
-
-    val legendColors = state.colorMap
-
     val labelBuilder = List.newBuilder[Text]
     var maxWidth = 0
 
-    // TODO - check for uniques!
     var format = "%.0f%s"
     if (legendColors.nonEmpty) {
       var lastLabel = UnitPrefix.format(legendColors.head.min, format)
       for (i <- 1 until legendColors.size) {
         val nextLabel = UnitPrefix.format(legendColors(i).min, format)
-        // System.out.println(s"next ${nextLabel} prev ${lastLabel}")
         if (lastLabel.equals(nextLabel)) {
           format = "%.1f%s"
         }
@@ -56,7 +53,6 @@ case class HeatMapLegend(
           alignment = TextAlignment.CENTER
         )
 
-        // val width = str.length * txt.dims.width
         val width = g.getFontMetrics.stringWidth(str)
         if (width > maxWidth) {
           maxWidth = width
@@ -97,12 +93,6 @@ case class HeatMapLegend(
       val txtH = ChartSettings.smallFontDims.height
       val txtY = blockY + blockHeight + 5
       text.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
-
-//      Style(Color.GREEN).configure(g)
-//      g.drawLine(blockX - halfMax, txtY, blockX - halfMax, txtY + 10)
-//      Style(Color.RED).configure(g)
-//      g.drawLine(blockX + halfMax, txtY, blockX + halfMax, txtY + 10)
-//      Style(Color.BLACK).configure(g)
       blockX += w
     }
 
@@ -128,22 +118,24 @@ case class HeatMapLegend(
       }
     }
 
-    if (query.length > 0) {
-      styles.text.configure(g)
-      blockX += halfMax
-      txt = Text(
-        query,
-        font = ChartSettings.normalFont,
-        alignment = TextAlignment.LEFT
-      )
-
-      val txtY = y1
-      val txtH = ChartSettings.normalFontDims.height
-      txt.draw(g, blockX, txtY, x2, txtY + txtH)
-    }
+//    if (state.legendLabel.length > 0) {
+//      styles.text.configure(g)
+//      blockX += halfMax
+//      txt = Text(
+//        state.legendLabel,
+//        font = ChartSettings.normalFont,
+//        alignment = TextAlignment.LEFT
+//      )
+//
+//      val txtY = y1
+//      val txtH = ChartSettings.normalFontDims.height
+//      txt.draw(g, blockX, txtY, x2, txtY + txtH)
+//    }
   }
 
-  override def minHeight: Int = 10
+  override def minHeight: Int = if (graph.heatmaps(plotId).isEmpty) 0
+  else if (graph.heatmaps(plotId).get.colorMap.isEmpty) 0
+  else 10
 
   override def computeHeight(g: Graphics2D, width: Int): Int =
     ChartSettings.normalFontDims.height + ChartSettings.smallFontDims.height + 2

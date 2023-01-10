@@ -112,7 +112,8 @@ object Scales {
 
       // TODO - shouldn't need these if we're returning the proper ptile buckets!!!!!!!!!!!
       if (value < 0) {
-        if (Math.abs(v - ticks.last.nextDuration) < 1e-9) value = r2 // hack for last tick
+        if (Math.abs(v - ticks.last.nextDuration) < 1e-9)
+          value = r2 // hack for last tick
         else value = Int.MaxValue // write off the canvas. Probably a cleaner way.
       }
 //      if (value > r2) {

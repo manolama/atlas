@@ -100,7 +100,7 @@ case class PercentileHeatMap(
   def draw(g: Graphics2D): Unit = {
     buckets.foreach { bucket =>
       if (bucket != null && bucket.counts != null) {
-        val lineElement = HeatmapRow(bucket.counts, timeAxis, this)
+        val lineElement = HeatMapRow(bucket.counts, timeAxis, this)
         val yy = bucket.y - bucket.height + 1
         lineElement.draw(
           g,
@@ -377,9 +377,8 @@ object PercentileHeatMap {
     val majorTicks = (y2 - y1) / minTickLabelHeight
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
     val bktRange = Math.max(1, maxBkt - minBkt)
-    // val bktRange = maxBkt - minBkt + 1
     val fillsPerBkt = Math.round((majorTicks * 4) / bktRange.toDouble).toInt
-    val avgBktHeight = (y2 - y1).toDouble / bktRange
+    val avgBktHeight = (y2 - y1).toDouble / (bktRange + 1)
 
     var ticks = List.empty[PtileScale]
     var cnt = 0
