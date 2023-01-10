@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.atlas.chart.graphics.BasicHeatMap
 import com.netflix.atlas.chart.graphics.HeatMap
+import com.netflix.atlas.chart.graphics.HeatMap.computeGraphY
 import com.netflix.atlas.chart.graphics.PercentileHeatMap
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
@@ -189,7 +190,14 @@ private[chart] object JsonCodec {
       gen.writeStringField("colorScale", heatMapDef.colorScale.name())
       gen.writeStringField("upper", heatMapDef.upper.toString)
       gen.writeStringField("lower", heatMapDef.lower.toString)
-      // TODO - palette
+      if (heatMapDef.palette.nonEmpty) {
+        val p = heatMapDef.palette.get
+        gen.writeArrayFieldStart("palette")
+        p.uniqueColors.foreach { c =>
+          writeColor(gen, c)
+        }
+        gen.writeEndArray()
+      }
       gen.writeStringField("legend", heatMapDef.legend.getOrElse(""))
       gen.writeEndObject()
     }
@@ -199,7 +207,6 @@ private[chart] object JsonCodec {
       case Some(_) => writePlotHeatmaps(gen, config, plot, id)
       case None    => // no-op
     }
-
   }
 
   private def writePlotHeatmaps(
@@ -210,11 +217,6 @@ private[chart] object JsonCodec {
   ): Unit = {
     var heatmap: HeatMap = null
     val graph = TimeSeriesGraph(config)
-
-    val y1 = 5 // TODO - follow DefaultGraphEngine L78-L83 to figure out the starting height.
-    val chartEnd = graph.height // TODO - then figure out th chart end.
-    var heatmapIndex = 0
-
     val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
     if (heatmapLines.nonEmpty) {
       heatmapLines.find(isSpectatorPercentile(_)) match {
@@ -225,9 +227,9 @@ private[chart] object JsonCodec {
             graph.yaxes(id),
             graph.timeAxis,
             0,
-            y1,
+            computeGraphY(config),
             graph.width,
-            chartEnd
+            graph.height
           )
         case None =>
           heatmap = BasicHeatMap(
@@ -236,16 +238,15 @@ private[chart] object JsonCodec {
             graph.yaxes(id),
             graph.timeAxis,
             0,
-            y1,
+            computeGraphY(config),
             graph.width,
-            chartEnd
+            graph.height
           )
       }
     }
 
     if (heatmap != null) {
-      writeHeatMap(gen, heatmap, id, heatmapIndex)
-      heatmapIndex += 1
+      writeHeatMap(gen, heatmap, id)
       heatmap = null
     }
   }
@@ -253,11 +254,10 @@ private[chart] object JsonCodec {
   private def writeHeatMap(
     gen: JsonGenerator,
     heatmap: HeatMap,
-    plotId: Int,
-    id: Int
+    plotId: Int
   ): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", heatmap.`type`)
+    gen.writeStringField("type", "heatmap")
     gen.writeNumberField("plot", plotId)
 
     gen.writeArrayFieldStart("yticks")
@@ -271,7 +271,7 @@ private[chart] object JsonCodec {
     gen.writeEndArray()
 
     gen.writeObjectFieldStart("data")
-    gen.writeStringField("type", "heatmap")
+    gen.writeStringField("type", heatmap.`type`)
     gen.writeArrayFieldStart("values")
 
     heatmap.rows.foreach { bkt =>
@@ -289,7 +289,6 @@ private[chart] object JsonCodec {
       gen.writeStartObject()
       gen.writeFieldName("color")
       writeColor(gen, cm.color)
-      gen.writeNumberField("alpha", cm.color.getAlpha)
       gen.writeNumberField("min", cm.min)
       gen.writeNumberField("max", cm.max)
       gen.writeEndObject()
@@ -410,6 +409,9 @@ private[chart] object JsonCodec {
           gdef = toGraphDef(node)
         case "plot-metadata" =>
           plots += node.get("id").asInt(0) -> toPlotDef(node)
+        case "heatmap" =>
+        // ignored for now. Heatmaps are derived from the time series data which
+        // are currently serialized.
         case "timeseries" =>
           val plot = node.get("plot").asInt(0)
           data += plot -> toLineDef(gdef, node)
@@ -494,10 +496,33 @@ private[chart] object JsonCodec {
       upper         = PlotBound(node.get("upper").asText()),
       lower         = PlotBound(node.get("lower").asText()),
       tickLabelMode = TickLabelMode.valueOf(node.get("tickLabelMode").asText()),
-      // TODO - populate
-      heatmapDef = Some(HeatMapDef())
+      heatmapDef = Option(node.get("heatMapDef")).map(toHeatMapDef(_))
     )
     // format: on
+  }
+
+  private def toHeatMapDef(node: JsonNode): HeatMapDef = {
+
+    // format: off
+    HeatMapDef(
+      colorScale   = Scale.valueOf(node.get("colorScale").asText()),
+      upper        = PlotBound(node.get("upper").asText()),
+      lower        = PlotBound(node.get("lower").asText()),
+      palette      = Option(node.get("palette")).map(toPalette),
+      legend       = Option(node.get("legend")).map(_.asText())
+    )
+    // format: on
+  }
+
+  private def toPalette(node: JsonNode): Palette = {
+    val pairs = List.newBuilder[Color]
+    node.forEach { n =>
+      pairs += toColor(n)
+    }
+    Palette.fromArray(
+      "colors",
+      pairs.result().toArray
+    )
   }
 
   /**

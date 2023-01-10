@@ -81,6 +81,14 @@ case class Palette(name: String, colors: Int => Color) {
       colors(pos)
     }
   }
+
+  override def equals(obj: Any): Boolean = {
+    if (obj == null) return false
+    if (!obj.isInstanceOf[Palette]) return false
+    val other = obj.asInstanceOf[Palette]
+    if (!name.equals(other.name)) return false
+    uniqueColors.equals(other.uniqueColors)
+  }
 }
 
 object Palette {

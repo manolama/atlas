@@ -40,6 +40,7 @@ case class BasicHeatMap(
 ) extends HeatMap {
 
   val yticks = axis.ticks(y1, chartEnd)
+  val `type`: String = "heatmap"
 
   private val buckets = new Array[Array[Double]](yticks.size)
   private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
@@ -96,8 +97,6 @@ case class BasicHeatMap(
   override def legendLabel: String = label
 
   override def rows: Array[Array[Double]] = buckets
-
-  override def `type`: String = "heatmap"
 
   protected[graphics] lazy val palette = choosePalette(firstLine)
 

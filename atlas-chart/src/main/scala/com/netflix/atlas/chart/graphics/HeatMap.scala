@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
@@ -111,7 +112,6 @@ trait HeatMap {
     */
   protected[graphics] def getColor(count: Double): Color = {
     val scaled = colorScaler(count)
-    // updateLegend(count, scaled)
     palette.uniqueColors.reverse(scaled)
   }
 
@@ -152,6 +152,32 @@ object HeatMap {
   val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF).reverse
 
   val defaultDef = HeatMapDef()
+
+  /**
+    * Computes the starting position of the graph given optional titles or padding.
+    * Mirror of the DefaultGraphEngine code, copied out here for JsonCodec serialization
+    * purposes.
+    *
+    * @param config
+    *   The non-null graph config.
+    * @return
+    *   A positive offset incorporating optional titles.
+    */
+  def computeGraphY(config: GraphDef): Int = {
+    val aboveCanvas = List.newBuilder[Element]
+
+    config.title.foreach { str =>
+      if (config.showText)
+        aboveCanvas += Text(str, font = ChartSettings.largeFont, style = config.theme.image.text)
+          .truncate(config.width)
+    }
+    aboveCanvas += HorizontalPadding(5)
+
+    val h = aboveCanvas.result().foldLeft(0) { (acc, e) =>
+      acc + e.getHeight(ChartSettings.refGraphics, config.width)
+    }
+    if (config.layout.isFixedHeight) h else 0
+  }
 
   /**
     * Determines the palette to use from a line definition. If the line includes
@@ -233,4 +259,5 @@ object HeatMap {
     }
     Palette.fromArray("HeatMap", colors)
   }
+
 }

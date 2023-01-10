@@ -254,28 +254,18 @@ object HeatMapSuite {
       )
     }
 
-    val plotDef = if (lowerBound.nonEmpty || upperBound.nonEmpty) {
-      PlotDef(
-        timeseries,
-        scale = if (isPercentile) Scale.PERCENTILE else PlotDef(List.empty).scale,
-        heatmapDef = Some(
-          HeatMapDef(
-            lower = if (lowerBound.nonEmpty) Explicit(lowerBound.get) else AutoStyle,
-            upper = if (upperBound.nonEmpty) Explicit(upperBound.get) else AutoStyle
-          )
-        )
-      )
-    } else {
-      PlotDef(
-        timeseries,
-        scale = if (isPercentile) Scale.PERCENTILE else PlotDef(List.empty).scale
-      )
-    }
+    val heatMapDef = HeatMapDef(
+      lower = if (lowerBound.nonEmpty) Explicit(lowerBound.get) else AutoStyle,
+      upper = if (upperBound.nonEmpty) Explicit(upperBound.get) else AutoStyle
+    )
+    val plotDef = generatePlotDef(timeseries, Some(heatMapDef), isPercentile)
+
     val graphDef = GraphDef(
       List(plotDef),
       Instant.ofEpochMilli(start),
       Instant.ofEpochMilli(end)
     )
+
     val yaxis =
       if (isPercentile) HeatMapTimerValueAxis(plotDef, graphDef.theme.axis, min, max)
       else LeftValueAxis(plotDef, graphDef.theme.axis, min, max)
@@ -311,6 +301,18 @@ object HeatMapSuite {
       )
     }
 
+  }
+
+  def generatePlotDef(
+    timeseries: List[LineDef],
+    heatMapDef: Option[HeatMapDef] = None,
+    isPercentile: Boolean = false
+  ): PlotDef = {
+    PlotDef(
+      timeseries,
+      scale = if (isPercentile) Scale.PERCENTILE else PlotDef(List.empty).scale,
+      heatmapDef = heatMapDef
+    )
   }
 
   def assertColorMap(

@@ -5,14 +5,12 @@ import com.netflix.atlas.chart.graphics.HeatMap.defaultDef
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.PlotDef
-import com.netflix.atlas.chart.model.Scale
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
 import java.awt.Graphics2D
@@ -32,6 +30,7 @@ case class PercentileHeatMap(
 ) extends HeatMap {
 
   val yticks = axis.ticks(y1, chartEnd)
+  val `type`: String = "percentile-heatmap"
 
   private val yscale = axis.scale(y1, chartEnd)
   private val ptileScale = getPtileScale(axis.min, axis.max, y1, chartEnd)
@@ -124,8 +123,6 @@ case class PercentileHeatMap(
     }
     results
   }
-
-  override def `type`: String = "percentile-heatmap"
 
   protected[graphics] lazy val palette = choosePalette(firstLine)
 
