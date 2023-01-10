@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.chart
 
-import java.awt.Color
 import java.awt.Font
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -26,14 +25,10 @@ import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.graphics.Element
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
-import com.netflix.atlas.chart.model.LineStyle
-import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
 import com.netflix.iep.config.ConfigManager
 import com.netflix.spectator.api.histogram.PercentileBuckets
-
-import scala.collection.mutable
 
 class DefaultGraphEngine extends PngGraphEngine {
 
@@ -111,14 +106,15 @@ class DefaultGraphEngine extends PngGraphEngine {
             )
         }
       } else {
-        config.plots.zipWithIndex.foreach { plot =>
+        config.plots.zipWithIndex.foreach { tuple =>
+          val (plot, index) = tuple
           belowCanvas += Legend(
             config.theme.legend,
-            plot._1,
+            plot,
             None,
             showStats,
             entriesPerPlot,
-            plot._2,
+            index,
             graph
           )
         }
@@ -232,13 +228,5 @@ class DefaultGraphEngine extends PngGraphEngine {
     elements.foldLeft(0) { (acc, e) =>
       acc + e.getHeight(ChartSettings.refGraphics, w)
     }
-  }
-
-  def bktNanos(line: LineDef): Long = {
-    PercentileBuckets.get(bktIdx(line))
-  }
-
-  def bktIdx(line: LineDef): Int = {
-    Integer.parseInt(line.data.tags("percentile").substring(1), 16)
   }
 }
