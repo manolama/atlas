@@ -110,7 +110,7 @@ case class Grapher(settings: DefaultSettings) {
     val theme = params.get("theme").getOrElse(settings.theme)
     val palette = params.get("palette").getOrElse(settings.primaryPalette(theme))
 
-    var flags = ImageFlags(
+    val flags = ImageFlags(
       title = params.get("title").filter(_ != ""),
       width = params.get("w").fold(settings.width)(_.toInt),
       height = params.get("h").fold(settings.height)(_.toInt),
@@ -141,10 +141,6 @@ case class Grapher(settings: DefaultSettings) {
         .reverse
         .flatMap {
           case ModelExtractors.PresentationType(s) =>
-            // TODO - this right? Most definitely probably not.
-            if (s.settings.getOrElse("ls", "line").equals("heat")) {
-//              flags = flags.copy(showLegend = false)
-            }
             s.perOffset
           case v =>
             val tpe = v.getClass.getSimpleName
@@ -305,16 +301,12 @@ case class Grapher(settings: DefaultSettings) {
         val axisCfg = config.flags.axes(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
         if (
-          (dfltStyle == LineStyle.STACK || exprs
-            .find(
-              _.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.STACK
-            )
-            .nonEmpty) && exprs
-            .find(
-              _.lineStyle
-                .fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.HEATMAP
-            )
-            .nonEmpty
+          (dfltStyle == LineStyle.STACK || exprs.exists(
+            _.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.STACK
+          )) && exprs.exists(
+            _.lineStyle
+              .fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.HEATMAP
+          )
         ) {
           throw new IllegalArgumentException(
             "Not allowed to mix STACK and HEATMAP line styles on the same axis."
@@ -409,13 +401,13 @@ case class Grapher(settings: DefaultSettings) {
                 } else if (s.color.nonEmpty) {
                   None
                 } else if (s.palette.nonEmpty) {
-                  Some(newP(s.palette.get))
+                  Some(newPaletteRef(s.palette.get))
                 } else if (axisCfg.palette.nonEmpty) {
-                  Some(newP(axisCfg.palette.get))
+                  Some(newPaletteRef(axisCfg.palette.get))
                 } else {
                   lineStyle match {
                     case LineStyle.HEATMAP => None
-                    case _                 => Some(newP(config.flags.palette))
+                    case _                 => Some(newPaletteRef(config.flags.palette))
                   }
                 }
               }
@@ -476,7 +468,7 @@ case class Grapher(settings: DefaultSettings) {
     }
   }
 
-  private def newP(mode: String): Palette = {
+  private def newPaletteRef(mode: String): Palette = {
     val prefix = "hash:"
     if (mode.startsWith(prefix)) {
       val pname = mode.substring(prefix.length)
