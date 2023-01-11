@@ -21,14 +21,13 @@ import java.awt.image.BufferedImage
 import java.awt.image.RenderedImage
 import java.time.Duration
 import java.time.ZonedDateTime
+
 import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.graphics.Element
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
 import com.netflix.iep.config.ConfigManager
-import com.netflix.spectator.api.histogram.PercentileBuckets
 
 class DefaultGraphEngine extends PngGraphEngine {
 

@@ -24,7 +24,9 @@ import com.netflix.atlas.core.util.Strings
 
 case class Palette(name: String, colors: Int => Color) {
 
-  // TODO - think about it. Easy way to cache the built-ins.
+  /**
+    * The list of unique colors for the palette. Cached for re-use. Used by heatmaps.
+    */
   lazy val uniqueColors: List[Color] = {
     val it = iterator
     val colors = List.newBuilder[Color]

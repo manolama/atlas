@@ -16,26 +16,15 @@
 package com.netflix.atlas.chart.graphics
 
 import java.awt.BasicStroke
-import java.awt.Color
 import java.awt.Graphics2D
+
 import com.netflix.atlas.chart.GraphConstants
-import com.netflix.atlas.chart.graphics.HeatMap.computeGraphY
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
-import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktIdx
-import com.netflix.atlas.chart.graphics.TimeSeriesGraph.bktNanos
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
-import com.netflix.atlas.chart.model.Palette
-import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
-import com.netflix.atlas.core.model.ArrayTimeSeq
-import com.netflix.atlas.core.model.DsType
 import com.netflix.spectator.api.histogram.PercentileBuckets
-
-import java.util
-import scala.collection.mutable
 
 /**
   * Draws a time series graph.
@@ -195,46 +184,10 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
     graphDef.plots.zip(yaxes).zipWithIndex.foreach {
       case ((plot, axis), plotIdx) =>
-        val offsets = TimeSeriesStack.Offsets(timeAxis)
+        // always plot heatmaps first.
         heatmaps(plotIdx).map(_.draw(g))
-        // heatmaps first
-//        val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
-//        if (heatmapLines.nonEmpty) {
-//          var heatmap: HeatMap = null
-//          heatmapLines.find(isSpectatorPercentile(_)) match {
-//            case Some(_) =>
-//              heatmap = PercentileHeatMap(
-//                graphDef,
-//                plot,
-//                axis,
-//                timeAxis,
-//                x1,
-//                y1,
-//                x2,
-//                chartEnd,
-//                leftOffset,
-//                rightOffset
-//              )
-//            case None =>
-//              heatmap = BasicHeatMap(
-//                graphDef,
-//                plot,
-//                axis,
-//                timeAxis,
-//                x1,
-//                y1,
-//                x2,
-//                chartEnd,
-//                leftOffset,
-//                rightOffset
-//              )
-//          }
-//          if (heatmap != null) {
-//            heatmap.draw(g)
-//          }
-//          heatmaps(plotIdx) = heatmap
-//        }
 
+        val offsets = TimeSeriesStack.Offsets(timeAxis)
         val yscale = axis.scale(y1, y2)
         plot.lines.filter(_.lineStyle != LineStyle.HEATMAP).foreach { line =>
           val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
@@ -292,13 +245,5 @@ object TimeSeriesGraph {
     * Allow at least 4 small characters on the right side to prevent the final tick mark label
     * from getting truncated.
     */
-  private[graphics] val minRightSidePadding = ChartSettings.smallFontDims.width * 4
-
-  private[graphics] def bktNanos(line: LineDef): Long = {
-    PercentileBuckets.get(bktIdx(line))
-  }
-
-  private[graphics] def bktIdx(line: LineDef): Int = {
-    Integer.parseInt(line.data.tags("percentile").substring(1), 16)
-  }
+  private val minRightSidePadding = ChartSettings.smallFontDims.width * 4
 }

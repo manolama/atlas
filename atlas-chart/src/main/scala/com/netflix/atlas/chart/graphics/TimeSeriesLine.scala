@@ -46,8 +46,8 @@ case class TimeSeriesLine(style: Style, ts: TimeSeq, xaxis: TimeAxis, yscale: Sc
       val nv = ts(t)
       val py = yscale(pv)
       val ny = yscale(nv)
-      if (!pv.isNaN && !nv.isNaN) g.drawLine(px1, py, px1, ny) // vertical
-      if (!nv.isNaN) g.drawLine(px1, ny, px2, ny) // horizontal
+      if (!pv.isNaN && !nv.isNaN) g.drawLine(px1, py, px1, ny)
+      if (!nv.isNaN) g.drawLine(px1, ny, px2, ny)
       t += step
       pv = nv
     }

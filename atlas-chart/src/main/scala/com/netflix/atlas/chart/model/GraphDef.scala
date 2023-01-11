@@ -97,18 +97,8 @@ case class GraphDef(
 
   /** Total number of lines for all plots. Note that heatmaps count as a single line. */
   val numLines: Int = plots.foldLeft(0) { (acc, p) =>
-    var lastHeatmapQuery: String = null
-    var count = 0
-    p.lines.foreach { line =>
-      line.lineStyle match {
-        case LineStyle.HEATMAP =>
-          if (lastHeatmapQuery == null || !lastHeatmapQuery.equals(line.query.getOrElse(""))) {
-            lastHeatmapQuery = line.query.getOrElse("")
-            count += 1
-          }
-        case _ => count += 1
-      }
-    }
+    var count = if (p.lines.find(_.lineStyle == LineStyle.HEATMAP).isEmpty) 0 else 1
+    count += p.lines.filter(_.lineStyle != LineStyle.HEATMAP).size
     acc + count
   }
 
