@@ -245,6 +245,8 @@ object PercentileHeatMap {
 
   private val timerBucketIdPattern = Pattern.compile("^T[0-9A-F]{4}$")
 
+  private val percentileBucketsCount = PercentileBuckets.asArray().length
+
   /**
     * Determines if the line is a Spectator percentile timer by looking to see if
     * the line is grouped on the `percentile` tag and has a `T####` value.
@@ -373,7 +375,6 @@ object PercentileHeatMap {
     *   A non-empty list of percentile bucket descriptors.
     */
 
-
   def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     // aiming for about 10px per tick
     val majorTicks = (y2 - y1) / minTickLabelHeight
@@ -451,8 +452,7 @@ object PercentileHeatMap {
     }
 
     var maxBkt = PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
-    val allBkts = PercentileBuckets.asArray().length
-    if (maxBkt < allBkts && maxBkt > 0) {
+    if (maxBkt < percentileBucketsCount && maxBkt > 0) {
       val seconds = bktSeconds(maxBkt - 1)
       if (max > seconds) {
         maxBkt += 1

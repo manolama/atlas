@@ -114,8 +114,12 @@ object Scales {
       if (value < 0) {
         if (Math.abs(v - ticks.last.nextDuration) < 1e-9)
           value = r2 // hack for last tick
-        else
+        else {
+          if (v.isFinite) {
+            throw new IllegalStateException("Shouldn't be here!")
+          }
           value = Int.MaxValue // write off the canvas. Probably a cleaner way.
+        }
       }
 //      if (value > r2) {
 //        value = r2
