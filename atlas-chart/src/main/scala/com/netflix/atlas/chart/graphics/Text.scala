@@ -72,6 +72,19 @@ case class Text(
     math.ceil(y).toInt
   }
 
+  def getWidth(g: Graphics2D): Int = {
+    val attrStr = new AttributedString(str)
+    attrStr.addAttribute(TextAttribute.FONT, font)
+    val iterator = attrStr.getIterator
+    val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
+    var w = 0.0d
+    while (measurer.getPosition < str.length) {
+      val layout = measurer.nextLayout(Float.MaxValue)
+      w += layout.getBounds.getBounds2D.getWidth
+    }
+    math.ceil(w).toInt
+  }
+
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)
 

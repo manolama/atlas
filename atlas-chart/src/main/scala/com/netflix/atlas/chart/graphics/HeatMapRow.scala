@@ -13,7 +13,6 @@ case class HeatMapRow(
     val xscale = xaxis.scale(x1, x2)
     val ti = ticks.iterator
     var last = x1
-    System.out.println(s"Height: ${y2} @ ${y1}")
     ts.foreach { dp =>
       val x = if (ti.hasNext) xscale(ti.next().timestamp) else x2
       if (dp > 0) {

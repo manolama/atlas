@@ -3,6 +3,7 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.util.UnitPrefix
 
+import java.awt.Font
 import java.awt.Graphics2D
 
 case class HeatMapLegend(
@@ -16,7 +17,7 @@ case class HeatMapLegend(
 
   private val state = graph.heatmaps(plotId).getOrElse(null)
   private val (format, maxWidth) = findStringFormat(state.colorMap)
-  private val blockWidth = maxWidth + 4
+  private val blockWidth = maxWidth
   private val blockHeight = ChartSettings.normalFontDims.height - 2
 
   private val legendColors: List[List[HeatMapLegendColor]] = {
@@ -35,7 +36,7 @@ case class HeatMapLegend(
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     var blockY = y1
-    val halfMax = blockWidth / 2
+    val halfMax = Math.round(maxWidth / 2.0).toInt
     val txtH = ChartSettings.smallFontDims.height
     legendColors.foreach { colors =>
       var blockX = x1 + 2 + halfMax
@@ -43,7 +44,7 @@ case class HeatMapLegend(
 
       colors.foreach { lc =>
         Style(lc.color).configure(g)
-        g.fillRect(blockX, blockY, maxWidth, blockHeight)
+        g.fillRect(blockX, blockY, blockWidth, blockHeight)
 
         val str = UnitPrefix.format(lc.min, format)
         val txt = Text(
@@ -51,8 +52,8 @@ case class HeatMapLegend(
           font = ChartSettings.smallFont,
           alignment = TextAlignment.CENTER
         )
-        txt.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY + txtH)
-        blockX += maxWidth
+        txt.draw(g, blockX - halfMax, txtY, blockX + halfMax, txtY)
+        blockX += blockWidth
       }
 
       // final tick
@@ -76,7 +77,7 @@ case class HeatMapLegend(
           vx -= 1
         }
         g.drawLine(vx, lineY, vx, lineY + 3)
-        vx += maxWidth
+        vx += blockWidth
       }
 
       blockY =
@@ -85,12 +86,16 @@ case class HeatMapLegend(
 
     if (state.legendLabel.length > 0) {
       styles.text.configure(g)
-      val x = ((legendColors.head.size + 1) * maxWidth) + 2
+      val x = ((legendColors.head.size + 1) * blockWidth) + 2
+
+      // TODO - could get fancy and figure out wraps and height, particularly if
+      // the color scale wraps. Then truncate there. For now, just truncate on the
+      // one line.
       val txt = Text(
         state.legendLabel,
         font = ChartSettings.normalFont,
         alignment = TextAlignment.LEFT
-      )
+      ).truncate(x2 - x)
 
       val txtY = y1
       val txtH = ChartSettings.normalFontDims.height
@@ -113,28 +118,40 @@ case class HeatMapLegend(
     var maxWidth = 0
     if (colorMap.nonEmpty) {
       var lastLabel = UnitPrefix.format(colorMap.head.min, format)
-      for (i <- 1 until colorMap.size) {
-        val nextLabel = UnitPrefix.format(colorMap(i).min, format)
-        if (lastLabel.equals(nextLabel)) {
+      maxWidth = textWidth(lastLabel)
+
+      var i = 1
+      while (i < colorMap.size) {
+        val min = colorMap(i).min
+        val nextLabel = UnitPrefix.format(min, format)
+        if (lastLabel.equals(nextLabel) && format.equals("%.0f%s")) {
           format = "%.1f%s"
+          lastLabel = UnitPrefix.format(colorMap.head.min, format)
+          maxWidth = textWidth(lastLabel)
+          i = 1
         }
         lastLabel = nextLabel
-      }
 
-      colorMap.foreach { t =>
-        val str = UnitPrefix.format(t.min, format)
-        val txt = Text(
-          str,
-          font = ChartSettings.smallFont,
-          alignment = TextAlignment.CENTER
-        )
-
-        val width = ChartSettings.refGraphics.getFontMetrics.stringWidth(str)
+        val str = UnitPrefix.format(min, format)
+        val width = textWidth(str)
         if (width > maxWidth) {
           maxWidth = width
         }
+
+        i += 1
+      }
+
+      val str = UnitPrefix.format(colorMap.last.max, format)
+      val width = textWidth(str)
+      if (width > maxWidth) {
+        maxWidth = width
       }
     }
+
     (format, maxWidth)
+  }
+
+  private def textWidth(string: String, font: Font = ChartSettings.smallFont): Int = {
+    ChartSettings.refGraphics.getFontMetrics(font).stringWidth(s" ${string} ")
   }
 }

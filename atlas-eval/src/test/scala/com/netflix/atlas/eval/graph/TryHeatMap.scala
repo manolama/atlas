@@ -222,7 +222,7 @@ class TryHeatMap extends FunSuite {
 //        "T009F",
 //        "T00A0"
       ).asJava
-      if (false) {
+      if (true) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -246,7 +246,7 @@ class TryHeatMap extends FunSuite {
 
     // DEBUG PTILES
     "/api/v1/graph?q=" +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,My%20Heatmap,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
@@ -353,271 +353,271 @@ class TryHeatMap extends FunSuite {
     System.out.println(result.dataString)
   }
 
-  def scaleBackLOG(
-    d1: Double,
-    d2: Double,
-    r1: Int,
-    r2: Int,
-    x: Int
-  ): Double = {
-//    Math
-//      .pow(10, d1) + ((Math.pow(10, x) - r1) * ((log10(d2) - log10(d1)) / (r2 - r1)))
-//    ((log10(d1) * (Math.exp(x) - r2)) + (log10(d2) * (r1 - Math.exp(x)))) / (r1 - r2)
-//    Math.exp(
-//      (d1 * r1 - r1 * log10(d1) - d1 * r2 + x * log10(d1) + r1 * log10(d2) - x * log10(
-//        d2
-//      )) / (r1 - r2)
+//  def scaleBackLOG(
+//    d1: Double,
+//    d2: Double,
+//    r1: Int,
+//    r2: Int,
+//    x: Int
+//  ): Double = {
+////    Math
+////      .pow(10, d1) + ((Math.pow(10, x) - r1) * ((log10(d2) - log10(d1)) / (r2 - r1)))
+////    ((log10(d1) * (Math.exp(x) - r2)) + (log10(d2) * (r1 - Math.exp(x)))) / (r1 - r2)
+////    Math.exp(
+////      (d1 * r1 - r1 * log10(d1) - d1 * r2 + x * log10(d1) + r1 * log10(d2) - x * log10(
+////        d2
+////      )) / (r1 - r2)
+////    )
+//
+//    // wolfram without parens
+////    d1 * Math.exp(
+////      Math.pow(r1, 2) * (-Scales.log10(d1)) + r1 * r2 * Scales.log10(d1) + r1 * x * Scales.log10(
+////        d1
+////      ) - r2 * x * Scales.log10(d1) + Math.pow(r1, 2) * Scales.log10(d2) - r1 * r2 * Scales.log10(
+////        d2
+////      ) - r1 * x * Scales.log10(d2) + r2 * x * Scales.log10(d2)
+////    )
+//
+//    // what I thought it should be.
+////    Math.pow(10, ((x - r1) * (r2 - r1) * (Scales.log10(d2) - Scales.log10(d1))) + Scales.log10(d1))
+//
+//    // wolfram WITH parens
+////    Math.exp(
+////      (-r2 * Scales.log10(d1) + x * Scales.log10(d1) + r1 * Scales.log10(d2) - x * Scales.log10(
+////        d2
+////      )) / (r1 - r2)
+////    )
+//
+//    // try scale back linear
+//    Math.pow(10, scaleBackLinear(Scales.log10(d1), Scales.log10(d2), r1, r2, x))
+//  }
+//
+//  def scaleBackLinear(
+//    d1: Double,
+//    d2: Double,
+//    r1: Int,
+//    r2: Int,
+//    x: Int
+//  ): Double = {
+//    val pixelSpan = (d2 - d1) / (r2 - r1)
+//    ((x - r1) * pixelSpan) + d1
+//  }
+//
+//  test("scale plus 1") {
+//    var d1 = 1.0
+//    var d2 = 321000.0
+//    var r1 = 0
+//    var r2 = 3
+//    // var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
+//    var scale = Scales.logarithmic(d1, d2 + 1, r1, r2)
+//
+//    val reals = List(20, 40, 200, 3000, 25000, 320000, 320001, 321000 - 1, 321000)
+//    reals.foreach { r =>
+//      var s = scale(r)
+//      if (s >= r2) {
+//        System.out.println(s"@@@@@ WARNING! @ ${r} gave ${s}")
+//        s -= 1
+//      }
+//      System.out.println(s"${r} scaled: ${s}")
+//    }
+//  }
+//
+//  test("scale plus fraction") {
+//    // NOPE - doesn't work without stringifying and man that gets ugly. Just
+//    // switch to linear for sub 1 d2s.
+//    var d1 = 0.053
+//    var d2 = 0.01
+//    var r1 = 0
+//    var r2 = 3
+//    // var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
+//    var scale = Scales.logarithmic(d1, d2 + 1, r1, r2)
+//
+//    val reals = List(0.053, 0.07, 0.08, 0.081)
+//    reals.foreach { r =>
+//      var s = scale(r)
+//      if (s >= r2) {
+//        System.out.println(s"@@@@@ WARNING! @ ${r} gave ${s}")
+//        s -= 1
+//      }
+//      System.out.println(s"${r} scaled: ${s}")
+//    }
+//
+//    val exp = Math.getExponent(d2)
+//    val mant = d2 / Math.pow(2, exp)
+//    val isthisit = mant * Math.pow(2, exp)
+//    val shift = d2 * Math.pow(10, Math.abs(exp))
+//    System.out.println(
+//      s"MAnt for ${d2} is ${mant}  (exp = ${exp}) and ? ${isthisit} or Shift ${shift}"
 //    )
-
-    // wolfram without parens
-//    d1 * Math.exp(
-//      Math.pow(r1, 2) * (-Scales.log10(d1)) + r1 * r2 * Scales.log10(d1) + r1 * x * Scales.log10(
-//        d1
-//      ) - r2 * x * Scales.log10(d1) + Math.pow(r1, 2) * Scales.log10(d2) - r1 * r2 * Scales.log10(
-//        d2
-//      ) - r1 * x * Scales.log10(d2) + r2 * x * Scales.log10(d2)
-//    )
-
-    // what I thought it should be.
-//    Math.pow(10, ((x - r1) * (r2 - r1) * (Scales.log10(d2) - Scales.log10(d1))) + Scales.log10(d1))
-
-    // wolfram WITH parens
-//    Math.exp(
-//      (-r2 * Scales.log10(d1) + x * Scales.log10(d1) + r1 * Scales.log10(d2) - x * Scales.log10(
-//        d2
-//      )) / (r1 - r2)
-//    )
-
-    // try scale back linear
-    Math.pow(10, scaleBackLinear(Scales.log10(d1), Scales.log10(d2), r1, r2, x))
-  }
-
-  def scaleBackLinear(
-    d1: Double,
-    d2: Double,
-    r1: Int,
-    r2: Int,
-    x: Int
-  ): Double = {
-    val pixelSpan = (d2 - d1) / (r2 - r1)
-    ((x - r1) * pixelSpan) + d1
-  }
-
-  test("scale plus 1") {
-    var d1 = 1.0
-    var d2 = 321000.0
-    var r1 = 0
-    var r2 = 3
-    // var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
-    var scale = Scales.logarithmic(d1, d2 + 1, r1, r2)
-
-    val reals = List(20, 40, 200, 3000, 25000, 320000, 320001, 321000 - 1, 321000)
-    reals.foreach { r =>
-      var s = scale(r)
-      if (s >= r2) {
-        System.out.println(s"@@@@@ WARNING! @ ${r} gave ${s}")
-        s -= 1
-      }
-      System.out.println(s"${r} scaled: ${s}")
-    }
-  }
-
-  test("scale plus fraction") {
-    // NOPE - doesn't work without stringifying and man that gets ugly. Just
-    // switch to linear for sub 1 d2s.
-    var d1 = 0.053
-    var d2 = 0.01
-    var r1 = 0
-    var r2 = 3
-    // var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
-    var scale = Scales.logarithmic(d1, d2 + 1, r1, r2)
-
-    val reals = List(0.053, 0.07, 0.08, 0.081)
-    reals.foreach { r =>
-      var s = scale(r)
-      if (s >= r2) {
-        System.out.println(s"@@@@@ WARNING! @ ${r} gave ${s}")
-        s -= 1
-      }
-      System.out.println(s"${r} scaled: ${s}")
-    }
-
-    val exp = Math.getExponent(d2)
-    val mant = d2 / Math.pow(2, exp)
-    val isthisit = mant * Math.pow(2, exp)
-    val shift = d2 * Math.pow(10, Math.abs(exp))
-    System.out.println(
-      s"MAnt for ${d2} is ${mant}  (exp = ${exp}) and ? ${isthisit} or Shift ${shift}"
-    )
-
-    val b = new java.math.BigDecimal(d2)
-    val inc = java.math.BigDecimal.valueOf(1).scaleByPowerOfTen(-b.scale)
-    val out = b.add(inc).stripTrailingZeros().doubleValue()
-    System.out.println(String.format("ORG: %.5f", d2))
-    System.out.println(String.format("INC: %.5f", out))
-  }
-
-  test("scale backwards is ___?") {
-//    val d1 = 1.0
-//    val d2 = 4.0
-//    val r1 = 0
-//    val r2 = 6
-
-    var d1 = 1.0
-    var d2 = 321000.0
-    var r1 = 0
-    var r2 = 6
-
-    val v = 0.0
-    val x = ((log10(v) - d1) / ((log10(d2) - log10(d1)) / (r2 - r1))) + r1
-
-    var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
-    // val scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
-
-    for (i <- d1.toInt to d2.toInt) {
-      // System.out.println(s"maxmin ${i} => ${r2 - scale(i)}")
-    }
-//    System.out.println("--------")
+//
+//    val b = new java.math.BigDecimal(d2)
+//    val inc = java.math.BigDecimal.valueOf(1).scaleByPowerOfTen(-b.scale)
+//    val out = b.add(inc).stripTrailingZeros().doubleValue()
+//    System.out.println(String.format("ORG: %.5f", d2))
+//    System.out.println(String.format("INC: %.5f", out))
+//  }
+//
+//  test("scale backwards is ___?") {
+////    val d1 = 1.0
+////    val d2 = 4.0
+////    val r1 = 0
+////    val r2 = 6
+//
+//    var d1 = 1.0
+//    var d2 = 321000.0
+//    var r1 = 0
+//    var r2 = 6
+//
+//    val v = 0.0
+//    val x = ((log10(v) - d1) / ((log10(d2) - log10(d1)) / (r2 - r1))) + r1
+//
+//    var scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2, r1, r2)
+//    // val scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
+//
 //    for (i <- d1.toInt to d2.toInt) {
-//      val v = scale(i)
-//      // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, v)
-//      val sb = d2 - scaleBackLOG(d1, d2, r1, r2, v)
-//      System.out.println(s"v ${i} => ${v} RevScale: => ${sb}")
+//      // System.out.println(s"maxmin ${i} => ${r2 - scale(i)}")
 //    }
-
-    System.out.println("----------------------------")
-    val reals = List(20, 200, 3000, 25000, 320000, 320001, 321000 - 1, 321000)
-    // val reals = List(1, 64200, 64200 * 2, 64200 * 3, 320000)
-    d2 = 321000
-    scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
-    // scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
-
-    reals.foreach { r =>
-      var s = scale(r)
-      if (s >= r2) {
-        s -= 1
-      }
-      val sb = d2 - scaleBackLOG(d1, d2 + 1, r1, r2, s)
-      // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, s)
-      System.out.println(s"${r} scaled: ${s}  Back: ${sb.toInt}")
-    }
-  }
-
-//  test("such great heights") {
-//    val series = 165
-//    val lines = series + 1
-//    val height = 405
-//
-//    val dpHeight = height.toDouble / lines
-//    System.out.println(dpHeight)
-//
-////    var last = 0.0
-////    var pixels = 0
-////    for (_ <- 0 until lines) {
-////      val next = last + dpHeight
-////      val h = (Math.round(next) - Math.round(last)).toInt
-////      val off = Math.round(last).toInt
-////      pixels += h
-////      //System.out.println(s"H ${h} @ Off ${off}")
-////      last = next
+////    System.out.println("--------")
+////    for (i <- d1.toInt to d2.toInt) {
+////      val v = scale(i)
+////      // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, v)
+////      val sb = d2 - scaleBackLOG(d1, d2, r1, r2, v)
+////      System.out.println(s"v ${i} => ${v} RevScale: => ${sb}")
 ////    }
-////    System.out.println(s"Remainder: ${height - pixels} pixels")
 //
-//    // top down
-//    var prev = height.toDouble
-//    for (_ <- 0 until lines) {
-//      val next = prev - dpHeight
-//      val h = (Math.round(prev) - Math.round(next)).toInt
-//      val offset = Math.round(prev).toInt - h
-//      prev = next
-//      System.out.println(s"Offset ${offset}")
+//    System.out.println("----------------------------")
+//    val reals = List(20, 200, 3000, 25000, 320000, 320001, 321000 - 1, 321000)
+//    // val reals = List(1, 64200, 64200 * 2, 64200 * 3, 320000)
+//    d2 = 321000
+//    scale = Scales.factory(Scale.LOGARITHMIC)(d1, d2 + 1, r1, r2 + 1)
+//    // scale = Scales.factory(Scale.LINEAR)(d1, d2, r1, r2)
+//
+//    reals.foreach { r =>
+//      var s = scale(r)
+//      if (s >= r2) {
+//        s -= 1
+//      }
+//      val sb = d2 - scaleBackLOG(d1, d2 + 1, r1, r2, s)
+//      // val sb = d2 - scaleBackLinear(d1, d2, r1, r2, s)
+//      System.out.println(s"${r} scaled: ${s}  Back: ${sb.toInt}")
 //    }
-//    System.out.println(s"Remainder: ${prev}")
-//
 //  }
-
-  test("the bucketeer....") {
-
-    /**
-      * BUCKET IDX: 158  seconds: 68.71947673599999
-      *  BUCKET IDX: 159  seconds: 91.62596898100001
-      *  BUCKET IDX: 160  seconds: 114.532461226
-      */
-    val bktMax = 274
-    var seconds = bktSeconds(bktMax)
-    System.out.println(s"SECONDS ${seconds} for ${bktMax}")
-
-    seconds = 5.759865526446057e9
-    val idx = PercentileBuckets.indexOf(seconds.toLong * 1000 * 1000 * 1000)
-    System.out.println(s"To bkt Idx: ${idx}")
-  }
-
-//  test("bucket boundaries?") {
-//    val counts = new Array[Long](PercentileBuckets.length())
-//    counts(17) += 15
 //
-//    System.out.println("Nanos for bkt 5: " + PercentileBuckets.get(5))
-//    System.out.println(
-//      PercentileBuckets.indexOf(20) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(20))
-//    )
-//    System.out.println(
-//      PercentileBuckets.indexOf(21) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(21))
-//    )
-//    System.out.println(
-//      PercentileBuckets.indexOf(25) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(25))
-//    )
-//    System.out.println(
-//      PercentileBuckets.indexOf(26) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(26))
-//    )
-//    System.out.println(
-//      PercentileBuckets.indexOf(27) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(27))
-//    )
+////  test("such great heights") {
+////    val series = 165
+////    val lines = series + 1
+////    val height = 405
+////
+////    val dpHeight = height.toDouble / lines
+////    System.out.println(dpHeight)
+////
+//////    var last = 0.0
+//////    var pixels = 0
+//////    for (_ <- 0 until lines) {
+//////      val next = last + dpHeight
+//////      val h = (Math.round(next) - Math.round(last)).toInt
+//////      val off = Math.round(last).toInt
+//////      pixels += h
+//////      //System.out.println(s"H ${h} @ Off ${off}")
+//////      last = next
+//////    }
+//////    System.out.println(s"Remainder: ${height - pixels} pixels")
+////
+////    // top down
+////    var prev = height.toDouble
+////    for (_ <- 0 until lines) {
+////      val next = prev - dpHeight
+////      val h = (Math.round(prev) - Math.round(next)).toInt
+////      val offset = Math.round(prev).toInt - h
+////      prev = next
+////      System.out.println(s"Offset ${offset}")
+////    }
+////    System.out.println(s"Remainder: ${prev}")
+////
+////  }
 //
-//    System.out.println(s"P: ${PercentileBuckets.percentile(counts, 99.9999)}")
+//  test("the bucketeer....") {
 //
+//    /**
+//      * BUCKET IDX: 158  seconds: 68.71947673599999
+//      *  BUCKET IDX: 159  seconds: 91.62596898100001
+//      *  BUCKET IDX: 160  seconds: 114.532461226
+//      */
+//    val bktMax = 274
+//    var seconds = bktSeconds(bktMax)
+//    System.out.println(s"SECONDS ${seconds} for ${bktMax}")
+//
+//    seconds = 5.759865526446057e9
+//    val idx = PercentileBuckets.indexOf(seconds.toLong * 1000 * 1000 * 1000)
+//    System.out.println(s"To bkt Idx: ${idx}")
 //  }
-
-  test("scale") {
-//    val axis = HeatMapTimerValueAxis(
-//      PlotDef(List.empty),
-//      Styles(Style(), Style(), Style()),
-//      1.9999999999999997e-9,
-//      114.532461226
+//
+////  test("bucket boundaries?") {
+////    val counts = new Array[Long](PercentileBuckets.length())
+////    counts(17) += 15
+////
+////    System.out.println("Nanos for bkt 5: " + PercentileBuckets.get(5))
+////    System.out.println(
+////      PercentileBuckets.indexOf(20) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(20))
+////    )
+////    System.out.println(
+////      PercentileBuckets.indexOf(21) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(21))
+////    )
+////    System.out.println(
+////      PercentileBuckets.indexOf(25) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(25))
+////    )
+////    System.out.println(
+////      PercentileBuckets.indexOf(26) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(26))
+////    )
+////    System.out.println(
+////      PercentileBuckets.indexOf(27) + " => " + PercentileBuckets.get(PercentileBuckets.indexOf(27))
+////    )
+////
+////    System.out.println(s"P: ${PercentileBuckets.percentile(counts, 99.9999)}")
+////
+////  }
+//
+//  test("scale") {
+////    val axis = HeatMapTimerValueAxis(
+////      PlotDef(List.empty),
+////      Styles(Style(), Style(), Style()),
+////      1.9999999999999997e-9,
+////      114.532461226
+////    )
+////    axis.ticks(5, 405)
+//    System.out.println(
+//      s"BKT For the first.... ${PercentileBuckets.indexOf((1.9999999999999997e-9 * 1000 * 1000 * 1000).toInt)}"
 //    )
-//    axis.ticks(5, 405)
-    System.out.println(
-      s"BKT For the first.... ${PercentileBuckets.indexOf((1.9999999999999997e-9 * 1000 * 1000 * 1000).toInt)}"
-    )
-    val scaler = Scales.percentile(1.9999999999999997e-9, 114.532461226, 5, 405)
-
-//    for (i <- 0 to 160) {
-//      System.out.println(s"${bktSeconds(i)} -> ${scaler(bktSeconds(i))}")
-//    }
-    System.out.println("--------------")
-    // alignment
-    System.out.println(s"${63} -> ${scaler(63)}")
-    System.out.println(s"${75} -> ${scaler(75)}")
-    System.out.println(s"${91} -> ${scaler(91)}")
-    System.out.println(s"${92} -> ${scaler(92)}")
-
-    System.out.println(s"Bucket 0 = ${PercentileBuckets.get(0)}")
-    System.out.println(s"Bucket 1 = ${PercentileBuckets.get(1)}")
-  }
-
-  test("fudgefactor") {
-    val realBoundary = 2.147483647
-    val test = 2.4
-
-    var idx = bktIdx((realBoundary * 1000 * 1000 * 1000).toLong)
-    var givenS = bktNanos(idx - 1)
-    var matched = (realBoundary * 1000 * 1000 * 1000).toLong == givenS
-    System.out.println(s"MATCHED? ${matched}")
-
-    idx = bktIdx((test * 1000 * 1000 * 1000).toLong)
-    givenS = bktNanos(idx)
-    matched = (test * 1000 * 1000 * 1000).toLong == givenS
-    System.out.println(s"MATCHED? ${matched}")
-  }
+//    val scaler = Scales.percentile(1.9999999999999997e-9, 114.532461226, 5, 405)
+//
+////    for (i <- 0 to 160) {
+////      System.out.println(s"${bktSeconds(i)} -> ${scaler(bktSeconds(i))}")
+////    }
+//    System.out.println("--------------")
+//    // alignment
+//    System.out.println(s"${63} -> ${scaler(63)}")
+//    System.out.println(s"${75} -> ${scaler(75)}")
+//    System.out.println(s"${91} -> ${scaler(91)}")
+//    System.out.println(s"${92} -> ${scaler(92)}")
+//
+//    System.out.println(s"Bucket 0 = ${PercentileBuckets.get(0)}")
+//    System.out.println(s"Bucket 1 = ${PercentileBuckets.get(1)}")
+//  }
+//
+//  test("fudgefactor") {
+//    val realBoundary = 2.147483647
+//    val test = 2.4
+//
+//    var idx = bktIdx((realBoundary * 1000 * 1000 * 1000).toLong)
+//    var givenS = bktNanos(idx - 1)
+//    var matched = (realBoundary * 1000 * 1000 * 1000).toLong == givenS
+//    System.out.println(s"MATCHED? ${matched}")
+//
+//    idx = bktIdx((test * 1000 * 1000 * 1000).toLong)
+//    givenS = bktNanos(idx)
+//    matched = (test * 1000 * 1000 * 1000).toLong == givenS
+//    System.out.println(s"MATCHED? ${matched}")
+//  }
 
 }
 
