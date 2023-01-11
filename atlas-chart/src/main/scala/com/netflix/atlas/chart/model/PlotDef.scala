@@ -42,6 +42,10 @@ import com.netflix.atlas.chart.model.PlotBound.Explicit
   *     Lower limit for the axis.
   * @param tickLabelMode
   *     Mode to use for displaying tick labels.
+  * @param palette
+  *     Optional palette for the plot.
+  * @param heatmapDef
+  *     Optional heatmap settings for the plot.
   */
 case class PlotDef(
   data: List[DataDef],
@@ -69,10 +73,8 @@ case class PlotDef(
     if (dataLines.isEmpty) 0.0 -> 1.0
     else {
       val step = dataLines.head.data.data.step
-      // TODO - oohhhhewwwwwwwweeewewewewe how would STACK lines interact with
-      // Percentile graphs...? Blech!!!!!
       val (regular, stacked) = dataLines
-        .filter(_.lineStyle != LineStyle.VSPAN)
+        .filter(ls => ls.lineStyle != LineStyle.VSPAN)
         .partition(_.lineStyle != LineStyle.STACK)
 
       var max = -JDouble.MAX_VALUE
@@ -84,16 +86,10 @@ case class PlotDef(
       while (t < end) {
         regular.foreach { line =>
           val v = line.lineStyle match {
-            case LineStyle.HEATMAP =>
-              // TODO - super duper inefficient since we only need to get the bucket seconds ONCE per
-              // line. meh.
-              if (isSpectatorPercentile(line)) {
-                val bs = bktSeconds(line)
-                // System.out.println(s"***** BS: ${bs}  Idx: ${bktIdx(line)}")
-                bs
-              } else {
-                line.data.data(t)
-              }
+            case LineStyle.HEATMAP if isSpectatorPercentile(line) =>
+              // TODO - We may want to filter on percentiles earlier to keep from having
+              // to re-compute the same amount.
+              bktSeconds(line)
             case _ => line.data.data(t)
           }
           if (JDouble.isFinite(v)) {
@@ -133,23 +129,20 @@ case class PlotDef(
       // TODO fun edge case for ptile buckets. IF we have one bucket, the max and min are the
       // same. This will cause a 1 to be added and throw off bucketing. For now, if all of
       // the lines are heatmaps and percentiles, do some fudging.
-      val ptileOverride =
+      val percentileOverride =
         if (
           max == min &&
-          lines
-            .find(l =>
-              l.lineStyle != LineStyle.HEATMAP || (l.lineStyle == LineStyle.HEATMAP && !isSpectatorPercentile(
-                l
-              ))
-            )
-            .isEmpty
+          !lines.exists(l =>
+            l.lineStyle != LineStyle.HEATMAP ||
+            (l.lineStyle == LineStyle.HEATMAP && !isSpectatorPercentile(l))
+          )
         ) {
           true
         } else false
 
       min = if (min == JDouble.MAX_VALUE) 0.0 else min
       max = if (max == -JDouble.MAX_VALUE) 1.0 else max
-      finalBounds(hasArea, min, max, ptileOverride)
+      finalBounds(hasArea, min, max, percentileOverride)
     }
   }
 
@@ -157,7 +150,7 @@ case class PlotDef(
     hasArea: Boolean,
     min: Double,
     max: Double,
-    ptileOverride: Boolean = false
+    percentileOverride: Boolean = false
   ): (Double, Double) = {
 
     // Try to figure out bounds following the guidelines:
@@ -177,15 +170,11 @@ case class PlotDef(
         case (Explicit(_), Explicit(_)) => l       -> u
         case (_, Explicit(_))           => (u - 1) -> u
         case (Explicit(_), _) =>
-          if (ptileOverride)
-            l -> l
-          else
-            l -> (l + 1)
+          if (percentileOverride) l -> l
+          else l                    -> (l + 1)
         case (_, _) =>
-          if (ptileOverride)
-            l -> u
-          else
-            l -> (u + 1)
+          if (percentileOverride) l -> u
+          else l                    -> (u + 1)
       }
     }
   }
