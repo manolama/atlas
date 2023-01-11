@@ -372,6 +372,8 @@ object PercentileHeatMap {
     * @return
     *   A non-empty list of percentile bucket descriptors.
     */
+
+
   def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     // aiming for about 10px per tick
     val majorTicks = (y2 - y1) / minTickLabelHeight

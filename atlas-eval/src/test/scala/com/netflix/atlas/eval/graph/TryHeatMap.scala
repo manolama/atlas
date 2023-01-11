@@ -20,8 +20,14 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
+import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
+import com.netflix.atlas.chart.graphics.PtileScale
 import com.netflix.atlas.chart.graphics.Scales
+import com.netflix.atlas.chart.graphics.Scales.DoubleScale
+import com.netflix.atlas.chart.graphics.Scales.yscale
 import com.netflix.atlas.chart.graphics.Style
 import com.netflix.atlas.chart.graphics.Styles
 import com.netflix.atlas.chart.model.PlotDef
@@ -222,7 +228,7 @@ class TryHeatMap extends FunSuite {
 //        "T009F",
 //        "T00A0"
       ).asJava
-      if (true) {
+      if (false) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -618,6 +624,109 @@ class TryHeatMap extends FunSuite {
 //    matched = (test * 1000 * 1000 * 1000).toLong == givenS
 //    System.out.println(s"MATCHED? ${matched}")
 //  }
+
+  test("NewPTileBuckets") {
+    val d1 = 1.9999999999999997e-9
+    val d2 = 114.532461226
+    val y1 = 5
+    val y2 = 305
+
+    val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
+    for (i <- minBkt until maxBkt) {
+      System.out.println(s"[${i}] ${bktSeconds(i)}")
+    }
+    val bkts = getPtileScale(d1, d2, y1, y2)
+    val scale = yscale(percentile)(d1, d2, y1, y2)
+  }
+
+  def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
+    // aiming for about 10px per tick
+    val pixelSpan = y2 - y1
+    var pixelsPerBucket = 10.0
+    val initialTicks = pixelSpan / pixelsPerBucket
+
+    val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
+    val bktRange = Math.max(1, maxBkt - minBkt)
+
+    val bkts = List.newBuilder[PtileScale]
+    val bktsPerTick = (bktRange / initialTicks).toInt
+    if (bktsPerTick < 1) {
+      // spread the buckets out
+    } else {
+      val numBkts = bktRange / bktsPerTick
+      pixelsPerBucket = pixelSpan / numBkts.toDouble
+
+      // TODO - figure out major ticks
+      var prev = y2.toDouble
+      var bkt = minBkt
+
+      val majorTicks = (y2 - y1) / minTickLabelHeight
+//      val ticks = {
+//        if (majorTicks <= 2) {
+//          numBkts
+//        } else {
+//          var i = majorTicks - 2
+//
+//        }
+//      }
+
+      for (i <- 0 until numBkts) {
+        val base = bktSeconds(bkt)
+        val next = bktSeconds(bkt + bktsPerTick)
+        val y = prev - pixelsPerBucket + 1
+        val h = (Math.round(prev) - Math.round(y)).toInt
+        // val y = Math.round(prev).toInt
+
+        val major = if (i == 0 || i + 1 == numBkts) {
+          true
+        } else {
+
+          false
+        }
+        bkts += PtileScale(base, Math.round(y).toInt, h, next, false, major, List.empty)
+        bkt += bktsPerTick
+        prev = y
+      }
+
+    }
+
+    bkts.result()
+  }
+
+  def percentile(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
+    val ticks = getPtileScale(d1, d2, r1, r2)
+
+    v => {
+      var idx = 0
+      var value = -1
+      while (value < 0 && idx < ticks.size) {
+        val tick = ticks(idx)
+        if (v >= tick.baseDuration && v < tick.nextDuration) {
+          val vpt = (tick.nextDuration - tick.baseDuration) / tick.height
+          var offset = tick.baseDuration + vpt
+          var cnt = 0
+          while (v > offset && cnt + 1 < tick.height) {
+            offset += vpt
+            cnt += 1
+          }
+          value = tick.y + cnt
+        }
+        idx += 1
+      }
+
+      // TODO - shouldn't need these if we're returning the proper ptile buckets!!!!!!!!!!!
+      if (value < 0) {
+        if (Math.abs(v - ticks.last.nextDuration) < 1e-9)
+          value = r2 // hack for last tick
+        else
+          value = Int.MaxValue // write off the canvas. Probably a cleaner way.
+      }
+      //      if (value > r2) {
+      //        value = r2
+      //      }
+      value
+    }
+  }
 
 }
 
