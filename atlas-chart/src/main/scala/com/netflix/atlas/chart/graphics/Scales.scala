@@ -45,7 +45,7 @@ object Scales {
     case Scale.LOGARITHMIC => yscale(logarithmic)
     case Scale.POWER_2     => yscale(power(2.0))
     case Scale.SQRT        => yscale(power(0.5))
-    case Scale.PERCENTILE  => yscale(percentile)
+    case Scale.PERCENTILE  => yscale(percentile(List.empty)) // Shouldn't be used.
   }
 
   /** Factory for a linear mapping. */
@@ -89,36 +89,39 @@ object Scales {
     v => scale(pow(v, exp))
   }
 
-  def percentile(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    val scales = getPtileScale(d1, d2, r1, r2)
+  def percentile(
+    scales: List[PtileScale]
+  )(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
+    // val scales = getPtileScale(d1, d2, r1, r2, minP, maxP)
 
-    v => {
-      var idx = 0
-      var value = -1
-      while (value < 0 && idx < scales.size) {
-        val s = scales(idx)
-        if (v >= s.baseDuration && v < s.nextDuration) {
-          val vpt = (s.nextDuration - s.baseDuration) / Math.max(1, s.height)
-          var offset = s.baseDuration + vpt
-          var cnt = 0
-          while (v > offset && cnt + 1 < s.height) {
-            offset += vpt
-            cnt += 1
+    v =>
+      {
+        var idx = 0
+        var value = -1
+        while (value < 0 && idx < scales.size) {
+          val s = scales(idx)
+          if (v >= s.baseDuration && v < s.nextDuration) {
+            val vpt = (s.nextDuration - s.baseDuration) / Math.max(1, s.height)
+            var offset = s.baseDuration + vpt
+            var cnt = 0
+            while (v > offset && cnt + 1 < s.height) {
+              offset += vpt
+              cnt += 1
+            }
+            value = (s.y + s.height) - cnt
           }
-          value = (s.y + s.height) - cnt
+          idx += 1
         }
-        idx += 1
-      }
 
-      if (v.isFinite && value < 0) {
-        throw new IllegalStateException(s"WTF? Shouldn't be here. ${v}")
+        if (v.isFinite && value < 0) {
+          throw new IllegalStateException(s"WTF? Shouldn't be here. ${v}")
+        }
+        r1 - value + r2
       }
-      r1 - value + r2
-    }
   }
 
   def percentile__OLD(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    val ticks = getPtileScale(d1, d2, r1, r2)
+    val ticks = getPtileScale(d1, d2, r1, r2, -1, -1)
 
     v => {
       var idx = 0

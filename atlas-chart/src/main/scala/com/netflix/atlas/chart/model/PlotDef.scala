@@ -67,14 +67,17 @@ case class PlotDef(
     case (_, _) =>
   }
 
-  def bounds(start: Long, end: Long): (Double, Double) = {
+  def bounds(start: Long, end: Long): (Double, Double, Int, Int) = {
 
     val dataLines = lines
-    if (dataLines.isEmpty) 0.0 -> 1.0
+    if (dataLines.isEmpty) (0.0, 1.0, -1, -1)
     else {
       val step = dataLines.head.data.data.step
       val (regular, stacked) = dataLines
-        .filter(ls => ls.lineStyle != LineStyle.VSPAN)
+        .filter(ls =>
+          ls.lineStyle != LineStyle.VSPAN &&
+          !(ls.lineStyle == LineStyle.HEATMAP && isSpectatorPercentile(ls))
+        )
         .partition(_.lineStyle != LineStyle.STACK)
 
       var max = -JDouble.MAX_VALUE
@@ -85,13 +88,7 @@ case class PlotDef(
       var t = start
       while (t < end) {
         regular.foreach { line =>
-          val v = line.lineStyle match {
-            case LineStyle.HEATMAP if isSpectatorPercentile(line) =>
-              // TODO - We may want to filter on percentiles earlier to keep from having
-              // to re-compute the same amount.
-              bktSeconds(line)
-            case _ => line.data.data(t)
-          }
+          val v = line.data.data(t)
           if (JDouble.isFinite(v)) {
             max = if (v > max) v else max
             min = if (v < min) v else min
@@ -126,23 +123,24 @@ case class PlotDef(
         line.lineStyle == LineStyle.AREA || line.lineStyle == LineStyle.STACK
       }
 
-      // TODO fun edge case for ptile buckets. IF we have one bucket, the max and min are the
-      // same. This will cause a 1 to be added and throw off bucketing. For now, if all of
-      // the lines are heatmaps and percentiles, do some fudging.
-      val percentileOverride =
-        if (
-          max == min &&
-          !lines.exists(l =>
-            l.lineStyle != LineStyle.HEATMAP ||
-            (l.lineStyle == LineStyle.HEATMAP && !isSpectatorPercentile(l))
-          )
-        ) {
-          true
-        } else false
+      val percentileBuckets =
+        dataLines.filter(ls => ls.lineStyle == LineStyle.HEATMAP && isSpectatorPercentile(ls))
+      val minP = percentileBuckets.headOption.map(bktIdx(_)).getOrElse(-1)
+      if (minP > -1) {
+        val s = bktSeconds(minP)
+        if (s > max) max = s
+        if (s < min) min = s
+      }
+      val maxP = percentileBuckets.lastOption.map(bktIdx(_)).getOrElse(-1)
+      if (maxP > -1) {
+        val s = bktSeconds(maxP)
+        if (s > max) max = s
+        if (s < min) min = s
+      }
 
       min = if (min == JDouble.MAX_VALUE) 0.0 else min
       max = if (max == -JDouble.MAX_VALUE) 1.0 else max
-      finalBounds(hasArea, min, max, percentileOverride)
+      finalBounds(hasArea, min, max, minP, maxP)
     }
   }
 
@@ -150,8 +148,9 @@ case class PlotDef(
     hasArea: Boolean,
     min: Double,
     max: Double,
-    percentileOverride: Boolean = false
-  ): (Double, Double) = {
+    minPercentileBkt: Int = -1,
+    maxPercentileBkt: Int = -1
+  ): (Double, Double, Int, Int) = {
 
     // Try to figure out bounds following the guidelines:
     // * An explicit bound should always get used.
@@ -163,18 +162,18 @@ case class PlotDef(
     // If upper and lower bounds are equal or automatic/explicit combination causes lower to be
     // greater than the upper, then pad automatic bounds by 1. Explicit bounds should
     // be honored.
-    if (l < u) l -> u
+    if (l < u) (l, u, minPercentileBkt, maxPercentileBkt)
     else {
       (lower, upper) match {
 
-        case (Explicit(_), Explicit(_)) => l       -> u
-        case (_, Explicit(_))           => (u - 1) -> u
+        case (Explicit(_), Explicit(_)) => (l, u, minPercentileBkt, maxPercentileBkt)
+        case (_, Explicit(_))           => (u - 1, u, minPercentileBkt, maxPercentileBkt)
         case (Explicit(_), _) =>
-          if (percentileOverride) l -> l
-          else l                    -> (l + 1)
+          if (minPercentileBkt >= 0) (l, l, minPercentileBkt, maxPercentileBkt)
+          else (l, l + 1, minPercentileBkt, maxPercentileBkt)
         case (_, _) =>
-          if (percentileOverride) l -> u
-          else l                    -> (u + 1)
+          if (minPercentileBkt >= 0) (l, u, minPercentileBkt, maxPercentileBkt)
+          else (l, u + 1, minPercentileBkt, maxPercentileBkt)
       }
     }
   }

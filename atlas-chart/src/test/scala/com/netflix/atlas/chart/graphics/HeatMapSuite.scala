@@ -267,7 +267,7 @@ object HeatMapSuite {
     )
 
     val yaxis =
-      if (isPercentile) HeatMapTimerValueAxis(plotDef, graphDef.theme.axis, min, max)
+      if (isPercentile) HeatMapTimerValueAxis(plotDef, graphDef.theme.axis, min, max, -1, -1)
       else LeftValueAxis(plotDef, graphDef.theme.axis, min, max)
     val timeAxis = TimeAxis(
       Style(color = graphDef.theme.axis.line.color),
@@ -286,7 +286,9 @@ object HeatMapSuite {
         x1 = 0,
         y1 = 0,
         x2 = 400,
-        chartEnd = 200
+        chartEnd = 200,
+        -1,
+        -1
       )
     } else {
       BasicHeatMap(

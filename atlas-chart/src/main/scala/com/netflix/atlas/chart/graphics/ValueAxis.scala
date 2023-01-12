@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
+import com.netflix.atlas.chart.graphics.Scales.yscale
 
 import java.awt.Graphics2D
 import com.netflix.atlas.chart.model.LineDef
@@ -208,22 +209,23 @@ case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Dou
   }
 }
 
-case class PTileBoundary(
-  boundary: Double,
-  tick: ValueTick,
-  offset: Int,
-  vpt: Double,
-  height: Int
-)
-
-case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
-    extends ValueAxis {
+case class HeatMapTimerValueAxis(
+  plotDef: PlotDef,
+  styles: Styles,
+  min: Double,
+  max: Double,
+  minP: Int,
+  maxP: Int
+) extends ValueAxis {
 
   import ValueAxis._
 
   protected var skipBuckets = 0
 
   protected def angle: Double = -Math.PI / 2.0
+
+  override def scale(y1: Int, y2: Int): Scales.DoubleScale =
+    yscale(Scales.percentile(getPtileScale(min, max, y1, y2, minP, maxP)))(max, min, y1, y2)
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)
@@ -238,10 +240,9 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
   }
 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
-    val scale = getPtileScale(min, max, y1, y2)
+    val ptileBuckets = getPtileScale(min, max, y1, y2, minP, maxP)
     val ticks = List.newBuilder[ValueTick]
-
-    scale.foreach { s =>
+    ptileBuckets.foreach { s =>
       if (!s.skipTick) {
         val prefix = Ticks.getDurationPrefix(s.baseDuration, s.baseDuration)
         val fmt = prefix.format(s.baseDuration, "%.1f%s")
@@ -299,8 +300,14 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
 
 }
 
-case class RightHeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
-    extends ValueAxis {
+case class RightHeatMapTimerValueAxis(
+  plotDef: PlotDef,
+  styles: Styles,
+  min: Double,
+  max: Double,
+  minP: Int,
+  maxP: Int
+) extends ValueAxis {
 
   import ValueAxis._
 
@@ -321,7 +328,7 @@ case class RightHeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Dou
   }
 
   override def ticks(y1: Int, y2: Int): List[ValueTick] = {
-    val scale = getPtileScale(min, max, y1, y2)
+    val scale = getPtileScale(min, max, y1, y2, minP, maxP)
     val ticks = List.newBuilder[ValueTick]
 
     scale.foreach { s =>

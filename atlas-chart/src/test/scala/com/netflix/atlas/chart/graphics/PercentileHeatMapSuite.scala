@@ -108,7 +108,7 @@ class PercentileHeatMapSuite extends FunSuite {
   test("getPtileScale aligned normal range") {
     val min = 0.626349396 // 127 from bktSeconds
     val max = 2.863311529 // 137 from bktSeconds
-    val buckets = getPtileScale(min, max, 5, 305)
+    val buckets = getPtileScale(min, max, 5, 305, -1, -1)
     assertEquals(buckets.size, 11)
 
     var bktIdx = 125

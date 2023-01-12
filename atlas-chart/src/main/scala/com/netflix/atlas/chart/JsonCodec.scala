@@ -20,7 +20,6 @@ import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Base64
-
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
@@ -28,9 +27,10 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.atlas.chart.graphics.BasicHeatMap
 import com.netflix.atlas.chart.graphics.HeatMap
-import com.netflix.atlas.chart.graphics.HeatMap.computeGraphY
+import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
 import com.netflix.atlas.chart.graphics.PercentileHeatMap
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph
+import com.netflix.atlas.chart.graphics.HeatMap.computeGraphY
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.chart.util.PngImage
@@ -221,6 +221,7 @@ private[chart] object JsonCodec {
     val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
     val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
       case Some(_) =>
+        val hmtva = graph.yaxes(id).asInstanceOf[HeatMapTimerValueAxis]
         PercentileHeatMap(
           config,
           plot,
@@ -228,6 +229,8 @@ private[chart] object JsonCodec {
           graph.timeAxis,
           0,
           offset,
+          hmtva.minP,
+          hmtva.maxP,
           graph.width,
           graph.height
         )

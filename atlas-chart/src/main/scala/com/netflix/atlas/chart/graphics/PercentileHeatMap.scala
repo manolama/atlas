@@ -26,6 +26,8 @@ case class PercentileHeatMap(
   y1: Int,
   x2: Int,
   chartEnd: Int,
+  minP: Int,
+  maxP: Int,
   leftOffset: Int = 0,
   rightOffset: Int = 0
 ) extends HeatMap {
@@ -33,8 +35,8 @@ case class PercentileHeatMap(
   val yticks = axis.ticks(y1, chartEnd)
   val `type`: String = "percentile-heatmap"
 
-  private val yscale = axis.scale(y1, chartEnd)
-  private val ptileScale = getPtileScale(axis.min, axis.max, y1, chartEnd)
+  // private val yscale = axis.scale(y1, chartEnd)
+  private val ptileScale = getPtileScale(axis.min, axis.max, y1, chartEnd, minP, maxP)
   private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   private val hCells = xTicks.size
 
@@ -58,6 +60,7 @@ case class PercentileHeatMap(
     // NOTE: It is expected that the scale will ALWAYS be PERCENTILE if we get here.
     // If we desire supporting other scales, we need to handle alignment and the
     // single bucket (same min/max on the axis. 0 yticks in that case) use case.
+
     ptileScale.map(s =>
       Bkt(
         new Array[Double](hCells),
@@ -144,6 +147,25 @@ case class PercentileHeatMap(
 
   private def addLine(line: LineDef): Unit = {
     val seconds = bktSeconds(line)
+
+    var tn = graphDef.startTime.toEpochMilli
+    var cnt = 0
+    var sum = 0.0
+    var min = Double.MaxValue
+    var max = Double.MinValue
+    while (tn < graphDef.endTime.toEpochMilli) {
+      val v = line.data.data(tn)
+      System.out.print(s"${v}, ")
+      if (v.isFinite && v > 0) {
+        cnt += 1
+        sum += v
+        if (v > max) max = v
+        if (v < min) min = v
+      }
+      tn += line.data.data.step
+    }
+    System.out.println()
+    System.out.println(s"Count for ${seconds} is ${cnt} and sum ${sum} min ${min} max ${max}")
     // axis bounds check
     if (seconds > yticks.last.v || seconds < yticks.head.v) {
       return
@@ -183,19 +205,19 @@ case class PercentileHeatMap(
         if (x < hCells) {
           val tpb = row.ticksPerBucket
           val count = v / tpb
-          for (i <- 0 until tpb) {
-            if (bucketIndex + i < buckets.length) { // edge case if there is only a single bucket.
-              row = buckets(bucketIndex + i)
-              if (seconds >= 0) row.counts(x) += count else row.counts(x) += 1
+          // for (i <- 0 until tpb) {
+          // if (bucketIndex + i < buckets.length) { // edge case if there is only a single bucket.
+          // row = buckets(bucketIndex + i)
+          if (seconds >= 0) row.counts(x) += count else row.counts(x) += 1
 
-              if (row.counts(x) > 0 && row.counts(x) > cmax) {
-                cmax = row.counts(x)
-              }
-              if (row.counts(x) > 0 && row.counts(x) < cmin) {
-                cmin = row.counts(x)
-              }
-            }
+          if (row.counts(x) > 0 && row.counts(x) > cmax) {
+            cmax = row.counts(x)
           }
+          if (row.counts(x) > 0 && row.counts(x) < cmin) {
+            cmin = row.counts(x)
+          }
+          // }
+          // }
         }
       }
       t += graphDef.step
@@ -383,13 +405,33 @@ object PercentileHeatMap {
     * @return
     *   A non-empty list of percentile bucket descriptors.
     */
-  def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
+  def getPtileScale(
+    d1: Double,
+    d2: Double,
+    y1: Int,
+    y2: Int,
+    minP: Int,
+    maxP: Int
+  ): List[PtileScale] = {
     // aiming for about 10px per tick
     val pixelSpan = y2 - y1
     var pixelsPerPercentile = 10.0
     val initBkts = pixelSpan / pixelsPerPercentile
 
-    val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
+    val minBkt = {
+      if (d1 < bktSeconds(minP)) if (minP > 0) minP - 1 else minP
+      else minP
+    }
+    var maxBkt = {
+      val max = if (maxP + 1 < percentileBucketsCount) maxP + 1 else maxP
+      val s = bktSeconds(max)
+      if (d2 > s) if (max + 1 < percentileBucketsCount) max + 1 else max
+      else max
+    }
+    // var (minBkt, maxBkt) = minMaxBuckets(d1, d2)
+    if (minBkt == maxBkt && maxBkt + 1 < percentileBucketsCount) {
+      maxBkt += 1
+    }
     val bktRange = Math.max(1, maxBkt - minBkt)
 
     val bkts = List.newBuilder[PtileScale]
@@ -404,7 +446,8 @@ object PercentileHeatMap {
     if (bktsPerTick < 1) {
       // spread the buckets out
       val subsPerTick = (initBkts / bktRange).toInt
-      var prev = y2.toDouble
+      pixelsPerPercentile = pixelSpan / bktRange.doubleValue()
+      var prev = y2.toDouble + 1
       for (i <- minBkt until maxBkt) {
         val base = bktSeconds(i)
         val next = bktSeconds(i + 1)
@@ -417,13 +460,15 @@ object PercentileHeatMap {
           list.addOne((v, v == base, nxt))
         }
 
-        val y = prev - pixelsPerPercentile + 1
+        val y = prev - pixelsPerPercentile
         val h = (Math.round(prev) - Math.round(y)).toInt
+
         bkts += PtileScale(base, Math.round(y).toInt, h, next, false, true, 1, list.result())
-        prev -= pixelsPerPercentile
+
+        prev = y
       }
+      System.out.println("HERE")
     } else {
-      // val numBkts = Math.ceil(bktRange / bktsPerTick.toDouble).toInt
       pixelsPerPercentile = pixelSpan / (bktRange.toDouble)
 
       var bkt = minBkt
@@ -455,19 +500,19 @@ object PercentileHeatMap {
       }
       // ctr += 1
 
-      bkts += PtileScale(
-        bktSeconds(maxBkt),
-        y1,
-        0,
-        bktSeconds(maxBkt + 1),
-        false,
-        true, // ctr == nxtMgr,
-        1,
-        List.empty
-      )
-
       System.out.println(bkts.result())
     }
+
+    bkts += PtileScale(
+      bktSeconds(maxBkt),
+      y1,
+      0,
+      bktSeconds(maxBkt + 1),
+      false,
+      true, // ctr == nxtMgr,
+      1,
+      List.empty
+    )
 
     bkts.result()
   }
@@ -549,9 +594,9 @@ object PercentileHeatMap {
 //    }
 
     var maxBkt = bktIdx((max * 1000 * 1000 * 1000).toLong)
-    if (maxBkt < percentileBucketsCount) {
-      maxBkt += 1
-    }
+//    if (maxBkt < percentileBucketsCount) {
+//      maxBkt += 1
+//    }
 //    if (maxBkt < percentileBucketsCount && maxBkt > 0) {
 //      val seconds = bktSeconds(maxBkt - 1)
 //      if (max > seconds) {
