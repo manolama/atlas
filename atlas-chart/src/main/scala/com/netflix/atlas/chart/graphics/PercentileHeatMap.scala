@@ -467,15 +467,20 @@ object PercentileHeatMap {
 
         prev = y
       }
-      System.out.println("HERE")
     } else {
       pixelsPerPercentile = pixelSpan / (bktRange.toDouble)
+
+      val initBktsPerTick = {
+        val floorBuckets = Math.floor(bktRange / bktsPerTick).toInt
+        bktRange - (floorBuckets * bktsPerTick)
+      }
 
       var bkt = minBkt
       var prev = y2.toDouble + 1
       while (bkt < maxBkt) {
+        val bpt = if (bkt == minBkt && initBktsPerTick > 0) initBktsPerTick else bktsPerTick
         val base = bktSeconds(bkt)
-        var nxtBkt = bkt + bktsPerTick
+        var nxtBkt = bkt + bpt
         if (nxtBkt > maxBkt)
           nxtBkt = maxBkt
         val ptilesInScale = nxtBkt - bkt
@@ -490,7 +495,7 @@ object PercentileHeatMap {
           h,
           next,
           false,
-          bkt == minBkt,
+          true,//bkt == minBkt,
           ptilesInScale,
           List.empty
         )
@@ -582,7 +587,7 @@ object PercentileHeatMap {
     *   A tuple with the min and max bucket indices.
     */
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
-    var minBkt = bktIdx((min * 1000 * 1000 * 1000).toLong)
+    val minBkt = bktIdx((min * 1000 * 1000 * 1000).toLong)
     // we need to see if we received a match on an exact bucket boundary as we need
     // to back off one bucket. If not, we may have an explicit bounds or another
     // time series fudging the scale so account for that.

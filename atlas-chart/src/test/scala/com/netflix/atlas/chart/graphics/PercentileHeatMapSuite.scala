@@ -6,10 +6,7 @@ import com.netflix.atlas.chart.graphics.HeatMapSuite.assertRowCounts
 import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmap
 import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmapSeries
 import com.netflix.atlas.chart.graphics.HeatMapSuite.start
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.{bktIdx, bktNanos, bktSeconds, getPtileScale, minMaxBuckets}
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -239,5 +236,10 @@ class PercentileHeatMapSuite extends FunSuite {
       )
     )
     assertEquals(heatmap.legendLabel, "query")
+  }
+
+  test("blerug") {
+    System.out.println(bktSeconds(1))
+    System.out.println(bktNanos(1))
   }
 }
