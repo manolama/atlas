@@ -424,15 +424,15 @@ object PercentileHeatMap {
       }
     } else {
       // val numBkts = Math.ceil(bktRange / bktsPerTick.toDouble).toInt
-      pixelsPerPercentile = pixelSpan / (bktRange.toDouble - 1)
+      pixelsPerPercentile = pixelSpan / (bktRange.toDouble)
 
       var bkt = minBkt
       var prev = y2.toDouble + 1
-      while (bkt < maxBkt - 1) {
+      while (bkt < maxBkt) {
         val base = bktSeconds(bkt)
         var nxtBkt = bkt + bktsPerTick
-        if (nxtBkt >= maxBkt)
-          nxtBkt = maxBkt - 1
+        if (nxtBkt > maxBkt)
+          nxtBkt = maxBkt
         val ptilesInScale = nxtBkt - bkt
 
         val next = bktSeconds(nxtBkt)
@@ -456,10 +456,10 @@ object PercentileHeatMap {
       // ctr += 1
 
       bkts += PtileScale(
-        bktSeconds(maxBkt - 1),
+        bktSeconds(maxBkt),
         y1,
         0,
-        bktSeconds(maxBkt),
+        bktSeconds(maxBkt + 1),
         false,
         true, // ctr == nxtMgr,
         1,

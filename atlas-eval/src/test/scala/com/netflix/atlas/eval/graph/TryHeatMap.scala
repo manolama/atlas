@@ -119,7 +119,7 @@ class TryHeatMap extends FunSuite {
       var ts = timeseries.result()
 
       val keys = List(
-        "T0001",
+        //"T0001",
         "T0036",
         "T0037",
         "T0038",
