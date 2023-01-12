@@ -123,8 +123,8 @@ case class PercentileHeatMap(
       )
     }
 
-    Style(Color.RED).configure(g)
-    g.drawLine(x1 + leftOffset, 274, x2 - rightOffset, 274)
+//    Style(Color.RED).configure(g)
+//    g.drawLine(x1 + leftOffset, 274, x2 - rightOffset, 274)
   }
 
   override def legendLabel: String = label
@@ -494,7 +494,7 @@ object PercentileHeatMap {
           h,
           next,
           false,
-          true, // bkt == minBkt,
+          bkt == minBkt || bkt - initBktsPerTick != minBkt,
           ptilesInScale,
           List.empty
         )
