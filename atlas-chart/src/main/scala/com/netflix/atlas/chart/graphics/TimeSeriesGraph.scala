@@ -131,8 +131,9 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
             .sum
           val timeAxisH = if (graphDef.onlyGraph) 10 else timeAxis.height
 
-          val chartEnd =
-            (y1 + getHeight(ChartSettings.refGraphics, width)) - timeAxisH * timeAxes.size
+//          val chartEnd =
+//            (y1 + getHeight(ChartSettings.refGraphics, width)) - timeAxisH * timeAxes.size
+          val y2 = y1 + height
 
           val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
             case Some(_) =>
@@ -145,7 +146,7 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
                 0,
                 y1,
                 width,
-                chartEnd,
+                y2,
                 ax.minP,
                 ax.maxP,
                 leftOffset,
@@ -160,7 +161,7 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
                 0,
                 y1,
                 width,
-                chartEnd,
+                y2,
                 leftOffset,
                 rightOffset
               )

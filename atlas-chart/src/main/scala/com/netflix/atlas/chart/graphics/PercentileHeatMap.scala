@@ -35,7 +35,6 @@ case class PercentileHeatMap(
   val yticks = axis.ticks(y1, chartEnd)
   val `type`: String = "percentile-heatmap"
 
-  // private val yscale = axis.scale(y1, chartEnd)
   private val ptileScale = getPtileScale(axis.min, axis.max, y1, chartEnd, minP, maxP)
   private val xTicks = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset)
   private val hCells = xTicks.size
@@ -113,7 +112,6 @@ case class PercentileHeatMap(
 
   def draw(g: Graphics2D): Unit = {
     buckets.foreach { bucket =>
-      System.out.println(s" ------ plot y = ${bucket.y} => ${bucket.v}")
       val lineElement = HeatMapRow(bucket.counts, timeAxis, this)
       val yy = bucket.y
       lineElement.draw(
@@ -148,24 +146,24 @@ case class PercentileHeatMap(
   private def addLine(line: LineDef): Unit = {
     val seconds = bktSeconds(line)
 
-    var tn = graphDef.startTime.toEpochMilli
-    var cnt = 0
-    var sum = 0.0
-    var min = Double.MaxValue
-    var max = Double.MinValue
-    while (tn < graphDef.endTime.toEpochMilli) {
-      val v = line.data.data(tn)
-      System.out.print(s"${v}, ")
-      if (v.isFinite && v > 0) {
-        cnt += 1
-        sum += v
-        if (v > max) max = v
-        if (v < min) min = v
-      }
-      tn += line.data.data.step
-    }
-    System.out.println()
-    System.out.println(s"Count for ${seconds} is ${cnt} and sum ${sum} min ${min} max ${max}")
+//    var tn = graphDef.startTime.toEpochMilli
+//    var cnt = 0
+//    var sum = 0.0
+//    var min = Double.MaxValue
+//    var max = Double.MinValue
+//    while (tn < graphDef.endTime.toEpochMilli) {
+//      val v = line.data.data(tn)
+//      System.out.print(s"${v}, ")
+//      if (v.isFinite && v > 0) {
+//        cnt += 1
+//        sum += v
+//        if (v > max) max = v
+//        if (v < min) min = v
+//      }
+//      tn += line.data.data.step
+//    }
+//    System.out.println()
+//    System.out.println(s"Count for ${seconds} is ${cnt} and sum ${sum} min ${min} max ${max}")
     // axis bounds check
     if (seconds > yticks.last.v || seconds < yticks.head.v) {
       return
@@ -186,7 +184,8 @@ case class PercentileHeatMap(
     if (!found) {
       throw new IllegalStateException(s"No bucket?????? for ${seconds}")
     }
-    var row = buckets(bucketIndex)
+    val row = buckets(bucketIndex)
+    System.out.println(s"Row ${row.v} @ ${row.y}")
     var t = graphDef.startTime.toEpochMilli
     val ti = timeAxis.ticks(x1 + leftOffset, x2 - rightOffset).iterator
     var lastTick = ti.next()
@@ -495,7 +494,7 @@ object PercentileHeatMap {
           h,
           next,
           false,
-          true,//bkt == minBkt,
+          true, // bkt == minBkt,
           ptilesInScale,
           List.empty
         )

@@ -282,9 +282,9 @@ case class HeatMapTimerValueAxis(
     ticks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x2, py, x2 - tickMarkLength, py)
-      System.out.println(s"  Tick line: ${py} for ${tick.label}")
 
       if (plotDef.showTickLabels) {
+        System.out.println(s"  Tick line: ${tick.label} @ ${py}")
         val txt = Text(
           tick.label,
           font = ChartSettings.smallFont,
