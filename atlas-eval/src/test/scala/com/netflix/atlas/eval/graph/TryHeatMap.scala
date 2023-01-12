@@ -119,7 +119,7 @@ class TryHeatMap extends FunSuite {
       var ts = timeseries.result()
 
       val keys = List(
-//        "T0001",
+        "T0001",
         "T0036",
         "T0037",
         "T0038",
@@ -256,7 +256,7 @@ class TryHeatMap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
-      "&w=1296&h=600" +
+      // "&w=1296&h=600" +
 //      "&scale=percentile" +
 //      "&heatmap_scale=log" +
       // "&heatmap_legend=My%20Nifty%20Percentile%20map"
@@ -337,6 +337,15 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap"
 
   }*/
+
+  test("bkt ver again") {
+
+    val v = 1000000
+    val index = bktIdx(v)
+    val nanos = bktNanos(index)
+    val nextIdx = bktIdx(nanos)
+    System.out.println(s"v ${v}  idx ${index}  nanos ${nanos} nextIdx from nanos ${nextIdx}")
+  }
 
   test("jsonv2 maybe?") {
     db = getDB(false)
@@ -635,69 +644,71 @@ class TryHeatMap extends FunSuite {
     val y1 = 5
     val y2 = 605
 
-    val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
-
-    val bkts = getPtileScale(d1, d2, y1, y2)
+    // bkt 160 is max right now
+    System.out.println(s"BTK: ${bktSeconds(159)}")
     val scale = yscale(percentile)(d1, d2, y1, y2)
 
-    System.out.println(
-      String.format(
-        "%-5s %-8s %-5s %-25s %-25s %s",
-        "i",
-        "scale",
-        "sIdx",
-        "seconds",
-        "vpt",
-        "scale"
-      )
-    )
-    System.out.println(
-      "------------------------------------------------------------------------------"
-    )
-    for (i <- minBkt until maxBkt) {
-      val s = bktSeconds(i)
-      val sIdx = findScaleIdx(bkts, bktSeconds(i))
-      val sc = bkts(sIdx)
-      val vpt = (sc.nextDuration - sc.baseDuration) / Math.max(1, sc.height)
+    val y = scale(91.60573478131315)
+    System.out.println(y)
 
-      System.out.println(
-        String.format(
-          "%-5d %-8d %-5d %-25s %-25s %s",
-          i,
-          scale(s),
-          sIdx,
-          s.toString,
-          vpt.toString,
-          sc
-        )
-        // s"[${i}] ${scale(bktSeconds(i))} <- ${bktSeconds(i)} scale ${findScaleIdx(bkts, bktSeconds(i))}"
-      )
-    }
+    // val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
+    val bkts = getPtileScale(d1, d2, y1, y2)
+//    System.out.println(
+//      String.format(
+//        "%-5s %-8s %-5s %-25s %-25s %s",
+//        "i",
+//        "scale",
+//        "sIdx",
+//        "seconds",
+//        "vpt",
+//        "scale"
+//      )
+//    )
+//    System.out.println(
+//      "------------------------------------------------------------------------------"
+//    )
+//    for (i <- minBkt until maxBkt) {
+//      val s = bktSeconds(i)
+//      val sIdx = findScaleIdx(bkts, bktSeconds(i))
+//      val sc = bkts(sIdx)
+//      val vpt = (sc.nextDuration - sc.baseDuration) / Math.max(1, sc.height)
+//
+//      System.out.println(
+//        String.format(
+//          "%-5d %-8d %-5d %-25s %-25s %s",
+//          i,
+//          scale(s),
+//          sIdx,
+//          s.toString,
+//          vpt.toString,
+//          sc
+//        )
+//        // s"[${i}] ${scale(bktSeconds(i))} <- ${bktSeconds(i)} scale ${findScaleIdx(bkts, bktSeconds(i))}"
+//      )
+//    }
   }
 
   def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     // aiming for about 10px per tick
     val pixelSpan = y2 - y1
-    var pixelsPerBucket = 10.0
-    val initialTicks = pixelSpan / pixelsPerBucket
+    var pixelsPerPercentile = 10.0
+    val initBkts = pixelSpan / pixelsPerPercentile
 
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
     val bktRange = Math.max(1, maxBkt - minBkt)
 
     val bkts = List.newBuilder[PtileScale]
     val bktsPerTick = {
-      var t = initialTicks.toInt
-      var btt = bktRange / t
-      while (t > 10 && (btt % t != 0)) {
-        t -= 1
-        btt = bktRange / t
+      if (bktRange / initBkts < 1) {
+        0
+      } else {
+        Math.ceil(bktRange / initBkts).toInt
       }
-      btt
     }
 
     if (bktsPerTick < 1) {
       // spread the buckets out
-      val subsPerTick = (initialTicks / bktRange).toInt
+      val subsPerTick = (initBkts / bktRange).toInt
       var prev = y2.toDouble
       for (i <- minBkt until maxBkt) {
         val base = bktSeconds(i)
@@ -711,66 +722,43 @@ class TryHeatMap extends FunSuite {
           list.addOne((v, v == base, nxt))
         }
 
-        val y = prev - pixelsPerBucket + 1
+        val y = prev - pixelsPerPercentile + 1
         val h = (Math.round(prev) - Math.round(y)).toInt
         bkts += PtileScale(base, Math.round(y).toInt, h, next, false, true, 1, list.result())
-        prev -= pixelsPerBucket
+        prev -= pixelsPerPercentile
       }
     } else {
-      val numBkts = bktRange / bktsPerTick
-      pixelsPerBucket = pixelSpan / numBkts.toDouble
-
-      // TODO - figure out major ticks
+      pixelsPerPercentile = pixelSpan / (bktRange.toDouble - 1)
 
       var bkt = minBkt
-
-      // tick strategy for now.... bottom tick always. If odd, tick the second before
-      // top most bucket.
-      // if even, regular ticking.
-      val oddNumBkts = (numBkts + 1) % 2 != 0
-      val mjrBkts = if (oddNumBkts) numBkts else numBkts + 1
-      var numMjrs = ((y2 - y1) / minTickLabelHeight) - 1
-      while (numMjrs > 1 && mjrBkts % numMjrs != 0) {
-        numMjrs -= 1
-      }
-      val mjrInterval = mjrBkts / numMjrs
-
-      var ctr = 0
-      var nxtMgr = mjrInterval
       var prev = y2.toDouble
-      for (i <- 0 to numBkts) {
+      while (bkt < maxBkt - 1) {
         val base = bktSeconds(bkt)
-        val nxtBkt = bkt + bktsPerTick
-        val next = bktSeconds(Math.min(nxtBkt, maxBkt - 1))
+        var nxtBkt = bkt + bktsPerTick
+        if (nxtBkt >= maxBkt)
+          nxtBkt = maxBkt - 1
+        val ptilesInScale = nxtBkt - bkt
 
-        val y = prev - pixelsPerBucket + 1
+        val next = bktSeconds(nxtBkt)
+        val y = prev - (pixelsPerPercentile * ptilesInScale)
         val h = (Math.round(prev) - Math.round(y)).toInt
 
-        val major = if (i == 0) {
-          true
-        } else {
-          if (ctr == nxtMgr) {
-            nxtMgr += mjrInterval
-            true
-          } else {
-            false
-          }
-        }
         bkts += PtileScale(
           base,
           Math.round(y).toInt,
           h,
           next,
           false,
-          major,
-          nxtBkt - bkt,
+          false,
+          ptilesInScale,
           List.empty
         )
         bkt = nxtBkt
-        prev -= pixelsPerBucket
-        ctr += 1
+        // prev -= (pixelsPerPercentile * ptilesInScale)
+        prev = y
+        // ctr += 1
       }
-      ctr += 1
+      // ctr += 1
 
       bkts += PtileScale(
         bktSeconds(maxBkt - 1),

@@ -13,6 +13,7 @@ import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
+import java.awt.Color
 import java.awt.Graphics2D
 import java.util.regex.Pattern
 
@@ -111,7 +112,7 @@ case class PercentileHeatMap(
     buckets.foreach { bucket =>
       System.out.println(s" ------ plot y = ${bucket.y} => ${bucket.v}")
       val lineElement = HeatMapRow(bucket.counts, timeAxis, this)
-      val yy = bucket.y // - bucket.height + 1
+      val yy = bucket.y
       lineElement.draw(
         g,
         x1 + leftOffset,
@@ -120,6 +121,9 @@ case class PercentileHeatMap(
         Math.max(1, bucket.height)
       )
     }
+
+//    Style(Color.RED).configure(g)
+//    g.drawLine(x1 + leftOffset, 304, x2 - rightOffset, 304)
   }
 
   override def legendLabel: String = label
@@ -139,13 +143,7 @@ case class PercentileHeatMap(
     HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   private def addLine(line: LineDef): Unit = {
-    val seconds = {
-      // Remember, when we make this call, it's actually the NEXT bucket so we need
-      // to shift down.
-      var b = bktIdx(line)
-      // b = if (b > 0) b - 1 else b
-      bktSeconds(b)
-    }
+    val seconds = bktSeconds(line)
     // axis bounds check
     if (seconds > yticks.last.v || seconds < yticks.head.v) {
       return
@@ -164,7 +162,7 @@ case class PercentileHeatMap(
       }
     }
     if (!found) {
-      bucketIndex = 0
+      throw new IllegalStateException(s"No bucket?????? for ${seconds}")
     }
     var row = buckets(bucketIndex)
     var t = graphDef.startTime.toEpochMilli
@@ -310,7 +308,7 @@ object PercentileHeatMap {
     *   A nanoseconds value matching the Spectator percentile bucket lower boundary.
     */
   def bktNanos(index: Int): Long = {
-    PercentileBuckets.get(index)
+    PercentileBuckets.get(if (index > 0) index - 1 else index)
   }
 
   /**
@@ -322,7 +320,8 @@ object PercentileHeatMap {
     *   A seconds value matching the Spectator percentile bucket lower boundary.
     */
   def bktSeconds(line: LineDef): Double = {
-    PercentileBuckets.get(bktIdx(line)) / 1000.0 / 1000.0 / 1000.0
+    val idx = bktIdx(line)
+    PercentileBuckets.get(if (idx > 0) idx - 1 else idx) / 1000.0 / 1000.0 / 1000.0
   }
 
   /**
@@ -334,7 +333,7 @@ object PercentileHeatMap {
     *   A seconds value matching the Spectator percentile bucket lower boundary.
     */
   def bktSeconds(bkt: Int): Double = {
-    PercentileBuckets.get(bkt) / 1000.0 / 1000.0 / 1000.0
+    PercentileBuckets.get(if (bkt > 0) bkt - 1 else bkt) / 1000.0 / 1000.0 / 1000.0
   }
 
   /**
@@ -387,26 +386,24 @@ object PercentileHeatMap {
   def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
     // aiming for about 10px per tick
     val pixelSpan = y2 - y1
-    var pixelsPerBucket = 10.0
-    val initialTicks = pixelSpan / pixelsPerBucket
+    var pixelsPerPercentile = 10.0
+    val initBkts = pixelSpan / pixelsPerPercentile
 
     val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
     val bktRange = Math.max(1, maxBkt - minBkt)
 
     val bkts = List.newBuilder[PtileScale]
     val bktsPerTick = {
-      var t = initialTicks.toInt
-      var btt = bktRange / t
-      while (t > 10 && (btt % t != 0)) {
-        t -= 1
-        btt = bktRange / t
+      if (bktRange / initBkts < 1) {
+        0
+      } else {
+        Math.ceil(bktRange / initBkts).toInt
       }
-      btt
     }
 
     if (bktsPerTick < 1) {
       // spread the buckets out
-      val subsPerTick = (initialTicks / bktRange).toInt
+      val subsPerTick = (initBkts / bktRange).toInt
       var prev = y2.toDouble
       for (i <- minBkt until maxBkt) {
         val base = bktSeconds(i)
@@ -420,66 +417,43 @@ object PercentileHeatMap {
           list.addOne((v, v == base, nxt))
         }
 
-        val y = prev - pixelsPerBucket + 1
+        val y = prev - pixelsPerPercentile + 1
         val h = (Math.round(prev) - Math.round(y)).toInt
         bkts += PtileScale(base, Math.round(y).toInt, h, next, false, true, 1, list.result())
-        prev -= pixelsPerBucket
+        prev -= pixelsPerPercentile
       }
     } else {
-      val numBkts = bktRange / bktsPerTick
-      pixelsPerBucket = pixelSpan / numBkts.toDouble
-
-      // TODO - figure out major ticks
+      // val numBkts = Math.ceil(bktRange / bktsPerTick.toDouble).toInt
+      pixelsPerPercentile = pixelSpan / (bktRange.toDouble - 1)
 
       var bkt = minBkt
-
-      // tick strategy for now.... bottom tick always. If odd, tick the second before
-      // top most bucket.
-      // if even, regular ticking.
-      val oddNumBkts = (numBkts + 1) % 2 != 0
-      val mjrBkts = if (oddNumBkts) numBkts else numBkts + 1
-      var numMjrs = ((y2 - y1) / minTickLabelHeight) - 1
-      while (numMjrs > 1 && mjrBkts % numMjrs != 0) {
-        numMjrs -= 1
-      }
-      val mjrInterval = mjrBkts / numMjrs
-
-      var ctr = 0
-      var nxtMgr = mjrInterval
-      var prev = y2.toDouble
-      for (i <- 0 to numBkts) {
+      var prev = y2.toDouble + 1
+      while (bkt < maxBkt - 1) {
         val base = bktSeconds(bkt)
-        val nxtBkt = bkt + bktsPerTick
-        val next = bktSeconds(Math.min(nxtBkt, maxBkt - 1))
+        var nxtBkt = bkt + bktsPerTick
+        if (nxtBkt >= maxBkt)
+          nxtBkt = maxBkt - 1
+        val ptilesInScale = nxtBkt - bkt
 
-        val y = prev - pixelsPerBucket + 1
+        val next = bktSeconds(nxtBkt)
+        val y = prev - (pixelsPerPercentile * ptilesInScale)
         val h = (Math.round(prev) - Math.round(y)).toInt
 
-        val major = if (i == 0) {
-          true
-        } else {
-          if (ctr == nxtMgr) {
-            nxtMgr += mjrInterval
-            true
-          } else {
-            false
-          }
-        }
         bkts += PtileScale(
           base,
           Math.round(y).toInt,
           h,
           next,
           false,
-          major,
-          nxtBkt - bkt,
+          bkt == minBkt,
+          ptilesInScale,
           List.empty
         )
         bkt = nxtBkt
-        prev -= pixelsPerBucket
-        ctr += 1
+        prev = y
+        // ctr += 1
       }
-      ctr += 1
+      // ctr += 1
 
       bkts += PtileScale(
         bktSeconds(maxBkt - 1),
@@ -563,24 +537,27 @@ object PercentileHeatMap {
     *   A tuple with the min and max bucket indices.
     */
   def minMaxBuckets(min: Double, max: Double): (Int, Int) = {
-    var minBkt = PercentileBuckets.indexOf((min * 1000 * 1000 * 1000).toLong)
+    var minBkt = bktIdx((min * 1000 * 1000 * 1000).toLong)
     // we need to see if we received a match on an exact bucket boundary as we need
     // to back off one bucket. If not, we may have an explicit bounds or another
     // time series fudging the scale so account for that.
-    if (minBkt > 0) {
-      val seconds = bktSeconds(minBkt - 1)
-      if (Math.abs(seconds - min) < 1e-9) {
-        minBkt -= 1
-      }
-    }
+//    if (minBkt > 0) {
+//      val seconds = bktSeconds(minBkt - 1)
+//      if (Math.abs(seconds - min) < 1e-9) {
+//        minBkt -= 1
+//      }
+//    }
 
-    var maxBkt = PercentileBuckets.indexOf((max * 1000 * 1000 * 1000).toLong)
-    if (maxBkt < percentileBucketsCount && maxBkt > 0) {
-      val seconds = bktSeconds(maxBkt - 1)
-      if (max > seconds) {
-        maxBkt += 1
-      }
+    var maxBkt = bktIdx((max * 1000 * 1000 * 1000).toLong)
+    if (maxBkt < percentileBucketsCount) {
+      maxBkt += 1
     }
+//    if (maxBkt < percentileBucketsCount && maxBkt > 0) {
+//      val seconds = bktSeconds(maxBkt - 1)
+//      if (max > seconds) {
+//        maxBkt += 1
+//      }
+//    }
 
     // edge case for 0
     if (minBkt == 0 && maxBkt == 0) maxBkt = 1
