@@ -261,11 +261,11 @@ case class HeatMapTimerValueAxis(plotDef: PlotDef, styles: Styles, min: Double, 
     }
 
     // final tick at the top
-    val top = scale.last.nextDuration
-    val prefix = Ticks.getDurationPrefix(top, top)
-    val fmt = prefix.format(top, "%.1f%s")
-    val label = prefix.format(top, fmt)
-    ticks += ValueTick(top, 0.0, true, Some(label))
+//    val top = scale.last.nextDuration
+//    val prefix = Ticks.getDurationPrefix(top, top)
+//    val fmt = prefix.format(top, "%.1f%s")
+//    val label = prefix.format(top, fmt)
+//    ticks += ValueTick(top, 0.0, true, Some(label))
     ticks.result()
   }
 
