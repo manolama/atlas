@@ -28,6 +28,7 @@ import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
 import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.chart.model.VisionType
 import com.netflix.atlas.core.db.Database
@@ -298,7 +299,8 @@ case class Grapher(settings: DefaultSettings) {
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map {
       case (yaxis, exprs) =>
-        val axisCfg = config.flags.axes(yaxis)
+        var axisCfg = config.flags.axes(yaxis)
+        var scale = Scale.fromName(axisCfg.scale.getOrElse("linear"))
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
         if (
           (dfltStyle == LineStyle.STACK || exprs.exists(
@@ -325,7 +327,6 @@ case class Grapher(settings: DefaultSettings) {
 
         var messages = List.empty[String]
         var heatmapColor: Color = null
-        var hasSpectatorPercentile: Boolean = false
         val lines = exprs.flatMap { s =>
           val result = eval(s)
 
@@ -368,7 +369,6 @@ case class Grapher(settings: DefaultSettings) {
               val color = s.color.getOrElse {
                 val c = lineStyle match {
                   case LineStyle.HEATMAP =>
-                    if (isSpectatorPercentile(t.tags)) hasSpectatorPercentile = true
                     if (axisCfg.heatmapPalette.nonEmpty) {
                       // don't consume a color
                       if (heatmapColor == null) {
@@ -389,26 +389,24 @@ case class Grapher(settings: DefaultSettings) {
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
               }
 
-              val p: Option[Palette] = {
-                if (lineStyle == LineStyle.HEATMAP && axisCfg.heatmapPalette.nonEmpty) {
-                  val p = axisCfg.heatmapPalette.get
-                  if (p.contains("colors:") || p.contains("("))
-                    Some(
-                      Palette.fromArray("HeatMap", Palette.create(p).uniqueColors.reverse.toArray)
+              if (lineStyle == LineStyle.HEATMAP) {
+                if (scale != Scale.PERCENTILE) {
+                  if (isSpectatorPercentile(t.tags)) {
+                    scale = Scale.PERCENTILE
+                    axisCfg = axisCfg.copy(
+                      scale = Some(scale.name().toLowerCase())
                     )
-                  else
-                    Some(Palette.create(p))
-                } else if (s.color.nonEmpty) {
-                  None
-                } else if (s.palette.nonEmpty) {
-                  Some(newPaletteRef(s.palette.get))
-                } else if (axisCfg.palette.nonEmpty) {
-                  Some(newPaletteRef(axisCfg.palette.get))
-                } else {
-                  lineStyle match {
-                    case LineStyle.HEATMAP => None
-                    case _                 => Some(newPaletteRef(config.flags.palette))
                   }
+                }
+
+                if (s.palette.nonEmpty) {
+                  axisCfg = axisCfg.copy(
+                    heatmapPalette = s.palette
+                  )
+                } else if (axisCfg.palette.nonEmpty) {
+                  axisCfg = axisCfg.copy(
+                    heatmapPalette = axisCfg.palette
+                  )
                 }
               }
 
@@ -419,8 +417,7 @@ case class Grapher(settings: DefaultSettings) {
                 color = color,
                 lineStyle = lineStyle,
                 lineWidth = s.lineWidth,
-                legendStats = stats,
-                p
+                legendStats = stats
               )
           }
 
@@ -438,8 +435,7 @@ case class Grapher(settings: DefaultSettings) {
 
         axisCfg.newPlotDef(
           sortedLines ::: messages.map(s => MessageDef(s"... $s ...")),
-          multiY,
-          hasSpectatorPercentile
+          multiY
         )
     }
 

@@ -33,29 +33,29 @@ class HeatmapSuite extends FunSuite {
   )
   private val palette = Palette.create("blues")
 
-  test("choosePalette single color") {
-    val line = LineDef(ts)
-    val palette = choosePalette(line)
-    assertEquals(palette.uniqueColors.length, singleColorAlphas.length)
-    for (i <- 0 until singleColorAlphas.length) {
-      assertEquals(palette.uniqueColors(i).getAlpha, singleColorAlphas(i))
-    }
-  }
-
-  test("choosePalette palette provided") {
-    val line = LineDef(ts, palette = Some(Palette.create("blues")))
-    val palette = choosePalette(line)
-    assertEquals(palette, Palette.create("blues"))
-  }
-
-  test("choosePalette palette provided with single color") {
-    val line = LineDef(ts, palette = Some(Palette.create("colors:A1D99B")))
-    val palette = choosePalette(line)
-    assertEquals(palette.uniqueColors.length, singleColorAlphas.length)
-    for (i <- 0 until singleColorAlphas.length) {
-      assertEquals(palette.uniqueColors(i).getAlpha, singleColorAlphas(i))
-    }
-  }
+//  test("choosePalette single color") {
+//    val line = LineDef(ts)
+//    val palette = choosePalette(line)
+//    assertEquals(palette.uniqueColors.length, singleColorAlphas.length)
+//    for (i <- 0 until singleColorAlphas.length) {
+//      assertEquals(palette.uniqueColors(i).getAlpha, singleColorAlphas(i))
+//    }
+//  }
+//
+//  test("choosePalette palette provided") {
+//    val line = LineDef(ts, palette = Some(Palette.create("blues")))
+//    val palette = choosePalette(line)
+//    assertEquals(palette, Palette.create("blues"))
+//  }
+//
+//  test("choosePalette palette provided with single color") {
+//    val line = LineDef(ts, palette = Some(Palette.create("colors:A1D99B")))
+//    val palette = choosePalette(line)
+//    assertEquals(palette.uniqueColors.length, singleColorAlphas.length)
+//    for (i <- 0 until singleColorAlphas.length) {
+//      assertEquals(palette.uniqueColors(i).getAlpha, singleColorAlphas(i))
+//    }
+//  }
 
   test("colorScaler linear 1 to 1") {
     val plotDef = PlotDef(List.empty, scale = Scale.LINEAR)

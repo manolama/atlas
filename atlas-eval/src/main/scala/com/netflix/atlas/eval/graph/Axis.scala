@@ -59,8 +59,7 @@ case class Axis(
 
   def newPlotDef(
     data: List[DataDef] = Nil,
-    multiY: Boolean = false,
-    hasSpectatorPercentile: Boolean = false
+    multiY: Boolean = false
   ): PlotDef = {
     val label = ylabel.map(s => Strings.substitute(s, getAxisTags(data)))
     PlotDef(
@@ -68,8 +67,7 @@ case class Axis(
       lower = lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
       upper = upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
       ylabel = label,
-      scale =
-        if (hasSpectatorPercentile) Scale.PERCENTILE else Scale.fromName(scale.getOrElse("linear")),
+      scale = Scale.fromName(scale.getOrElse("linear")),
       axisColor = if (multiY) data.headOption.map(_.color) else None,
       tickLabelMode = tickLabelMode,
       heatmapDef = Some(

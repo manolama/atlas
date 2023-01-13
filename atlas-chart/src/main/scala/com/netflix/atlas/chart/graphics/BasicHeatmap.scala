@@ -17,8 +17,6 @@ package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.graphics.Heatmap.choosePalette
 import com.netflix.atlas.chart.graphics.Heatmap.defaultDef
-import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatmap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
@@ -98,7 +96,7 @@ case class BasicHeatmap(
 
   override def rows: Array[Array[Double]] = buckets
 
-  protected[graphics] lazy val palette = choosePalette(firstLine)
+  protected[graphics] lazy val palette = choosePalette(plot, firstLine)
 
   protected[graphics] lazy val colorScaler =
     Heatmap.colorScaler(plot, palette, lowerCellBound, upperCellBound)

@@ -158,7 +158,7 @@ class TryHeatmap extends FunSuite {
 //        "T005A",
 //        "T005B",
 //        "T005C",
-        "T005D",
+        "T005D"
 //        "T005E",
 //        "T005F",
 //        "T0060"
@@ -227,7 +227,7 @@ class TryHeatmap extends FunSuite {
 //        "T009F",
 //        "T00A0"
       ).asJava
-      if (true) {
+      if (false) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -255,7 +255,7 @@ class TryHeatmap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + //"fcba03,:color," + // "blues,:palette," + // "bluegreen,:palette," +
       // "&w=1296&h=600" +
 //      "&scale=percentile" +
 //      "&heatmap_scale=log" +

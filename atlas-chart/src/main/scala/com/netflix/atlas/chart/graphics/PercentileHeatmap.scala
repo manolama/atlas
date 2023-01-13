@@ -116,7 +116,7 @@ case class PercentileHeatmap(
     results
   }
 
-  protected[graphics] lazy val palette = choosePalette(firstLine)
+  protected[graphics] lazy val palette = choosePalette(plot, firstLine)
 
   protected[graphics] lazy val colorScaler =
     Heatmap.colorScaler(plot, palette, lowerCellBound, upperCellBound)

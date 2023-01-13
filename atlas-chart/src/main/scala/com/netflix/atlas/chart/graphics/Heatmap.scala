@@ -191,12 +191,17 @@ object Heatmap {
     * @return
     *   A palette to use for the color scale.
     */
-  def choosePalette(line: LineDef): Palette = {
-    line.palette match {
-      case Some(p) =>
-        if (p.uniqueColors.length > 1) p
-        else fromSingleColor(p.uniqueColors.head)
-      case None => fromSingleColor(line.color)
+  def choosePalette(plot: PlotDef, line: LineDef): Palette = {
+    plot.heatmapDef match {
+      case Some(heatmap) =>
+        heatmap.palette
+          .map { palette =>
+            if (palette.uniqueColors.length > 1) palette
+            else fromSingleColor(palette.uniqueColors.head)
+          }
+          .getOrElse(fromSingleColor(line.color))
+      case None =>
+        fromSingleColor(line.color)
     }
   }
 
