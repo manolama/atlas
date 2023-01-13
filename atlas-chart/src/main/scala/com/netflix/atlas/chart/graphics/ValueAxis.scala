@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.graphics.Scales.yscale
 
 import java.awt.Graphics2D

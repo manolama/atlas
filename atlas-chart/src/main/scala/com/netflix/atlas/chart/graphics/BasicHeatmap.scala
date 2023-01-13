@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
-import com.netflix.atlas.chart.graphics.HeatMap.defaultDef
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
+import com.netflix.atlas.chart.graphics.Heatmap.choosePalette
+import com.netflix.atlas.chart.graphics.Heatmap.defaultDef
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
@@ -26,7 +26,7 @@ import com.netflix.atlas.chart.model.PlotDef
 
 import java.awt.Graphics2D
 
-case class BasicHeatMap(
+case class BasicHeatmap(
   graphDef: GraphDef,
   plot: PlotDef,
   axis: ValueAxis,
@@ -37,7 +37,7 @@ case class BasicHeatMap(
   chartEnd: Int,
   leftOffset: Int = 0,
   rightOffset: Int = 0
-) extends HeatMap {
+) extends Heatmap {
 
   val yticks = axis.ticks(y1, chartEnd)
   val `type`: String = "heatmap"
@@ -101,7 +101,7 @@ case class BasicHeatMap(
   protected[graphics] lazy val palette = choosePalette(firstLine)
 
   protected[graphics] lazy val colorScaler =
-    HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
+    Heatmap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   private def addLine(line: LineDef): Unit = {
     var t = graphDef.startTime.toEpochMilli

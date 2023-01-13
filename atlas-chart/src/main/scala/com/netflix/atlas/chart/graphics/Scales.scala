@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.spectator.api.histogram.PercentileBuckets

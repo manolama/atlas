@@ -1,13 +1,13 @@
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
-import com.netflix.atlas.chart.graphics.HeatMapSuite.assertColorMap
-import com.netflix.atlas.chart.graphics.HeatMapSuite.assertRowCounts
-import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmapSeries
-import com.netflix.atlas.chart.graphics.HeatMapSuite.start
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
+import com.netflix.atlas.chart.graphics.Heatmap.singleColorAlphas
+import com.netflix.atlas.chart.graphics.HeatmapSuite.assertColorMap
+import com.netflix.atlas.chart.graphics.HeatmapSuite.assertRowCounts
+import com.netflix.atlas.chart.graphics.HeatmapSuite.generateHeatmapSeries
+import com.netflix.atlas.chart.graphics.HeatmapSuite.start
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktNanos
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -18,7 +18,7 @@ import org.junit.Assert.assertFalse
 
 import java.util
 
-class PercentileHeatMapSuite extends FunSuite {
+class PercentileHeatmapSuite extends FunSuite {
 
   val plotDef = PlotDef(List.empty, scale = Scale.PERCENTILE)
   val styles = Styles(Style(), Style(), Style())

@@ -1,11 +1,11 @@
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
-import com.netflix.atlas.chart.graphics.HeatMap.colorScaler
-import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
-import com.netflix.atlas.chart.graphics.HeatMapSuite.start
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
+import com.netflix.atlas.chart.graphics.Heatmap.choosePalette
+import com.netflix.atlas.chart.graphics.Heatmap.colorScaler
+import com.netflix.atlas.chart.graphics.Heatmap.singleColorAlphas
+import com.netflix.atlas.chart.graphics.HeatmapSuite.start
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.isSpectatorPercentile
 import com.netflix.atlas.chart.graphics.Scales.DoubleScale
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
@@ -27,7 +27,7 @@ import java.awt.Color
 import java.awt.Graphics2D
 import java.time.Instant
 
-class HeatMapSuite extends FunSuite {
+class HeatmapSuite extends FunSuite {
 
   private val ts = TimeSeries(
     Map.empty,
@@ -130,12 +130,12 @@ class HeatMapSuite extends FunSuite {
   }
 
   test("colorMap no real values processed") {
-    val hm = MockHeatMap(palette.uniqueColors.length)
+    val hm = MockHeatmap(palette.uniqueColors.length)
     assert(hm.colorMap.isEmpty)
   }
 
   test("colorMap all used with one value per color") {
-    val hm = MockHeatMap(palette.uniqueColors.length)
+    val hm = MockHeatmap(palette.uniqueColors.length)
     for (i <- 1 to palette.uniqueColors.length) {
       hm.updateLegend(i, hm.colorScaler(i))
     }
@@ -149,7 +149,7 @@ class HeatMapSuite extends FunSuite {
   }
 
   test("colorMap partial use") {
-    val hm = MockHeatMap(3)
+    val hm = MockHeatmap(3)
     for (i <- 1 to 3) {
       hm.updateLegend(i, hm.colorScaler(i))
     }
@@ -166,7 +166,7 @@ class HeatMapSuite extends FunSuite {
   }
 
   test("colorMap diff min/max") {
-    val hm = MockHeatMap(palette.uniqueColors.length * 2)
+    val hm = MockHeatmap(palette.uniqueColors.length * 2)
     for (i <- 1 to palette.uniqueColors.length * 2) {
       hm.updateLegend(i, hm.colorScaler(i))
     }
@@ -183,7 +183,7 @@ class HeatMapSuite extends FunSuite {
     }
   }
 
-  case class MockHeatMap(upperCellBound: Int) extends HeatMap {
+  case class MockHeatmap(upperCellBound: Int) extends Heatmap {
 
     override def draw(g: Graphics2D): Unit = ???
 
@@ -195,14 +195,14 @@ class HeatMapSuite extends FunSuite {
 
     override def rows: Array[Array[Double]] = ???
 
-    override def palette: Palette = HeatMapSuite.this.palette
+    override def palette: Palette = HeatmapSuite.this.palette
 
     override def colorScaler: DoubleScale =
-      HeatMap.colorScaler(PlotDef(List.empty), palette, 1, upperCellBound)
+      Heatmap.colorScaler(PlotDef(List.empty), palette, 1, upperCellBound)
   }
 }
 
-object HeatMapSuite {
+object HeatmapSuite {
 
   val start = 1672819200000L
   val end = start + (60_000 * 60)
@@ -212,7 +212,7 @@ object HeatMapSuite {
     lowerBound: Option[Double] = None,
     upperBound: Option[Double] = None,
     label: String = "query"
-  ): HeatMap = {
+  ): Heatmap = {
     var idx = 0
     val timeseries = data.map { dps =>
       idx += 1
@@ -229,7 +229,7 @@ object HeatMapSuite {
     data: List[TimeSeries],
     lowerBound: Option[Double] = None,
     upperBound: Option[Double] = None
-  ): HeatMap = {
+  ): Heatmap = {
     var min = Double.MaxValue
     var max = Double.MinValue
     var isPercentile = false
@@ -278,7 +278,7 @@ object HeatMapSuite {
     )
 
     if (timeseries.filter(isSpectatorPercentile(_)).nonEmpty) {
-      PercentileHeatMap(
+      PercentileHeatmap(
         graphDef,
         plotDef,
         yaxis,
@@ -291,7 +291,7 @@ object HeatMapSuite {
         -1
       )
     } else {
-      BasicHeatMap(
+      BasicHeatmap(
         graphDef,
         plotDef,
         yaxis,

@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.chart.model
 
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktIdx
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktNanos
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.isSpectatorPercentile
 
 import java.awt.Color
 import com.netflix.atlas.chart.graphics.Theme

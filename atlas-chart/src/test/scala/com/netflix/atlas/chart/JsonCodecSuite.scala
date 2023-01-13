@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.chart
 
-import com.netflix.atlas.chart.graphics.HeatMapSuite.end
-import com.netflix.atlas.chart.graphics.HeatMapSuite.generatePlotDef
-import com.netflix.atlas.chart.graphics.HeatMapSuite.start
+import com.netflix.atlas.chart.graphics.HeatmapSuite.end
+import com.netflix.atlas.chart.graphics.HeatmapSuite.generatePlotDef
+import com.netflix.atlas.chart.graphics.HeatmapSuite.start
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatMapDef

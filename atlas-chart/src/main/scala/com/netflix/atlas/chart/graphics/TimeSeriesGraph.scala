@@ -19,7 +19,7 @@ import java.awt.BasicStroke
 import java.awt.Graphics2D
 
 import com.netflix.atlas.chart.GraphConstants
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.isSpectatorPercentile
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
@@ -113,7 +113,7 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
       }
   }
 
-  val heatmaps: List[Option[HeatMap]] = {
+  val heatmaps: List[Option[Heatmap]] = {
     graphDef.plots.zip(yaxes).map {
       case (plot, axis) =>
         val heatmapLines = plot.lines.filter(_.lineStyle == LineStyle.HEATMAP)
@@ -138,7 +138,7 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
           val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
             case Some(_) =>
               val ax = axis.asInstanceOf[HeatMapTimerValueAxis]
-              PercentileHeatMap(
+              PercentileHeatmap(
                 graphDef,
                 plot,
                 axis,
@@ -153,7 +153,7 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
                 rightOffset
               )
             case None =>
-              BasicHeatMap(
+              BasicHeatmap(
                 graphDef,
                 plot,
                 axis,

@@ -25,13 +25,13 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.atlas.chart.graphics.BasicHeatMap
-import com.netflix.atlas.chart.graphics.HeatMap
+import com.netflix.atlas.chart.graphics.BasicHeatmap
+import com.netflix.atlas.chart.graphics.Heatmap
 import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
-import com.netflix.atlas.chart.graphics.PercentileHeatMap
+import com.netflix.atlas.chart.graphics.PercentileHeatmap
 import com.netflix.atlas.chart.graphics.TimeSeriesGraph
-import com.netflix.atlas.chart.graphics.HeatMap.computeGraphY
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.isSpectatorPercentile
+import com.netflix.atlas.chart.graphics.Heatmap.computeGraphY
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.isSpectatorPercentile
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -222,7 +222,7 @@ private[chart] object JsonCodec {
     val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
       case Some(_) =>
         val hmtva = graph.yaxes(id).asInstanceOf[HeatMapTimerValueAxis]
-        PercentileHeatMap(
+        PercentileHeatmap(
           config,
           plot,
           graph.yaxes(id),
@@ -235,7 +235,7 @@ private[chart] object JsonCodec {
           graph.height
         )
       case None =>
-        BasicHeatMap(
+        BasicHeatmap(
           config,
           plot,
           graph.yaxes(id),
@@ -250,9 +250,9 @@ private[chart] object JsonCodec {
   }
 
   private def writeHeatMap(
-    gen: JsonGenerator,
-    heatmap: HeatMap,
-    plotId: Int
+                            gen: JsonGenerator,
+                            heatmap: Heatmap,
+                            plotId: Int
   ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "heatmap")

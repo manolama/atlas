@@ -28,7 +28,7 @@ import java.awt.Graphics2D
 /**
   * Represents a heatmap for graphing or serializing.
   */
-trait HeatMap {
+trait Heatmap {
 
   /** Used to track legend min/max values and hits. (min, max, hits) */
   private var legendMinMax: Array[(Double, Double, Long)] = null
@@ -146,7 +146,7 @@ case class HeatMapLegendColor(
   hits: Long
 )
 
-object HeatMap {
+object Heatmap {
 
   // Used to scale a single color on the alpha axis.
   val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF).reverse

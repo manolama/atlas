@@ -5,7 +5,7 @@ import java.awt.Graphics2D
 case class HeatMapRow(
   ts: Array[Double],
   xaxis: TimeAxis,
-  heatmap: HeatMap
+  heatmap: Heatmap
 ) extends Element {
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {

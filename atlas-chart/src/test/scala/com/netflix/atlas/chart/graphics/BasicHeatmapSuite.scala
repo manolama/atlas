@@ -1,17 +1,17 @@
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
-import com.netflix.atlas.chart.graphics.HeatMapSuite.assertColorMap
-import com.netflix.atlas.chart.graphics.HeatMapSuite.assertRowCounts
-import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmap
-import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmapSeries
+import com.netflix.atlas.chart.graphics.Heatmap.singleColorAlphas
+import com.netflix.atlas.chart.graphics.HeatmapSuite.assertColorMap
+import com.netflix.atlas.chart.graphics.HeatmapSuite.assertRowCounts
+import com.netflix.atlas.chart.graphics.HeatmapSuite.generateHeatmap
+import com.netflix.atlas.chart.graphics.HeatmapSuite.generateHeatmapSeries
 import com.netflix.atlas.core.index.DataSet.wave
 import munit.FunSuite
 
 import java.time.Duration
 import java.util
 
-class BasicHeatMapSuite extends FunSuite {
+class BasicHeatmapSuite extends FunSuite {
 
   test("1 series positive value") {
     val dps = new Array[Double](60)

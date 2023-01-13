@@ -1,9 +1,9 @@
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.HeatMap.choosePalette
-import com.netflix.atlas.chart.graphics.HeatMap.defaultDef
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
+import com.netflix.atlas.chart.graphics.Heatmap.choosePalette
+import com.netflix.atlas.chart.graphics.Heatmap.defaultDef
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatMapDef
 import com.netflix.atlas.chart.model.LineDef
@@ -14,7 +14,7 @@ import com.netflix.spectator.api.histogram.PercentileBuckets
 import java.awt.Graphics2D
 import java.util.regex.Pattern
 
-case class PercentileHeatMap(
+case class PercentileHeatmap(
   graphDef: GraphDef,
   plot: PlotDef,
   axis: ValueAxis,
@@ -27,7 +27,7 @@ case class PercentileHeatMap(
   maxP: Int,
   leftOffset: Int = 0,
   rightOffset: Int = 0
-) extends HeatMap {
+) extends Heatmap {
 
   val yticks = axis.ticks(y1, chartEnd)
   val `type`: String = "percentile-heatmap"
@@ -117,7 +117,7 @@ case class PercentileHeatMap(
   protected[graphics] lazy val palette = choosePalette(firstLine)
 
   protected[graphics] lazy val colorScaler =
-    HeatMap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
+    Heatmap.colorScaler(plot, palette, lowerCellBound, upperCellBound)
 
   private def addLine(line: LineDef): Unit = {
     val seconds = bktSeconds(line)
@@ -223,7 +223,7 @@ case class PtileScale(
   subTicks: List[(Double, Boolean, Double)] = List.empty
 )
 
-object PercentileHeatMap {
+object PercentileHeatmap {
 
   private val timerBucketIdPattern = Pattern.compile("^T[0-9A-F]{4}$")
 

@@ -17,10 +17,10 @@ package com.netflix.atlas.eval.graph
 
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.databind.JsonNode
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktIdx
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktNanos
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
 import com.netflix.atlas.chart.graphics.PtileScale
@@ -36,7 +36,7 @@ import com.netflix.atlas.core.db.SimpleStaticDatabase
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.eval.graph.TryHeatMap.GraphResponse
+import com.netflix.atlas.eval.graph.TryHeatmap.GraphResponse
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
@@ -59,7 +59,7 @@ import munit.FunSuite
 import java.io.File
 import java.io.FileOutputStream
 
-class TryHeatMap extends FunSuite {
+class TryHeatmap extends FunSuite {
 
   private val bless = false
 
@@ -681,7 +681,7 @@ class TryHeatMap extends FunSuite {
 
 }
 
-object TryHeatMap {
+object TryHeatmap {
 
   case class GraphResponse(
     start: Long,
