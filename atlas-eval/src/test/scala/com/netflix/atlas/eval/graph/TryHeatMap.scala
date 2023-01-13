@@ -21,7 +21,6 @@ import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktIdx
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
 import com.netflix.atlas.chart.graphics.ValueAxis.minTickLabelHeight
 import com.netflix.atlas.chart.graphics.HeatMapTimerValueAxis
 import com.netflix.atlas.chart.graphics.PtileScale
@@ -120,45 +119,45 @@ class TryHeatMap extends FunSuite {
 
       val keys = List(
         // "T0001",
-        "T0036",
-        "T0037",
-        "T0038",
-        "T0039",
-        "T003A",
-        "T003B",
-        "T003C",
-        "T003D",
-        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
-        "T003F",
-        "T0040",
-        "T0041",
-        "T0042",
-        "T0043",
-        "T0044",
-        "T0045",
-        "T0046",
-        "T0047",
-        "T0048",
-        "T0049",
-        "T004A",
-        "T004B",
-        "T004C",
-        "T004D",
-        "T004E",
-        "T004F",
-        "T0050",
-        "T0051",
-        "T0052",
-        "T0053",
-        "T0054",
-        "T0055",
-        "T0056",
-        "T0057",
-        "T0058",
-        "T0059",
-        "T005A",
-        "T005B",
-        "T005C",
+//        "T0036",
+//        "T0037",
+//        "T0038",
+//        "T0039",
+//        "T003A",
+//        "T003B",
+//        "T003C",
+//        "T003D",
+//        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
+//        "T003F",
+//        "T0040",
+//        "T0041",
+//        "T0042",
+//        "T0043",
+//        "T0044",
+//        "T0045",
+//        "T0046",
+//        "T0047",
+//        "T0048",
+//        "T0049",
+//        "T004A",
+//        "T004B",
+//        "T004C",
+//        "T004D",
+//        "T004E",
+//        "T004F",
+//        "T0050",
+//        "T0051",
+//        "T0052",
+//        "T0053",
+//        "T0054",
+//        "T0055",
+//        "T0056",
+//        "T0057",
+//        "T0058",
+//        "T0059",
+//        "T005A",
+//        "T005B",
+//        "T005C",
         "T005D",
         "T005E",
         "T005F",
@@ -175,60 +174,60 @@ class TryHeatMap extends FunSuite {
         "T006A",
         "T006B",
         "T006C",
-        "T006D",
-        "T006E",
-        "T006F",
-        "T0070",
-        "T0071",
-        "T0072",
-        "T0073",
-        "T0074",
-        "T0075",
-        "T0076",
-        "T0077",
-        "T0078",
-        "T0079",
-        "T007A",
-        "T007B",
-        "T007C",
-        "T007D",
-        "T007E",
-        "T007F",
-        "T0080",
-        "T0081",
-        "T0082",
-        "T0083",
-        "T0084",
-        "T0085",
-        "T0086",
-        "T0087",
-        "T0088",
-        "T0089",
-        "T008A",
-        "T008B",
-        "T008C",
-        "T008D",
-        "T008E",
-        "T008F",
-        "T0090",
-        "T0091",
-        "T0092",
-        "T0093",
-        "T0094",
-        "T0095",
-        "T0096",
-        "T0097",
-        "T0098",
-        "T0099",
-        "T009A",
-        "T009B",
-        "T009C",
-        "T009D",
-        "T009E",
-        "T009F",
-        "T00A0"
+        "T006D"
+//        "T006E",
+//        "T006F",
+//        "T0070",
+//        "T0071",
+//        "T0072",
+//        "T0073",
+//        "T0074",
+//        "T0075",
+//        "T0076",
+//        "T0077",
+//        "T0078",
+//        "T0079",
+//        "T007A",
+//        "T007B",
+//        "T007C",
+//        "T007D",
+//        "T007E",
+//        "T007F",
+//        "T0080",
+//        "T0081",
+//        "T0082",
+//        "T0083",
+//        "T0084",
+//        "T0085",
+//        "T0086",
+//        "T0087",
+//        "T0088",
+//        "T0089",
+//        "T008A",
+//        "T008B",
+//        "T008C",
+//        "T008D",
+//        "T008E",
+//        "T008F",
+//        "T0090",
+//        "T0091",
+//        "T0092",
+//        "T0093",
+//        "T0094",
+//        "T0095",
+//        "T0096",
+//        "T0097",
+//        "T0098",
+//        "T0099",
+//        "T009A",
+//        "T009B",
+//        "T009C",
+//        "T009D",
+//        "T009E",
+//        "T009F",
+//        "T00A0"
       ).asJava
-      if (true) {
+      if (false) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -241,7 +240,7 @@ class TryHeatMap extends FunSuite {
   }
 
   // GOOD tests
-  imageTest("my histo") {
+  /* imageTest("my histo") {
     db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -261,7 +260,7 @@ class TryHeatMap extends FunSuite {
 //      "&heatmap_scale=log" +
       // "&heatmap_legend=My%20Nifty%20Percentile%20map"
       // "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
-//      "&heatmap_palette=armytage" +
+      "&heatmap_palette=armytage" +
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
       ""
@@ -284,9 +283,9 @@ class TryHeatMap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
-  }
+  }*/
 
-  /*imageTest("histos") {
+  imageTest("histos") {
     db = getDB(false)
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -312,12 +311,15 @@ class TryHeatMap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&scale=percentile"
 
     // ptile scale
-//    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,:heatmap," +
-//      "&scale=percentile"
+    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
+      "name,requestLatency,:eq,(,50,99,99.9999,),:percentiles,Foo,:legend," +
+      // "&scale=percentile" +
+      // "&heatmap_l=1000&heatmap_u=3000" +
+      ""
 
     // heatmap, lines, heatmap same axis
-    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,Whohohohoh,:legend," +
-      "name,sps,:eq,(,nf.cluster,),:by,"
+//    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,Whohohohoh,:legend," +
+//      "name,sps,:eq,(,nf.cluster,),:by,"
 
     // line
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap,45,:heatmap,48,:heatmap,99,:heatmap"
@@ -336,7 +338,7 @@ class TryHeatMap extends FunSuite {
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap"
 
-  }*/
+  }
 
 //  test("jsonv2 maybe?") {
 //    db = getDB(false)
@@ -677,131 +679,6 @@ class TryHeatMap extends FunSuite {
 ////    }
 //  }
 
-  def getPtileScale(d1: Double, d2: Double, y1: Int, y2: Int): List[PtileScale] = {
-    // aiming for about 10px per tick
-    val pixelSpan = y2 - y1
-    var pixelsPerPercentile = 10.0
-    val initBkts = pixelSpan / pixelsPerPercentile
-
-    val (minBkt, maxBkt) = minMaxBuckets(d1, d2)
-    val bktRange = Math.max(1, maxBkt - minBkt)
-
-    val bkts = List.newBuilder[PtileScale]
-    val bktsPerTick = {
-      if (bktRange / initBkts < 1) {
-        0
-      } else {
-        Math.ceil(bktRange / initBkts).toInt
-      }
-    }
-
-    if (bktsPerTick < 1) {
-      // spread the buckets out
-      val subsPerTick = (initBkts / bktRange).toInt
-      pixelsPerPercentile = pixelSpan / bktRange.doubleValue()
-      var prev = y2.toDouble + 1
-      for (i <- minBkt until maxBkt) {
-        val base = bktSeconds(i)
-        val next = bktSeconds(i + 1)
-
-        val list = List.newBuilder[(Double, Boolean, Double)]
-        val delta = (next - base) / subsPerTick
-        for (x <- 1 until subsPerTick) {
-          val v = base + (delta * x)
-          val nxt = base + (delta * x + 1)
-          list.addOne((v, v == base, nxt))
-        }
-
-        val y = prev - pixelsPerPercentile
-        val h = (Math.round(prev) - Math.round(y)).toInt
-        bkts += PtileScale(base, Math.round(y).toInt, h, next, false, true, 1, list.result())
-        prev = y
-      }
-      System.out.println("HERE")
-    } else {
-      // val numBkts = Math.ceil(bktRange / bktsPerTick.toDouble).toInt
-      pixelsPerPercentile = pixelSpan / (bktRange.toDouble)
-
-      var bkt = minBkt
-      var prev = y2.toDouble + 1
-      while (bkt < maxBkt) {
-        val base = bktSeconds(bkt)
-        var nxtBkt = bkt + bktsPerTick
-        if (nxtBkt > maxBkt)
-          nxtBkt = maxBkt
-        val ptilesInScale = nxtBkt - bkt
-
-        val next = bktSeconds(nxtBkt)
-        val y = prev - (pixelsPerPercentile * ptilesInScale)
-        val h = (Math.round(prev) - Math.round(y)).toInt
-
-        bkts += PtileScale(
-          base,
-          Math.round(y).toInt,
-          h,
-          next,
-          false,
-          bkt == minBkt,
-          ptilesInScale,
-          List.empty
-        )
-        bkt = nxtBkt
-        prev = y
-        // ctr += 1
-      }
-      // ctr += 1
-
-      System.out.println(bkts.result())
-    }
-
-    bkts += PtileScale(
-      bktSeconds(maxBkt),
-      y1,
-      0,
-      bktSeconds(maxBkt + 1),
-      false,
-      true, // ctr == nxtMgr,
-      1,
-      List.empty
-    )
-
-    bkts.result()
-  }
-
-  def percentile(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    val scales = getPtileScale(d1, d2, r1, r2)
-
-    v => {
-      var idx = 0
-      var value = -1
-      while (value < 0 && idx < scales.size) {
-        val s = scales(idx)
-        if (v >= s.baseDuration && v < s.nextDuration) {
-          val vpt = (s.nextDuration - s.baseDuration) / Math.max(1, s.height)
-          var offset = s.baseDuration + vpt
-          var cnt = 0
-          while (v > offset && cnt + 1 < s.height) {
-            offset += vpt
-            cnt += 1
-          }
-          value = (s.y + s.height) - cnt
-        }
-        idx += 1
-      }
-
-      if (value < 0) {
-        throw new IllegalStateException("WTF? Shouldn't be here.")
-      }
-      r1 - value + r2
-    }
-  }
-
-  def findScaleIdx(bkts: List[PtileScale], v: Double): Int = {
-    bkts.zipWithIndex
-      .find(t => v >= t._1.baseDuration && v < t._1.nextDuration)
-      .map(_._2)
-      .getOrElse(-1)
-  }
 }
 
 object TryHeatMap {

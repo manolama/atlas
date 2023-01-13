@@ -98,13 +98,14 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
         }
       } else {
         if (plot.scale == Scale.PERCENTILE) {
-          RightHeatMapTimerValueAxis(
+          HeatMapTimerValueAxis(
             plot,
             graphDef.theme.axis,
             bounds._1,
             bounds._2,
             bounds._3,
-            bounds._4
+            bounds._4,
+            false
           )
         } else {
           RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)

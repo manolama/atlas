@@ -15,17 +15,13 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.minMaxBuckets
 import com.netflix.atlas.chart.graphics.Scales.yscale
 
 import java.awt.Graphics2D
-import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.core.util.UnitPrefix
-import com.netflix.spectator.api.histogram.PercentileBuckets
 
 sealed trait ValueAxis extends Element with FixedWidth {
 
@@ -215,12 +211,11 @@ case class HeatMapTimerValueAxis(
   min: Double,
   max: Double,
   minP: Int,
-  maxP: Int
+  maxP: Int,
+  leftAxis: Boolean = true
 ) extends ValueAxis {
 
   import ValueAxis._
-
-  protected var skipBuckets = 0
 
   protected def angle: Double = -Math.PI / 2.0
 
@@ -232,7 +227,10 @@ case class HeatMapTimerValueAxis(
     g.drawLine(x2, y1, x2, y2)
 
     val majorTicks = ticks(y1, y2).filter(_.major)
-    drawNormal(majorTicks, g, x1, y1, x2, y2)
+    leftAxis match {
+      case true  => drawLeft(majorTicks, g, x1, y1, x2, y2)
+      case false => drawRight(majorTicks, g, x1, y1, x2, y2)
+    }
 
     label.foreach { t =>
       drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
@@ -260,17 +258,10 @@ case class HeatMapTimerValueAxis(
         }
       }
     }
-
-    // final tick at the top
-//    val top = scale.last.nextDuration
-//    val prefix = Ticks.getDurationPrefix(top, top)
-//    val fmt = prefix.format(top, "%.1f%s")
-//    val label = prefix.format(top, fmt)
-//    ticks += ValueTick(top, 0.0, true, Some(label))
     ticks.result()
   }
 
-  private def drawNormal(
+  private def drawLeft(
     ticks: List[ValueTick],
     g: Graphics2D,
     x1: Int,
@@ -284,7 +275,6 @@ case class HeatMapTimerValueAxis(
       g.drawLine(x2, py, x2 - tickMarkLength, py)
 
       if (plotDef.showTickLabels) {
-        System.out.println(s"  Tick line: ${tick.label} @ ${py}")
         val txt = Text(
           tick.label,
           font = ChartSettings.smallFont,
@@ -298,68 +288,7 @@ case class HeatMapTimerValueAxis(
     }
   }
 
-}
-
-case class RightHeatMapTimerValueAxis(
-  plotDef: PlotDef,
-  styles: Styles,
-  min: Double,
-  max: Double,
-  minP: Int,
-  maxP: Int
-) extends ValueAxis {
-
-  import ValueAxis._
-
-  protected var skipBuckets = 0
-
-  protected def angle: Double = -Math.PI / 2.0
-
-  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    style.configure(g)
-    g.drawLine(x2, y1, x2, y2)
-
-    val majorTicks = ticks(y1, y2).filter(_.major)
-    drawNormal(majorTicks, g, x1, y1, x2, y2)
-
-    label.foreach { t =>
-      drawLabel(t, g, x1, y1, x1 + labelHeight, y2)
-    }
-  }
-
-  override def ticks(y1: Int, y2: Int): List[ValueTick] = {
-    val scale = getPtileScale(min, max, y1, y2, minP, maxP)
-    val ticks = List.newBuilder[ValueTick]
-
-    scale.foreach { s =>
-      if (!s.skipTick) {
-        val prefix = Ticks.getDurationPrefix(s.baseDuration, s.baseDuration)
-        val fmt = prefix.format(s.baseDuration, "%.1f%s")
-        val label = prefix.format(s.baseDuration, fmt)
-        ticks += ValueTick(s.baseDuration, 0.0, s.majorTick, Some(label))
-      }
-
-      if (s.subTicks.nonEmpty) {
-        s.subTicks.foreach { tuple =>
-          val (v, isMajor, _) = tuple
-          val prefix = Ticks.getDurationPrefix(v, v)
-          val fmt = prefix.format(v, "%.1f%s")
-          val label = prefix.format(v, fmt)
-          ticks += ValueTick(v, 0.0, isMajor, Some(label))
-        }
-      }
-    }
-
-    // final tick at the top
-    val top = scale.last.nextDuration
-    val prefix = Ticks.getDurationPrefix(top, top)
-    val fmt = prefix.format(top, "%.1f%s")
-    val label = prefix.format(top, fmt)
-    ticks += ValueTick(top, 0.0, true, Some(label))
-    ticks.result()
-  }
-
-  private def drawNormal(
+  private def drawRight(
     ticks: List[ValueTick],
     g: Graphics2D,
     x1: Int,
@@ -371,7 +300,6 @@ case class RightHeatMapTimerValueAxis(
     ticks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x1, py, x1 + tickMarkLength, py)
-      System.out.println(s"  Tick line: ${py} for ${tick.label}")
 
       if (plotDef.showTickLabels) {
         val txt = Text(

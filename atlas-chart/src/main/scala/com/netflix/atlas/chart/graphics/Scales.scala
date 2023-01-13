@@ -45,7 +45,7 @@ object Scales {
     case Scale.LOGARITHMIC => yscale(logarithmic)
     case Scale.POWER_2     => yscale(power(2.0))
     case Scale.SQRT        => yscale(power(0.5))
-    case Scale.PERCENTILE  => yscale(percentile(List.empty)) // Shouldn't be used.
+    case Scale.PERCENTILE  => yscale(percentile(List.empty))
   }
 
   /** Factory for a linear mapping. */
@@ -92,70 +92,33 @@ object Scales {
   def percentile(
     scales: List[PtileScale]
   )(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    // val scales = getPtileScale(d1, d2, r1, r2, minP, maxP)
-
-    v =>
-      {
-        var idx = 0
-        var value = -1
-        while (value < 0 && idx < scales.size) {
-          val s = scales(idx)
-          if (v >= s.baseDuration && v < s.nextDuration) {
-            val vpt = (s.nextDuration - s.baseDuration) / Math.max(1, s.height)
-            var offset = s.baseDuration + vpt
-            var cnt = 0
-            while (v > offset && cnt + 1 < s.height) {
-              offset += vpt
-              cnt += 1
-            }
-            value = (s.y + s.height) - cnt
-          }
-          idx += 1
-        }
-
-        if (v.isFinite && value < 0) {
-          throw new IllegalStateException(s"WTF? Shouldn't be here. ${v}")
-        }
-        r1 - value + r2
-      }
-  }
-
-  def percentile__OLD(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    val ticks = getPtileScale(d1, d2, r1, r2, -1, -1)
+    val ptileScale = scales match {
+      case Nil => getPtileScale(d1, d2, r1, r2, -1, -1).toArray
+      case _   => scales.toArray
+    }
 
     v => {
       var idx = 0
       var value = -1
-      while (value < 0 && idx < ticks.size) {
-        val tick = ticks(idx)
-        if (v >= tick.baseDuration && v < tick.nextDuration) {
-          val vpt = (tick.nextDuration - tick.baseDuration) / tick.height
-          var offset = tick.baseDuration + vpt
+      while (value < 0 && idx < ptileScale.size) {
+        val s = ptileScale(idx)
+        if (v >= s.baseDuration && v < s.nextDuration) {
+          val vpt = (s.nextDuration - s.baseDuration) / Math.max(1, s.height)
+          var offset = s.baseDuration + vpt
           var cnt = 0
-          while (v > offset && cnt + 1 < tick.height) {
+          while (v > offset && cnt + 1 < s.height) {
             offset += vpt
             cnt += 1
           }
-          value = tick.y + cnt
+          value = (s.y + s.height) - cnt
         }
         idx += 1
       }
 
-      // TODO - shouldn't need these if we're returning the proper ptile buckets!!!!!!!!!!!
-      if (value < 0) {
-        if (Math.abs(v - ticks.last.nextDuration) < 1e-9)
-          value = r2 // hack for last tick
-        else {
-          if (v.isFinite) {
-            throw new IllegalStateException("Shouldn't be here!")
-          }
-          value = Int.MaxValue // write off the canvas. Probably a cleaner way.
-        }
+      if (v.isFinite && value < 0) {
+        throw new IllegalStateException(s"WTF? Shouldn't be here. ${v}")
       }
-//      if (value > r2) {
-//        value = r2
-//      }
-      value
+      r1 - value + r2
     }
   }
 

@@ -3,10 +3,11 @@ package com.netflix.atlas.chart.graphics
 import com.netflix.atlas.chart.graphics.HeatMap.singleColorAlphas
 import com.netflix.atlas.chart.graphics.HeatMapSuite.assertColorMap
 import com.netflix.atlas.chart.graphics.HeatMapSuite.assertRowCounts
-import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmap
 import com.netflix.atlas.chart.graphics.HeatMapSuite.generateHeatmapSeries
 import com.netflix.atlas.chart.graphics.HeatMapSuite.start
-import com.netflix.atlas.chart.graphics.PercentileHeatMap.{bktIdx, bktNanos, bktSeconds, getPtileScale, minMaxBuckets}
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktNanos
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.bktSeconds
+import com.netflix.atlas.chart.graphics.PercentileHeatMap.getPtileScale
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -21,86 +22,6 @@ class PercentileHeatMapSuite extends FunSuite {
 
   val plotDef = PlotDef(List.empty, scale = Scale.PERCENTILE)
   val styles = Styles(Style(), Style(), Style())
-
-  test("minMaxBuckets aligned normal range") {
-    val min = 0.626349396 // 127 from bktSeconds
-    val max = 2.863311529 // 137 from bktSeconds
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 126)
-    assertEquals(maxBkt, 137)
-  }
-
-  test("minMaxBuckets unaligned normal range") {
-    val min = 0.62634937
-    val max = 2.863311501
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 126)
-    assertEquals(maxBkt, 137)
-  }
-
-  test("minMaxBuckets unaligned normal range") {
-    val min = 0.62634937
-    val max = 2.863311501
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 126)
-    assertEquals(maxBkt, 137)
-  }
-
-  test("minMaxBuckets unaligned single bucket") {
-    val min = 0.62634938
-    val max = 0.62634939
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 126)
-    assertEquals(maxBkt, 127)
-  }
-
-  test("minMaxBuckets unaligned single value") {
-    val min = 0.62634938
-    val max = 0.62634938
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 126)
-    assertEquals(maxBkt, 127)
-  }
-
-  test("minMaxBuckets 0 to next bucket") {
-    val min = 0
-    val max = 1.0 / 1000 / 1000 / 1000
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 0)
-    assertEquals(maxBkt, 1)
-  }
-
-  test("minMaxBuckets 0 to 0") {
-    val min = 0
-    val max = 0.1 / 1000 / 1000 / 1000
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 0)
-    assertEquals(maxBkt, 1)
-  }
-
-  test("minMaxBuckets bucket to max bucket") {
-    val min = 4.2273788502251053e9
-    val max = 9.3e9
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 274)
-    assertEquals(maxBkt, 276)
-  }
-
-  test("minMaxBuckets max bucket to max bucket") {
-    val min = 9.3e9
-    val max = 9.3e12
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 275)
-    assertEquals(maxBkt, 276)
-  }
-
-  test("minMaxBuckets negative values") {
-    val min = -0.626349396
-    val max = -2.863311529
-    val (minBkt, maxBkt) = minMaxBuckets(min, max)
-    assertEquals(minBkt, 0)
-    assertEquals(maxBkt, 1)
-  }
 
   test("getPtileScale aligned normal range") {
     val min = 0.626349396 // 127 from bktSeconds
@@ -238,8 +159,4 @@ class PercentileHeatMapSuite extends FunSuite {
     assertEquals(heatmap.legendLabel, "query")
   }
 
-  test("blerug") {
-    System.out.println(bktSeconds(1))
-    System.out.println(bktNanos(1))
-  }
 }
