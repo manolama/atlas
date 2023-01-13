@@ -56,16 +56,18 @@ case class PercentileHeatmap(
     // NOTE: It is expected that the scale will ALWAYS be PERCENTILE if we get here.
     // If we desire supporting other scales, we need to handle alignment and the
     // single bucket (same min/max on the axis. 0 yticks in that case) use case.
-    ptileScale.map(s =>
-      Bkt(
-        new Array[Double](hCells),
-        s.y,
-        s.height,
-        s.baseDuration,
-        s.nextDuration,
-        Math.max(1, s.subTicks.size)
+    ptileScale
+      .map(s =>
+        Bkt(
+          new Array[Double](hCells),
+          s.y,
+          s.height,
+          s.baseDuration,
+          s.nextDuration,
+          s.subTicks.size
+        )
       )
-    )
+      .filter(_.height > 0)
 
   {
     plot.lines.zip(plot.data).filter(_._1.lineStyle == LineStyle.HEATMAP).foreach { tuple =>
@@ -160,7 +162,7 @@ case class PercentileHeatmap(
 
       if (v > 0) { // filters NaNs
         if (x < hCells) {
-          val tpb = row.ticksPerBucket
+          val tpb = row.ticksPerBucket + 1
           val count = v / tpb
           if (seconds >= 0) row.counts(x) += count else row.counts(x) += 1
 
@@ -342,7 +344,9 @@ object PercentileHeatmap {
     * Computes a list of Spectator percentile buckets in range of the values along
     * with their y scales and whether or not the ticks should be major or omitted.
     * If a plot has a small number of buckets relative to the y axis, buckets are
-    * split into sub-buckets to distribute the counts across the sub-buckets..
+    * split into sub-buckets to distribute the counts across the sub-buckets.
+    *
+    * Note: The last bucket has a height of 0 and is used for the upper most tick.
     *
     * @param d1
     *   The min value to be plotted in seconds. It may be a percentile bucket boundary
@@ -386,7 +390,9 @@ object PercentileHeatmap {
     }
     var maxBkt = {
       maxP match {
-        case -1 => bktIdx((d2 * 1000 * 1000 * 1000).toLong)
+        case -1 =>
+          val bi = bktIdx((d2 * 1000 * 1000 * 1000).toLong)
+          if (bi + 1 < percentileBucketsCount) bi + 1 else bi
         case _ =>
           val max = if (maxP + 1 < percentileBucketsCount) maxP + 1 else maxP
           val s = bktSeconds(max)
@@ -423,7 +429,7 @@ object PercentileHeatmap {
         val delta = (next - base) / subsPerTick
         for (x <- 1 until subsPerTick) {
           val v = base + (delta * x)
-          val nxt = base + (delta * x + 1)
+          val nxt = base + (delta * (x + 1))
           list.addOne((v, v == base, nxt))
         }
 

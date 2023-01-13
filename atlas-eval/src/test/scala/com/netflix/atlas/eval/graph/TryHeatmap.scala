@@ -159,22 +159,22 @@ class TryHeatmap extends FunSuite {
 //        "T005B",
 //        "T005C",
         "T005D",
-        "T005E",
-        "T005F",
-        "T0060",
-        "T0061",
-        "T0062",
-        "T0063",
-        "T0064",
-        "T0065",
-        "T0066",
-        "T0067",
-        "T0068",
-        "T0069",
-        "T006A",
-        "T006B",
-        "T006C",
-        "T006D"
+//        "T005E",
+//        "T005F",
+//        "T0060"
+//        "T0061",
+//        "T0062",
+//        "T0063",
+//        "T0064",
+//        "T0065",
+//        "T0066",
+//        "T0067",
+//        "T0068",
+//        "T0069",
+//        "T006A",
+//        "T006B",
+//        "T006C",
+//        "T006D"
 //        "T006E",
 //        "T006F",
 //        "T0070",
@@ -227,7 +227,7 @@ class TryHeatmap extends FunSuite {
 //        "T009F",
 //        "T00A0"
       ).asJava
-      if (false) {
+      if (true) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -240,7 +240,7 @@ class TryHeatmap extends FunSuite {
   }
 
   // GOOD tests
-  /* imageTest("my histo") {
+  imageTest("my histo") {
     db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -251,16 +251,17 @@ class TryHeatmap extends FunSuite {
 
     // DEBUG PTILES
     "/api/v1/graph?q=" +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+      // "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
-      //"&w=1296&h=600" +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + // "blues,:palette," + //"fcba03,:color," + // "bluegreen,:palette," +
+      // "&w=1296&h=600" +
 //      "&scale=percentile" +
 //      "&heatmap_scale=log" +
       // "&heatmap_legend=My%20Nifty%20Percentile%20map"
       // "&heatmap_palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027"
-      "&heatmap_palette=armytage" +
+      // "&heatmap_palette=armytage" +
 //    "&u=17.5"
 //      "&l=2.45&u=2.92"
       ""
@@ -283,9 +284,9 @@ class TryHeatmap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
-  }*/
+  }
 
-  imageTest("histos") {
+  /*imageTest("histos") {
     db = getDB(false)
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -338,7 +339,7 @@ class TryHeatmap extends FunSuite {
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap"
 
-  }
+  }*/
 
 //  test("jsonv2 maybe?") {
 //    db = getDB(false)

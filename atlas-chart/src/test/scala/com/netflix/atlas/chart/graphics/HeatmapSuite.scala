@@ -304,9 +304,9 @@ object HeatmapSuite {
   }
 
   def generatePlotDef(
-                       timeseries: List[LineDef],
-                       heatMapDef: Option[HeatmapDef] = None,
-                       isPercentile: Boolean = false
+    timeseries: List[LineDef],
+    heatMapDef: Option[HeatmapDef] = None,
+    isPercentile: Boolean = false
   ): PlotDef = {
     PlotDef(
       timeseries,
@@ -324,16 +324,17 @@ object HeatmapSuite {
     obtained.zip(expected).foreach { oe =>
       val (c, (alpha, min, max)) = oe
       assertEquals(c.color.getAlpha, alpha, s"Incorrect alpha at ${idx}")
-      assertEquals(c.min, min, s"Incorrect min at ${idx}")
-      assertEquals(c.max, max, s"Incorrect max at ${idx}")
+      junit.framework.TestCase.assertEquals(min, c.min, 0.01)
+      junit.framework.TestCase.assertEquals(max, c.max, 0.01)
       idx += 1
     }
   }
 
   def assertRowCounts(v: Double, min: Double, row: Array[Double]): Unit = {
-    assertEquals(row.head, min)
-    for (i <- 1 until row.length - 1) assertEquals(row(i), v)
-    assertEquals(row.last, min)
+    junit.framework.TestCase.assertEquals(min, row.head, 0.01)
+    for (i <- 1 until row.length - 1)
+      junit.framework.TestCase.assertEquals(v, row(i), 0.01)
+    junit.framework.TestCase.assertEquals(min, row.last, 0.01)
   }
 
 }

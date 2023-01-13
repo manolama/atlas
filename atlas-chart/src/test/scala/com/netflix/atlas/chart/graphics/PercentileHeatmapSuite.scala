@@ -5,7 +5,6 @@ import com.netflix.atlas.chart.graphics.HeatmapSuite.assertColorMap
 import com.netflix.atlas.chart.graphics.HeatmapSuite.assertRowCounts
 import com.netflix.atlas.chart.graphics.HeatmapSuite.generateHeatmapSeries
 import com.netflix.atlas.chart.graphics.HeatmapSuite.start
-import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktNanos
 import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.model.PlotDef
@@ -23,22 +22,44 @@ class PercentileHeatmapSuite extends FunSuite {
   val plotDef = PlotDef(List.empty, scale = Scale.PERCENTILE)
   val styles = Styles(Style(), Style(), Style())
 
-  test("getPtileScale aligned normal range") {
+  test("getPtileScale min/max aligned range no buckets") {
     val min = 0.626349396 // 127 from bktSeconds
     val max = 2.863311529 // 137 from bktSeconds
-    val buckets = getPtileScale(min, max, 5, 305, -1, -1)
-    assertEquals(buckets.size, 11)
+    validate127to137(getPtileScale(min, max, 5, 305, -1, -1))
+  }
 
-    var bktIdx = 125
-    buckets.foreach { bkt =>
-      assertEquals(bkt.baseDuration, bktSeconds(bktIdx))
-      assertEquals(bkt.nextDuration, bktSeconds(bktIdx + 1))
-      assertFalse(bkt.skipTick)
-      assert(bkt.majorTick)
-      assert(bkt.subTicks.isEmpty)
-      bktIdx += 1
-    }
-    System.out.println(buckets)
+  test("getPtileScale min/max aligned range with buckets") {
+    val min = 0.626349396 // 127 from bktSeconds
+    val max = 2.863311529 // 137 from bktSeconds
+    validate127to137(getPtileScale(min, max, 5, 305, 127, 137))
+  }
+
+  test("getPtileScale unaligned range no buckets") {
+    val min = 0.62635 // 127 from bktSeconds
+    val max = 2.864 // 137 from bktSeconds
+    validate127to137(getPtileScale(min, max, 5, 305, -1, -1))
+  }
+
+  test("getPtileScale unaligned range with buckets") {
+    val min = 0.62635 // 127 from bktSeconds
+    val max = 2.864 // 137 from bktSeconds
+    validate127to137(getPtileScale(min, max, 5, 305, 127, 137))
+  }
+
+  test("getPtileScale single bucket") {
+    val min = 0.626349396
+    val buckets = getPtileScale(min, min, 5, 305, -1, -1)
+    assertEquals(buckets.size, 2)
+    var bkt = buckets(0)
+    assertEquals(bkt.baseDuration, bktSeconds(127))
+    assertEquals(bkt.nextDuration, bktSeconds(128))
+    assertFalse(bkt.skipTick)
+    assert(bkt.majorTick)
+    assertEquals(bkt.subTicks.size, 29)
+
+    bkt = buckets(1)
+    assertEquals(bkt.baseDuration, bktSeconds(128))
+    assertEquals(bkt.nextDuration, bktSeconds(129))
   }
 
   test("1 bucket") {
@@ -50,9 +71,9 @@ class PercentileHeatmapSuite extends FunSuite {
       new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
     )
     val heatmap = generateHeatmapSeries(List(ts))
-    assertEquals(heatmap.rows.size, 20)
+    assertEquals(heatmap.rows.size, 1)
     for (i <- 0 until heatmap.rows.size) {
-      assertRowCounts(0.1, 0.05, heatmap.rows(i))
+      assertRowCounts(0.10, 0.05, heatmap.rows(i))
     }
     assertEquals(heatmap.yticks.head.label, "49.2μs")
     assertEquals(heatmap.yticks.last.label, "54.6μs")
@@ -81,7 +102,7 @@ class PercentileHeatmapSuite extends FunSuite {
       new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
     )
     val heatmap = generateHeatmapSeries(List(ts1, ts2))
-    assertEquals(heatmap.rows.size, 20)
+    assertEquals(heatmap.rows.size, 2)
     for (i <- 0 until heatmap.rows.size) {
       assertRowCounts(0.2, 0.1, heatmap.rows(i))
     }
@@ -112,9 +133,10 @@ class PercentileHeatmapSuite extends FunSuite {
       bkt += 1
     }
     val heatmap = generateHeatmapSeries(series.result())
-    assertEquals(heatmap.rows.size, 25)
-    for (i <- 0 until heatmap.rows.size) {
-      assertRowCounts(6, 3, heatmap.rows(i))
+    assertEquals(heatmap.rows.size, 19)
+    assertRowCounts(6, 3, heatmap.rows(0))
+    for (i <- 1 until heatmap.rows.size) {
+      assertRowCounts(8, 4, heatmap.rows(i))
     }
     assertEquals(heatmap.yticks.head.label, "49.2μs")
     assertEquals(heatmap.yticks.last.label, "4.3s")
@@ -122,8 +144,10 @@ class PercentileHeatmapSuite extends FunSuite {
     assertColorMap(
       heatmap.colorMap,
       List(
-        (singleColorAlphas(4), 3, 3),
-        (singleColorAlphas(1), 6, 6)
+        (singleColorAlphas(5), 3, 3),
+        (singleColorAlphas(4), 4, 4),
+        (singleColorAlphas(2), 6, 6),
+        (singleColorAlphas.head, 8, 8)
       )
     )
     assertEquals(heatmap.legendLabel, "query")
@@ -143,9 +167,10 @@ class PercentileHeatmapSuite extends FunSuite {
       bkt += 1
     }
     val heatmap = generateHeatmapSeries(series.result(), Some(4))
-    assertEquals(heatmap.rows.size, 25)
-    for (i <- 0 until heatmap.rows.size) {
-      assertRowCounts(6, 0, heatmap.rows(i))
+    assertEquals(heatmap.rows.size, 19)
+    assertRowCounts(6, 0, heatmap.rows(0))
+    for (i <- 1 until heatmap.rows.size) {
+      assertRowCounts(8, 4, heatmap.rows(i))
     }
     assertEquals(heatmap.yticks.head.label, "49.2μs")
     assertEquals(heatmap.yticks.last.label, "4.3s")
@@ -153,10 +178,26 @@ class PercentileHeatmapSuite extends FunSuite {
     assertColorMap(
       heatmap.colorMap,
       List(
-        (singleColorAlphas(2), 6, 6)
+        (singleColorAlphas(6), 4, 4),
+        (singleColorAlphas(4), 6, 6),
+        (singleColorAlphas(1), 8, 8)
       )
     )
     assertEquals(heatmap.legendLabel, "query")
   }
 
+  def validate127to137(buckets: List[PtileScale]): Unit = {
+    assertEquals(buckets.size, 12)
+
+    var bktIdx = 127
+    buckets.foreach { bkt =>
+      assertEquals(bkt.baseDuration, bktSeconds(bktIdx))
+      assertEquals(bkt.nextDuration, bktSeconds(bktIdx + 1))
+      assertFalse(bkt.skipTick)
+      assert(bkt.majorTick)
+      if (bktIdx == 138) assertEquals(bkt.subTicks.size, 0)
+      else assertEquals(bkt.subTicks.size, 1)
+      bktIdx += 1
+    }
+  }
 }
