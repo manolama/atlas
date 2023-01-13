@@ -71,7 +71,7 @@ class PercentileHeatmapSuite extends FunSuite {
       new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
     )
     val heatmap = generateHeatmapSeries(List(ts))
-    assertEquals(heatmap.rows.size, 1)
+    assertEquals(heatmap.rows.size, 19)
     for (i <- 0 until heatmap.rows.size) {
       assertRowCounts(0.10, 0.05, heatmap.rows(i))
     }
@@ -102,7 +102,7 @@ class PercentileHeatmapSuite extends FunSuite {
       new ArrayTimeSeq(DsType.Gauge, start, 60_000, dps)
     )
     val heatmap = generateHeatmapSeries(List(ts1, ts2))
-    assertEquals(heatmap.rows.size, 2)
+    assertEquals(heatmap.rows.size, 18)
     for (i <- 0 until heatmap.rows.size) {
       assertRowCounts(0.2, 0.1, heatmap.rows(i))
     }

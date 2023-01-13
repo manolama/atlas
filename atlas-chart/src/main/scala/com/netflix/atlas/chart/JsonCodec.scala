@@ -194,7 +194,7 @@ private[chart] object JsonCodec {
       if (heatMapDef.palette.nonEmpty) {
         val p = heatMapDef.palette.get
         gen.writeArrayFieldStart("palette")
-        p.uniqueColors.foreach { c =>
+        p.colorArray.foreach { c =>
           writeColor(gen, c)
         }
         gen.writeEndArray()
@@ -250,9 +250,9 @@ private[chart] object JsonCodec {
   }
 
   private def writeHeatMap(
-                            gen: JsonGenerator,
-                            heatmap: Heatmap,
-                            plotId: Int
+    gen: JsonGenerator,
+    heatmap: Heatmap,
+    plotId: Int
   ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "heatmap")

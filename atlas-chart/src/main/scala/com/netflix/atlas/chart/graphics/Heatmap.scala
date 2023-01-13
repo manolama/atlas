@@ -74,13 +74,14 @@ trait Heatmap {
       return List.empty
     }
 
-    palette.uniqueColors.reverse
+    palette.colorArray.reverse
       .zip(legendMinMax)
       // get rid of colors that weren't used.
       .filter(t => t._2._3 != 0)
       .map { tuple =>
         HeatMapLegendColor(tuple._1, tuple._2._1, tuple._2._2, tuple._2._3)
       }
+      .toList
   }
 
   /**
@@ -112,12 +113,12 @@ trait Heatmap {
     */
   protected[graphics] def getColor(count: Double): Color = {
     val scaled = colorScaler(count)
-    palette.uniqueColors.reverse(scaled)
+    palette.colorArray.reverse(scaled)
   }
 
   private[graphics] def updateLegend(count: Double, scaleIndex: Int): Unit = {
     if (legendMinMax == null) {
-      legendMinMax = new Array[(Double, Double, Long)](palette.uniqueColors.size)
+      legendMinMax = new Array[(Double, Double, Long)](palette.colorArray.size)
       for (i <- 0 until legendMinMax.length) legendMinMax(i) = (Long.MaxValue, Long.MinValue, 0)
     }
     val (n, a, c) = legendMinMax(scaleIndex)
@@ -196,8 +197,8 @@ object Heatmap {
       case Some(heatmap) =>
         heatmap.palette
           .map { palette =>
-            if (palette.uniqueColors.length > 1) palette
-            else fromSingleColor(palette.uniqueColors.head)
+            if (palette.colorArray.length > 1) palette
+            else fromSingleColor(palette.colorArray.head)
           }
           .getOrElse(fromSingleColor(line.color))
       case None =>
@@ -234,20 +235,20 @@ object Heatmap {
   ): Scales.DoubleScale = {
     if (upperCellBound < 1) {
       // only linear really makes sense here.
-      Scales.linear(lowerCellBound, upperCellBound, 0, palette.uniqueColors.size - 1)
+      Scales.linear(lowerCellBound, upperCellBound, 0, palette.colorArray.size - 1)
     } else {
       plot.heatmapDef.getOrElse(defaultDef).colorScale match {
         case Scale.LINEAR =>
-          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+          Scales.linear(lowerCellBound, upperCellBound + 1, 0, palette.colorArray.size)
         case Scale.LOGARITHMIC =>
-          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.colorArray.size)
         case Scale.POWER_2 =>
-          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+          Scales.power(2)(lowerCellBound, upperCellBound + 1, 0, palette.colorArray.size)
         case Scale.SQRT =>
-          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+          Scales.power(0.5)(lowerCellBound, upperCellBound + 1, 0, palette.colorArray.size)
         case Scale.PERCENTILE =>
           // Not particularly useful so we'll switch to log.
-          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.uniqueColors.size)
+          Scales.logarithmic(lowerCellBound, upperCellBound + 1, 0, palette.colorArray.size)
       }
     }
   }

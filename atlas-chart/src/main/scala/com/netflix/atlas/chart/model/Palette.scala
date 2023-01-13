@@ -24,21 +24,6 @@ import com.netflix.atlas.core.util.Strings
 import scala.collection.immutable.ArraySeq
 
 case class Palette(name: String, colorArray: ArraySeq[Color]) {
-    * The list of unique colors for the palette. Cached for re-use. Used by heatmaps.
-    */
-  lazy val uniqueColors: List[Color] = {
-    val it = iterator
-    val colors = List.newBuilder[Color]
-    val init = it.next()
-    colors += init
-    var next = it.next()
-    while (it.hasNext && !init.equals(next)) {
-      colors += next
-      next = it.next
-    }
-    colors.result()
-  }
-
 
   override def equals(obj: Any): Boolean = {
     if (obj == null) return false
@@ -78,14 +63,6 @@ case class Palette(name: String, colorArray: ArraySeq[Color]) {
       if (pos >= colorArray.length) pos = 0
       colorArray(pos)
     }
-  }
-
-  override def equals(obj: Any): Boolean = {
-    if (obj == null) return false
-    if (!obj.isInstanceOf[Palette]) return false
-    val other = obj.asInstanceOf[Palette]
-    if (!name.equals(other.name)) return false
-    uniqueColors.equals(other.uniqueColors)
   }
 
   /**

@@ -101,6 +101,6 @@ class PaletteSuite extends FunSuite {
 
   test("blurg") {
     val p = Palette.create("(,f00,00ff00,ff0000ff,)")
-    System.out.println(p.uniqueColors)
+    System.out.println(p.colorArray)
   }
 }

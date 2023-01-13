@@ -108,12 +108,12 @@ case class PercentileHeatmap(
   override def legendLabel: String = label
 
   def rows: Array[Array[Double]] = {
-    val results = new Array[Array[Double]](buckets.length)
-    buckets.zipWithIndex.foreach { tuple =>
-      val (bkt, idx) = tuple
-      results(idx) = bkt.counts
+    val results = List.newBuilder[Array[Double]]
+    buckets.foreach { bkt =>
+      results += bkt.counts
+      for (i <- 1 until bkt.ticksPerBucket) results += bkt.counts
     }
-    results
+    results.result().toArray
   }
 
   protected[graphics] lazy val palette = choosePalette(plot, firstLine)

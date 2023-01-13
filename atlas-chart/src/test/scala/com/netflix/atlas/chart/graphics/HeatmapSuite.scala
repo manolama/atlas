@@ -36,9 +36,9 @@ class HeatmapSuite extends FunSuite {
 //  test("choosePalette single color") {
 //    val line = LineDef(ts)
 //    val palette = choosePalette(line)
-//    assertEquals(palette.uniqueColors.length, singleColorAlphas.length)
+//    assertEquals(palette.colorArray.length, singleColorAlphas.length)
 //    for (i <- 0 until singleColorAlphas.length) {
-//      assertEquals(palette.uniqueColors(i).getAlpha, singleColorAlphas(i))
+//      assertEquals(palette.colorArray(i).getAlpha, singleColorAlphas(i))
 //    }
 //  }
 //
@@ -51,24 +51,24 @@ class HeatmapSuite extends FunSuite {
 //  test("choosePalette palette provided with single color") {
 //    val line = LineDef(ts, palette = Some(Palette.create("colors:A1D99B")))
 //    val palette = choosePalette(line)
-//    assertEquals(palette.uniqueColors.length, singleColorAlphas.length)
+//    assertEquals(palette.colorArray.length, singleColorAlphas.length)
 //    for (i <- 0 until singleColorAlphas.length) {
-//      assertEquals(palette.uniqueColors(i).getAlpha, singleColorAlphas(i))
+//      assertEquals(palette.colorArray(i).getAlpha, singleColorAlphas(i))
 //    }
 //  }
 
   test("colorScaler linear 1 to 1") {
     val plotDef = PlotDef(List.empty, scale = Scale.LINEAR)
-    val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
-    for (i <- 1 to palette.uniqueColors.length) {
+    val scaler = colorScaler(plotDef, palette, 1, palette.colorArray.length)
+    for (i <- 1 to palette.colorArray.length) {
       assertEquals(scaler(i), i - 1)
     }
   }
 
   test("colorScaler linear 1 to larger") {
     val plotDef = PlotDef(List.empty, scale = Scale.LINEAR)
-    val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length * 2)
-    for (i <- 1 to palette.uniqueColors.length * 2 by 2) {
+    val scaler = colorScaler(plotDef, palette, 1, palette.colorArray.length * 2)
+    for (i <- 1 to palette.colorArray.length * 2 by 2) {
       assertEquals(scaler(i), (i - 1) / 2)
     }
   }
@@ -83,35 +83,35 @@ class HeatmapSuite extends FunSuite {
 
   test("colorScaler log") {
     val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.LOGARITHMIC)))
-    val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
+    val scaler = colorScaler(plotDef, palette, 1, palette.colorArray.length)
     val expected = Array(0, 1, 3, 4, 5, 5, 6)
-    for (i <- 1 to palette.uniqueColors.length) {
+    for (i <- 1 to palette.colorArray.length) {
       assertEquals(scaler(i), expected(i - 1))
     }
   }
 
   test("colorScaler power 2") {
     val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.POWER_2)))
-    val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
+    val scaler = colorScaler(plotDef, palette, 1, palette.colorArray.length)
     val expected = Array(0, 0, 0, 1, 2, 3, 5)
-    for (i <- 1 to palette.uniqueColors.length) {
+    for (i <- 1 to palette.colorArray.length) {
       assertEquals(scaler(i), expected(i - 1))
     }
   }
 
   test("colorScaler square root") {
     val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.SQRT)))
-    val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
-    for (i <- 1 to palette.uniqueColors.length) {
+    val scaler = colorScaler(plotDef, palette, 1, palette.colorArray.length)
+    for (i <- 1 to palette.colorArray.length) {
       assertEquals(scaler(i), i - 1)
     }
   }
 
   test("colorScaler percentile switches to log") {
     val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.PERCENTILE)))
-    val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
+    val scaler = colorScaler(plotDef, palette, 1, palette.colorArray.length)
     val expected = Array(0, 1, 3, 4, 5, 5, 6)
-    for (i <- 1 to palette.uniqueColors.length) {
+    for (i <- 1 to palette.colorArray.length) {
       assertEquals(scaler(i), expected(i - 1))
     }
   }
@@ -128,19 +128,19 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorMap no real values processed") {
-    val hm = MockHeatmap(palette.uniqueColors.length)
+    val hm = MockHeatmap(palette.colorArray.length)
     assert(hm.colorMap.isEmpty)
   }
 
   test("colorMap all used with one value per color") {
-    val hm = MockHeatmap(palette.uniqueColors.length)
-    for (i <- 1 to palette.uniqueColors.length) {
+    val hm = MockHeatmap(palette.colorArray.length)
+    for (i <- 1 to palette.colorArray.length) {
       hm.updateLegend(i, hm.colorScaler(i))
     }
 
     val cm = hm.colorMap
     for (i <- 0 until cm.size) {
-      assertEquals(cm(i).color, palette.uniqueColors.reverse(i))
+      assertEquals(cm(i).color, palette.colorArray.reverse(i))
       assertEquals(cm(i).min.toInt, i + 1)
       assertEquals(cm(i).max.toInt, i + 1)
     }
@@ -156,7 +156,7 @@ class HeatmapSuite extends FunSuite {
     var paletteIndex = 0
     for (i <- 0 until 3) {
       val entry = cm(i)
-      assertEquals(entry.color, palette.uniqueColors.reverse(paletteIndex))
+      assertEquals(entry.color, palette.colorArray.reverse(paletteIndex))
       assertEquals(entry.min.toInt, i + 1)
       assertEquals(entry.max.toInt, i + 1)
       paletteIndex += 2
@@ -164,8 +164,8 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorMap diff min/max") {
-    val hm = MockHeatmap(palette.uniqueColors.length * 2)
-    for (i <- 1 to palette.uniqueColors.length * 2) {
+    val hm = MockHeatmap(palette.colorArray.length * 2)
+    for (i <- 1 to palette.colorArray.length * 2) {
       hm.updateLegend(i, hm.colorScaler(i))
     }
 
@@ -173,7 +173,7 @@ class HeatmapSuite extends FunSuite {
     var paletteIndex = 0
     var min = 1
     cm.foreach { entry =>
-      assertEquals(entry.color, palette.uniqueColors.reverse(paletteIndex))
+      assertEquals(entry.color, palette.colorArray.reverse(paletteIndex))
       assertEquals(entry.min.toInt, min)
       assertEquals(entry.max.toInt, min + 1)
       min += 2
