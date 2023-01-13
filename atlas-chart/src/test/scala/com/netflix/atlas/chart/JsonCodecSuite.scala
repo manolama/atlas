@@ -20,7 +20,7 @@ import com.netflix.atlas.chart.graphics.HeatmapSuite.generatePlotDef
 import com.netflix.atlas.chart.graphics.HeatmapSuite.start
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.HeatMapDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
@@ -47,7 +47,7 @@ class JsonCodecSuite extends FunSuite {
 
   private def generateHeatmap(
     isPercentile: Boolean = false,
-    heatMapDef: Option[HeatMapDef] = None
+    heatMapDef: Option[HeatmapDef] = None
   ): GraphDef = {
     val dpsA = new Array[Double](60)
     java.util.Arrays.fill(dpsA, 1)
@@ -124,7 +124,7 @@ class JsonCodecSuite extends FunSuite {
   test("v2 basic heatmap with heatmapdef") {
     val gdef = generateHeatmap(
       heatMapDef = Some(
-        HeatMapDef(
+        HeatmapDef(
           colorScale = Scale.LOGARITHMIC,
           upper = Explicit(4.0),
           lower = Explicit(2.0),

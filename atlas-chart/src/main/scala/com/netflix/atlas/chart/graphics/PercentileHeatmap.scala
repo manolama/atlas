@@ -5,7 +5,7 @@ import com.netflix.atlas.chart.graphics.Heatmap.defaultDef
 import com.netflix.atlas.chart.graphics.PercentileHeatmap.bktSeconds
 import com.netflix.atlas.chart.graphics.PercentileHeatmap.getPtileScale
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.HeatMapDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.PlotDef
@@ -177,8 +177,8 @@ case class PercentileHeatmap(
   }
 
   private def enforceCellBounds: Unit = {
-    lowerCellBound = plot.heatmapDef.getOrElse(HeatMapDef()).lower.lower(false, cmin)
-    upperCellBound = plot.heatmapDef.getOrElse(HeatMapDef()).upper.upper(false, cmax)
+    lowerCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).lower.lower(false, cmin)
+    upperCellBound = plot.heatmapDef.getOrElse(HeatmapDef()).upper.upper(false, cmax)
     buckets.foreach { row =>
       for (i <- 0 until row.counts.length) {
         val count = row.counts(i)
@@ -339,21 +339,27 @@ object PercentileHeatmap {
   }
 
   /**
-    * Computes a list of Spectator buckets in range of the values along with their y
-    * scales and whether or not the ticks should be major or omitted. If a plot has
-    * a small number of buckets relative to the y axis, buckets are split into sub-
-    * ticks to distribute the counts across minor ticks.
+    * Computes a list of Spectator percentile buckets in range of the values along
+    * with their y scales and whether or not the ticks should be major or omitted.
+    * If a plot has a small number of buckets relative to the y axis, buckets are
+    * split into sub-buckets to distribute the counts across the sub-buckets..
     *
     * @param d1
-    *   The min value to be plotted in seconds. Note that it MAY be a bucket boundary
-    *   for the NEXT bucket.
+    *   The min value to be plotted in seconds. It may be a percentile bucket boundary
+    *   or a value from another series.
     * @param d2
-    *   The max value to be plotted in seconds. Note that it MAY be a bucket boundary
-    *   for the NEXT bucket.
+    *   The max value to be plotted in seconds. It may be a percentile bucket boundary
+    *   or a value from another series.
     * @param y1
     *   The start of the y axis from the top of the graph.
     * @param y2
     *   The end of the chart area from the top of the graph.
+    * @param minP
+    *   The minimum percentile bucket index. If -1, then d1 value is used to
+    *   find a bucket boundary.
+    * @param maxP
+    *   The maximum percentile bucket index. If -1, then the d2 value is used to
+    *   find a bucket boundary.
     * @return
     *   A non-empty list of percentile bucket descriptors.
     */
@@ -371,14 +377,23 @@ object PercentileHeatmap {
     val initBkts = pixelSpan / pixelsPerPercentile
 
     val minBkt = {
-      if (d1 < bktSeconds(minP)) if (minP > 0) minP - 1 else minP
-      else minP
+      minP match {
+        case -1 => bktIdx((d1 * 1000 * 1000 * 1000).toLong)
+        case _ =>
+          if (d1 < bktSeconds(minP)) if (minP > 0) minP - 1 else minP
+          else minP
+      }
     }
     var maxBkt = {
-      val max = if (maxP + 1 < percentileBucketsCount) maxP + 1 else maxP
-      val s = bktSeconds(max)
-      if (d2 > s) if (max + 1 < percentileBucketsCount) max + 1 else max
-      else max
+      maxP match {
+        case -1 => bktIdx((d2 * 1000 * 1000 * 1000).toLong)
+        case _ =>
+          val max = if (maxP + 1 < percentileBucketsCount) maxP + 1 else maxP
+          val s = bktSeconds(max)
+          if (d2 > s) if (max + 1 < percentileBucketsCount) max + 1 else max
+          else max
+      }
+
     }
 
     if (minBkt == maxBkt && maxBkt + 1 < percentileBucketsCount) {

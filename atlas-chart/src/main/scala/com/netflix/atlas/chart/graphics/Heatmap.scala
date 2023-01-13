@@ -16,7 +16,7 @@
 package com.netflix.atlas.chart.graphics
 
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.HeatMapDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
@@ -151,7 +151,7 @@ object Heatmap {
   // Used to scale a single color on the alpha axis.
   val singleColorAlphas = Array(33, 55, 77, 99, 0xBB, 0xDD, 0xFF).reverse
 
-  val defaultDef = HeatMapDef()
+  val defaultDef = HeatmapDef()
 
   /**
     * Computes the starting position of the graph given optional titles or padding.
@@ -206,8 +206,8 @@ object Heatmap {
     * for upper cell counts of 1 or more. If the upper cell count is less than 1,
     * the scale switches to linear to avoid using a single color.
     *
-    * **NOTE** if the scale is set to PERCENTILE for some odd reason, we switch to
-    * log.
+    * **NOTE** if the scale is set to PERCENTILE for some odd reason, (shouldn't
+    * be used on the color scale) we switch to log.
     * 
     * @param plot
     *   The non-null plot used to pull the heat map color scaling type.

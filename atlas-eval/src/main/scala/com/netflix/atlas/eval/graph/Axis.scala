@@ -16,7 +16,7 @@
 package com.netflix.atlas.eval.graph
 
 import com.netflix.atlas.chart.model.DataDef
-import com.netflix.atlas.chart.model.HeatMapDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotBound
@@ -73,7 +73,7 @@ case class Axis(
       axisColor = if (multiY) data.headOption.map(_.color) else None,
       tickLabelMode = tickLabelMode,
       heatmapDef = Some(
-        HeatMapDef(
+        HeatmapDef(
           heatmapScale.fold[Scale](Scale.LINEAR)(Scale.fromName(_)),
           heatmapUpper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
           heatmapLower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),

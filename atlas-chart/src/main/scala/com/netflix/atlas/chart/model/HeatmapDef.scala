@@ -16,7 +16,7 @@ import com.netflix.atlas.chart.model.PlotBound.AutoStyle
   * @param legend
   *   A string to use for the legend.
   */
-case class HeatMapDef(
+case class HeatmapDef(
   colorScale: Scale = Scale.LINEAR,
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,

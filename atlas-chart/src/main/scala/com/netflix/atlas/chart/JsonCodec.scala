@@ -499,10 +499,10 @@ private[chart] object JsonCodec {
     // format: on
   }
 
-  private def toHeatMapDef(node: JsonNode): HeatMapDef = {
+  private def toHeatMapDef(node: JsonNode): HeatmapDef = {
 
     // format: off
-    HeatMapDef(
+    HeatmapDef(
       colorScale   = Scale.valueOf(node.get("colorScale").asText()),
       upper        = PlotBound(node.get("upper").asText()),
       lower        = PlotBound(node.get("lower").asText()),

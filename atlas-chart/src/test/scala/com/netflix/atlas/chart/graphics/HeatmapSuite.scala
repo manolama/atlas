@@ -10,7 +10,7 @@ import com.netflix.atlas.chart.graphics.Scales.DoubleScale
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.HeatMapDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
@@ -19,11 +19,9 @@ import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.Strings
 import munit.Assertions.assertEquals
 import munit.FunSuite
 
-import java.awt.Color
 import java.awt.Graphics2D
 import java.time.Instant
 
@@ -84,7 +82,7 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorScaler log") {
-    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatMapDef(colorScale = Scale.LOGARITHMIC)))
+    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.LOGARITHMIC)))
     val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
     val expected = Array(0, 1, 3, 4, 5, 5, 6)
     for (i <- 1 to palette.uniqueColors.length) {
@@ -93,7 +91,7 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorScaler power 2") {
-    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatMapDef(colorScale = Scale.POWER_2)))
+    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.POWER_2)))
     val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
     val expected = Array(0, 0, 0, 1, 2, 3, 5)
     for (i <- 1 to palette.uniqueColors.length) {
@@ -102,7 +100,7 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorScaler square root") {
-    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatMapDef(colorScale = Scale.SQRT)))
+    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.SQRT)))
     val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
     for (i <- 1 to palette.uniqueColors.length) {
       assertEquals(scaler(i), i - 1)
@@ -110,7 +108,7 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorScaler percentile switches to log") {
-    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatMapDef(colorScale = Scale.PERCENTILE)))
+    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.PERCENTILE)))
     val scaler = colorScaler(plotDef, palette, 1, palette.uniqueColors.length)
     val expected = Array(0, 1, 3, 4, 5, 5, 6)
     for (i <- 1 to palette.uniqueColors.length) {
@@ -119,7 +117,7 @@ class HeatmapSuite extends FunSuite {
   }
 
   test("colorScaler small values to linear") {
-    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatMapDef(colorScale = Scale.LOGARITHMIC)))
+    val plotDef = PlotDef(List.empty, heatmapDef = Some(HeatmapDef(colorScale = Scale.LOGARITHMIC)))
     val scaler = colorScaler(plotDef, palette, 0.001, 0.01)
     val expected = Array(0, 0, 1, 1, 2, 3, 3, 4, 5, 6)
     var count = 0.001
@@ -254,7 +252,7 @@ object HeatmapSuite {
       )
     }
 
-    val heatMapDef = HeatMapDef(
+    val heatMapDef = HeatmapDef(
       lower = if (lowerBound.nonEmpty) Explicit(lowerBound.get) else AutoStyle,
       upper = if (upperBound.nonEmpty) Explicit(upperBound.get) else AutoStyle
     )
@@ -306,9 +304,9 @@ object HeatmapSuite {
   }
 
   def generatePlotDef(
-    timeseries: List[LineDef],
-    heatMapDef: Option[HeatMapDef] = None,
-    isPercentile: Boolean = false
+                       timeseries: List[LineDef],
+                       heatMapDef: Option[HeatmapDef] = None,
+                       isPercentile: Boolean = false
   ): PlotDef = {
     PlotDef(
       timeseries,
