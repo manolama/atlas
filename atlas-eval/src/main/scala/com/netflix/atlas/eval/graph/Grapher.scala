@@ -390,14 +390,14 @@ case class Grapher(settings: DefaultSettings) {
               }
 
               if (lineStyle == LineStyle.HEATMAP) {
-                if (scale != Scale.PERCENTILE) {
-                  if (isSpectatorPercentile(t.tags)) {
-                    scale = Scale.PERCENTILE
-                    axisCfg = axisCfg.copy(
-                      scale = Some(scale.name().toLowerCase())
-                    )
-                  }
-                }
+//                if (scale != Scale.PERCENTILE) {
+//                  if (isSpectatorPercentile(t.tags)) {
+//                    scale = Scale.PERCENTILE
+//                    axisCfg = axisCfg.copy(
+//                      scale = Some(scale.name().toLowerCase())
+//                    )
+//                  }
+//                }
 
                 if (s.palette.nonEmpty) {
                   axisCfg = axisCfg.copy(

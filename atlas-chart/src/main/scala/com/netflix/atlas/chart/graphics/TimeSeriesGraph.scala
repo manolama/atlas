@@ -84,18 +84,18 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
       if (i == 0) {
-        if (plot.scale == Scale.PERCENTILE) {
-          HeatMapTimerValueAxis(
-            plot,
-            graphDef.theme.axis,
-            bounds._1,
-            bounds._2,
-            bounds._3,
-            bounds._4
-          )
-        } else {
+//        if (plot.scale == Scale.PERCENTILE) {
+//          HeatMapTimerValueAxis(
+//            plot,
+//            graphDef.theme.axis,
+//            bounds._1,
+//            bounds._2,
+//            bounds._3,
+//            bounds._4
+//          )
+//        } else {
           LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
-        }
+        //}
       } else {
         if (plot.scale == Scale.PERCENTILE) {
           HeatMapTimerValueAxis(
@@ -137,8 +137,8 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
 
           val heatmap = heatmapLines.find(isSpectatorPercentile(_)) match {
             case Some(_) =>
-              val ax = axis.asInstanceOf[HeatMapTimerValueAxis]
-              PercentileHeatmap(
+//              val ax = axis.asInstanceOf[HeatMapTimerValueAxis]
+              PercentileHeatmap2(
                 graphDef,
                 plot,
                 axis,
@@ -147,8 +147,8 @@ case class TimeSeriesGraph(graphDef: GraphDef, aboveCanvas: List[Element])
                 y1,
                 width,
                 chartEnd,
-                ax.minP,
-                ax.maxP,
+                //ax.minP,
+                //ax.maxP,
                 leftOffset,
                 rightOffset
               )
