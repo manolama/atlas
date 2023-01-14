@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.model.MathExpr.NamedRewrite
 import com.netflix.atlas.core.model.Query.allKeys
 
 import java.awt.Color
@@ -537,12 +538,18 @@ object StyleVocabulary extends Vocabulary {
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case nw: NamedRewrite =>
+        nw
       case DataExprType(expr) :: stack =>
         System.out.println(s"MATCHED ${expr}")
         // Percentile always needs sum aggregate type, if others are used convert to sum
         val e = expr match {
-          case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
-          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
+
+          case af: AggregateFunction =>
+            // likely here due to an :sum or :max
+            DataExpr.GroupBy(af, List(TagKey.percentile))
+          case by: DataExpr.GroupBy =>
+            DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
           case q: Query =>
             if (allKeys(q).contains("statistic")) {
               // TODO - properly verify, for now we assume it is there
@@ -559,11 +566,11 @@ object StyleVocabulary extends Vocabulary {
             )
         }
         // modify the stack here
-        if (e.keys.size > 1) {
-          throw new IllegalArgumentException(
-            ":percentile_heatmap can only have 'percentile' in the group by clause at this time."
-          )
-        }
+//        if (e.keys.size > 1) {
+//          throw new IllegalArgumentException(
+//            ":percentile_heatmap can only have 'percentile' in the group by clause at this time."
+//          )
+//        }
 
         StyleExpr(MathExpr.PerStep(e), Map("ls" -> "heatmap")) :: stack
     }

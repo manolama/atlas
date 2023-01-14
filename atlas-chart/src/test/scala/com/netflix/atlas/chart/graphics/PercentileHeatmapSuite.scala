@@ -62,6 +62,13 @@ class PercentileHeatmapSuite extends FunSuite {
     assertEquals(bkt.nextDuration, bktSeconds(129))
   }
 
+  test("getPtileScale max larger than ptiles") {
+    val min = 0.62635 // 127 from bktSeconds
+    val max = 1e15// 137 from bktSeconds
+    val buckets = getPtileScale(min, max, 5, 305, 127, 137)
+    System.out.println(buckets)
+  }
+
   test("1 bucket") {
     val dps = new Array[Double](60)
     util.Arrays.fill(dps, 1)

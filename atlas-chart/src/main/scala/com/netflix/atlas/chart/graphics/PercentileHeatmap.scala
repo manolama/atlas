@@ -384,7 +384,7 @@ object PercentileHeatmap {
       minP match {
         case -1 => bktIdx((d1 * 1000 * 1000 * 1000).toLong)
         case _ =>
-          if (d1 < bktSeconds(minP)) if (minP > 0) minP - 1 else minP
+          if (d1 < bktSeconds(minP)) bktIdx((d1 * 1000 * 1000 * 1000).toLong)
           else minP
       }
     }
@@ -396,7 +396,8 @@ object PercentileHeatmap {
         case _ =>
           val max = if (maxP + 1 < percentileBucketsCount) maxP + 1 else maxP
           val s = bktSeconds(max)
-          if (d2 > s) if (max + 1 < percentileBucketsCount) max + 1 else max
+          if (d2 > s)
+            bktIdx((d2 * 1000 * 1000 * 1000).toLong)
           else max
       }
 

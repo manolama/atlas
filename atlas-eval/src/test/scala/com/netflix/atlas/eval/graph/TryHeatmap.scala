@@ -119,115 +119,115 @@ class TryHeatmap extends FunSuite {
 
       val keys = List(
         // "T0001",
-//        "T0036",
-//        "T0037",
-//        "T0038",
-//        "T0039",
-//        "T003A",
-//        "T003B",
-//        "T003C",
-//        "T003D",
-//        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
-//        "T003F",
-//        "T0040",
-//        "T0041",
-//        "T0042",
-//        "T0043",
-//        "T0044",
-//        "T0045",
-//        "T0046",
-//        "T0047",
-//        "T0048",
-//        "T0049",
-//        "T004A",
-//        "T004B",
-//        "T004C",
-//        "T004D",
-//        "T004E",
-//        "T004F",
-//        "T0050",
-//        "T0051",
-//        "T0052",
-//        "T0053",
-//        "T0054",
-//        "T0055",
-//        "T0056",
-//        "T0057",
-//        "T0058",
-//        "T0059",
-//        "T005A",
-//        "T005B",
-//        "T005C",
-        "T005D"
-//        "T005E",
-//        "T005F",
-//        "T0060"
-//        "T0061",
-//        "T0062",
-//        "T0063",
-//        "T0064",
-//        "T0065",
-//        "T0066",
-//        "T0067",
-//        "T0068",
-//        "T0069",
-//        "T006A",
-//        "T006B",
-//        "T006C",
-//        "T006D"
-//        "T006E",
-//        "T006F",
-//        "T0070",
-//        "T0071",
-//        "T0072",
-//        "T0073",
-//        "T0074",
-//        "T0075",
-//        "T0076",
-//        "T0077",
-//        "T0078",
-//        "T0079",
-//        "T007A",
-//        "T007B",
-//        "T007C",
-//        "T007D",
-//        "T007E",
-//        "T007F",
-//        "T0080",
-//        "T0081",
-//        "T0082",
-//        "T0083",
-//        "T0084",
-//        "T0085",
-//        "T0086",
-//        "T0087",
-//        "T0088",
-//        "T0089",
-//        "T008A",
-//        "T008B",
-//        "T008C",
-//        "T008D",
-//        "T008E",
-//        "T008F",
-//        "T0090",
-//        "T0091",
-//        "T0092",
-//        "T0093",
-//        "T0094",
-//        "T0095",
-//        "T0096",
-//        "T0097",
-//        "T0098",
-//        "T0099",
-//        "T009A",
-//        "T009B",
-//        "T009C",
-//        "T009D",
-//        "T009E",
-//        "T009F",
-//        "T00A0"
+        "T0036",
+        "T0037",
+        "T0038",
+        "T0039",
+        "T003A",
+        "T003B",
+        "T003C",
+        "T003D",
+        "T003E", // this sucker causes a peak value at 7 cells from the end to disappear!!!
+        "T003F",
+        "T0040",
+        "T0041",
+        "T0042",
+        "T0043",
+        "T0044",
+        "T0045",
+        "T0046",
+        "T0047",
+        "T0048",
+        "T0049",
+        "T004A",
+        "T004B",
+        "T004C",
+        "T004D",
+        "T004E",
+        "T004F",
+        "T0050",
+        "T0051",
+        "T0052",
+        "T0053",
+        "T0054",
+        "T0055",
+        "T0056",
+        "T0057",
+        "T0058",
+        "T0059",
+        "T005A",
+        "T005B",
+        "T005C",
+        "T005D",
+        "T005E",
+        "T005F",
+        "T0060",
+        "T0061",
+        "T0062",
+        "T0063",
+        "T0064",
+        "T0065",
+        "T0066",
+        "T0067",
+        "T0068",
+        "T0069",
+        "T006A",
+        "T006B",
+        "T006C",
+        "T006D",
+        "T006E",
+        "T006F",
+        "T0070",
+        "T0071",
+        "T0072",
+        "T0073",
+        "T0074",
+        "T0075",
+        "T0076",
+        "T0077",
+        "T0078",
+        "T0079",
+        "T007A",
+        "T007B",
+        "T007C",
+        "T007D",
+        "T007E",
+        "T007F",
+        "T0080",
+        "T0081",
+        "T0082",
+        "T0083",
+        "T0084",
+        "T0085",
+        "T0086",
+        "T0087",
+        "T0088",
+        "T0089",
+        "T008A",
+        "T008B",
+        "T008C",
+        "T008D",
+        "T008E",
+        "T008F",
+        "T0090",
+        "T0091",
+        "T0092",
+        "T0093",
+        "T0094",
+        "T0095",
+        "T0096",
+        "T0097",
+        "T0098",
+        "T0099",
+        "T009A",
+        "T009B",
+        "T009C",
+        "T009D",
+        "T009E",
+        "T009F",
+        "T00A0"
       ).asJava
-      if (false) {
+      if (true) {
         ts = ts.filter { t =>
           keys.contains(t.tags("percentile"))
         }
@@ -240,7 +240,7 @@ class TryHeatmap extends FunSuite {
   }
 
   // GOOD tests
-  imageTest("my histo") {
+  /*imageTest("my histo") {
     db = getDB(true)
     // "/api/v1/graph?&s=e-24h&e=2012-01-15T00:00&no_legend=1&q=name,requestLatency,:eq,(,percentile,),:by&tick_labels=off"
     // "/api/v1/graph?q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -255,7 +255,7 @@ class TryHeatmap extends FunSuite {
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,50,),:percentiles," + // "ff0000,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.99,),:percentiles," + // "c203fc,:color,2,:lw," +
       "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,99.999999999,),:percentiles," + // "033dfc,:color,2,:lw," +
-      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + //"fcba03,:color," + // "blues,:palette," + // "bluegreen,:palette," +
+      "name,ipc.server.call,:eq,statistic,percentile,:eq,:and,(,percentile,),:by,:per-step,:heatmap,Computes%20the%20Spectator%20bucket%20indexes%20for%20the%20given%20min/max%20values.%20Note%20that%20since%20buckets%20are%20[lower%20%20upper)%20%20the%20indices%20returned%20from%20{@link%20indexOf}%20for%20the%20duration%20returned%20from%20{@link%20bktSeconds)%20are%20for%20the%20**NEXT**%20bucket%20instead%20of%20the%20bucket%20where%20the%20value%20should%20reside.%20Thus%20this%20method%20attempts%20to%20detect%20if%20the%20min/max%20are%20coming%20from%20{@link%20bktSeconds}%20or%20actual%20values%20and%20adjust%20min%20down%20or%20max%20up%20for%20a%20proper%20range.,:legend," + // "fcba03,:color," + // "blues,:palette," + // "bluegreen,:palette," +
       // "&w=1296&h=600" +
 //      "&scale=percentile" +
 //      "&heatmap_scale=log" +
@@ -284,9 +284,9 @@ class TryHeatmap extends FunSuite {
 
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?q=42,:heatmap"
-  }
+  }*/
 
-  /*imageTest("histos") {
+  imageTest("histos") {
     db = getDB(false)
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by" +
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,ipc.server.call,:eq,(,percentile,),:by&no_legend=1&w=1296&h=400"
@@ -312,15 +312,17 @@ class TryHeatmap extends FunSuite {
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,bluegreen,:palette,name,sps,:eq,(,nf.cluster,),:by&w=1296&h=400&scale=percentile"
 
     // ptile scale
-    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,),:by,:per-step,:heatmap," +
+    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,requestLatency,:eq,(,percentile,nf.node,),:by,:per-step,:heatmap," +
       "name,requestLatency,:eq,(,50,99,99.9999,),:percentiles,Foo,:legend," +
-      // "&scale=percentile" +
-      // "&heatmap_l=1000&heatmap_u=3000" +
+      "1024" +
+//      // "&scale=percentile" +
+//      // "&heatmap_l=1000&heatmap_u=3000" +
       ""
 
     // heatmap, lines, heatmap same axis
 //    "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:heatmap,Whohohohoh,:legend," +
-//      "name,sps,:eq,(,nf.cluster,),:by,"
+//      "name,sps,:eq,(,nf.cluster,),:by," +
+//    ""
 
     // line
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap,45,:heatmap,48,:heatmap,99,:heatmap"
@@ -339,7 +341,7 @@ class TryHeatmap extends FunSuite {
     // TODO - in this case, the graph comes out as a line again just like it didn't have a heatmap.
     // "/api/v1/graph?s=e-24h&e=2012-01-15T00:00&q=42,:heatmap"
 
-  }*/
+  }
 
 //  test("jsonv2 maybe?") {
 //    db = getDB(false)

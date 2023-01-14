@@ -59,4 +59,9 @@ class StyleVocabularySuite extends FunSuite {
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "60ff0000"))
     assertEquals(expr, expected)
   }
+
+  test("ptile") {
+    var expr = eval("a,b,:eq,:avg,:percentile_heatmap")
+    System.out.println(expr)
+  }
 }

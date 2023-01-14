@@ -20,9 +20,6 @@ import java.time.ZoneOffset
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
 import com.netflix.atlas.core.model.MathExpr.NamedRewrite
-import com.netflix.atlas.core.model.MathVocabulary.Percentiles.toSum
-import com.netflix.atlas.core.model.Query.allKeys
-import com.netflix.atlas.core.model.Query.exactKeys
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
