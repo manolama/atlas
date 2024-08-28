@@ -17,6 +17,8 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Math
 
+import java.util
+
 object TimeSeries {
 
   private val noDataTags = Map("name" -> "NO_DATA")
@@ -249,6 +251,12 @@ trait TimeSeries extends TaggedItem {
   def offset(dur: Long): TimeSeries = {
     LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur))
   }
+}
+
+trait IrregularSeries extends TimeSeries {
+
+  def meta: List[Map[String, String]]
+
 }
 
 case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)

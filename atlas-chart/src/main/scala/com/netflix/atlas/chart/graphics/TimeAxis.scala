@@ -55,8 +55,7 @@ case class TimeAxis(
   zone: ZoneId = ZoneOffset.UTC,
   alpha: Int = 40,
   showZone: Boolean = true
-) extends Element
-    with FixedHeight {
+) extends XAxis {
 
   override def height: Int = 10 + ChartSettings.smallFontDims.height
 
@@ -127,6 +126,8 @@ case class TimeAxis(
       zoneLabel.draw(g, x1 - labelW - padding, y1 + txtH / 2, x1 - padding, y1 + txtH)
     }
   }
+
+  override val size: Int = ((end - start) / step).toInt
 }
 
 object TimeAxis {

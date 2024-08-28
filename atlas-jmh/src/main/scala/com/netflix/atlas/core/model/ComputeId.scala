@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
+import com.netflix.spectator.impl.Hash64
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -67,6 +68,8 @@ class ComputeId {
     "statistic"  -> "totalTime"
   )
 
+  private val hashers = ThreadLocal.withInitial(() => new Hash64())
+
   private val smallTagMap = SmallHashMap(tagMap)
 
   private val sortedTagMap = SortedTagMap(tagMap)
@@ -95,5 +98,34 @@ class ComputeId {
   @Benchmark
   def computeIdSortedTagMap(bh: Blackhole): Unit = {
     bh.consume(TaggedItem.computeId(sortedTagMap))
+  }
+
+  @Threads(1)
+  @Benchmark
+  def computeXXHashNaive(bh: Blackhole): Unit = {
+    val sorted = tagMap.toList.sortWith(_._1 < _._1).map(t => t._1 + "=" + t._2)
+    val hasher = hashers.get()
+    hasher.updateString(sorted.mkString(","))
+    bh.consume(hasher.computeAndReset())
+  }
+
+  @Threads(1)
+  @Benchmark
+  def computeXXHashNaiveIterate(bh: Blackhole): Unit = {
+    val sorted = tagMap.toList.sortWith(_._1 < _._1).map(t => t._1 + "=" + t._2)
+    val hasher = hashers.get()
+    sorted.foreach(hasher.updateString)
+    bh.consume(hasher.computeAndReset())
+  }
+
+  @Threads(1)
+  @Benchmark
+  def computeXXHashSortedMapIterate(bh: Blackhole): Unit = {
+    val hasher = hashers.get()
+    sortedTagMap.foreachEntry { (k, v) =>
+      hasher.updateString(k)
+      hasher.updateString(v)
+    }
+    bh.consume(hasher.computeAndReset())
   }
 }

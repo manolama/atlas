@@ -52,6 +52,8 @@ object Fonts {
     * the font rendering causing diffs.
     */
   def shouldRunTests: Boolean = {
+    System.out.println(s"ARCH: ${System.getProperty("os.arch")}") // "x86_64" on M2, not "aarch64"
+    if (true) return true
     // May work on others, but 15 is the earliest confirmed to have consistent rendering
     // at this point
     val isAtLeastJdk15 = System.getProperty("java.specification.version").toDouble >= 15.0

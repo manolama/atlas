@@ -24,7 +24,7 @@ import com.netflix.atlas.chart.graphics.Theme
 import com.netflix.atlas.chart.graphics.TimeAxis
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
-import com.netflix.atlas.core.model.TimeSeq
+import com.netflix.atlas.core.model.{IrregularSeries, TimeSeq}
 
 /**
   * Definition for a plot, i.e., a y-axis and associated data elements.
@@ -54,7 +54,8 @@ case class PlotDef(
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,
   tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL,
-  heatmap: Option[HeatmapDef] = None
+  heatmap: Option[HeatmapDef] = None,
+  genericX: Boolean = false
 ) {
 
   import java.lang.Double as JDouble
@@ -90,13 +91,35 @@ case class PlotDef(
             max = math.max(max, mx)
         }
 
-      var t = start
-      while (t < end) {
+      var s = start
+      var e = end
+      if (genericX) {
+        var gs = Long.MaxValue
         regular.foreach { line =>
-          val v = line.data.data(t)
-          if (JDouble.isFinite(v)) {
-            max = if (v > max) v else max
-            min = if (v < min) v else min
+            gs = math.min(gs, line.data.asInstanceOf[IrregularSeries].meta.size)
+        }
+        s = 0
+        e = gs
+      }
+
+      var t = s
+      while (t < e) {
+        regular.foreach { line =>
+          line.data match {
+            case ir: IrregularSeries =>
+              if (t < ir.meta.size) {
+                val v = ir.data(t)
+                if (JDouble.isFinite(v)) {
+                  max = if (v > max) v else max
+                  min = if (v < min) v else min
+                }
+              }
+            case ts: TimeSeq =>
+              val v = ts(t)
+              if (JDouble.isFinite(v)) {
+                max = if (v > max) v else max
+                min = if (v < min) v else min
+              }
           }
         }
 
