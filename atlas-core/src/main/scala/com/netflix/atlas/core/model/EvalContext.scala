@@ -18,14 +18,17 @@ package com.netflix.atlas.core.model
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-
 import com.netflix.atlas.core.util.IdentityMap
+
+import scala.util.Failure
+import scala.util.Try
 
 case class EvalContext(
   start: Long,
   end: Long,
   step: Long,
-  state: Map[StatefulExpr, Any] = IdentityMap.empty
+  state: Map[StatefulExpr, Any] = IdentityMap.empty,
+  parsedQuery: Try[List[StyleExpr]] = Failure(new RuntimeException("Parsed queries not set."))
 ) {
 
   require(start < end, s"start time must be less than end time ($start >= $end)")

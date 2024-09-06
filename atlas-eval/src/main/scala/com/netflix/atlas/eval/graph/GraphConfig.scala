@@ -45,7 +45,9 @@ case class GraphConfig(
   features: Features,
   isBrowser: Boolean,
   isAllowedFromBrowser: Boolean,
-  uri: String
+  uri: String,
+  stepLess: Boolean = false // TODO - use this flag to say our data doesn't adhere
+  // to a step.
 ) {
 
   import GraphConfig.*
@@ -97,7 +99,12 @@ case class GraphConfig(
   def contentType: ContentType = settings.contentTypes(format)
 
   val evalContext: EvalContext = {
-    EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
+    EvalContext(
+      fstart.toEpochMilli,
+      fend.toEpochMilli + stepSize,
+      stepSize,
+      parsedQuery = parsedQuery
+    )
   }
 
   def exprs: List[StyleExpr] = parsedQuery.get
