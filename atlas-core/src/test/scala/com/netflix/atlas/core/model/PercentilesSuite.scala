@@ -422,4 +422,38 @@ class PercentilesSuite extends FunSuite {
     val t = data.head
     assertEqualsDouble(t.data(0L), 0.9, 1e-6)
   }
+
+  test("ptile") {
+    val counts = new Array[Long](PercentileBuckets.asArray().size)
+    counts(25) = 1
+    counts(26) = 2
+    System.out.println("Bucket at 25: " + PercentileBuckets.get(25))
+    System.out.println("Bucket at 26: " + PercentileBuckets.get(26))
+    val ptiles = new Array[Double](1)
+    ptiles(0) = 50.0
+    val results = new Array[Double](1)
+    PercentileBuckets.percentiles(counts, ptiles, results)
+    System.out.println("Result: " + results(0))
+  }
+
+  test("step-less ") {
+    val input = {
+      (25 until 50).map { i =>
+        System.out.println("Bucket: " + PercentileBuckets.get(i))
+        val bucket = f"D$i%04X"
+        val v = 1.0
+        val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(v, v))
+        val mode = if (Integer.parseInt(bucket.substring(1), 16) % 2 == 0) "even" else "odd"
+        IregTS("foo", Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), List.empty, seq)
+      } toList
+    }
+
+    val context = EvalContext(0, 2, 1)
+    val str = "name,test,:eq,(,25,50,90,),:percentiles"
+    val expr = interpreter.execute(str).stack match {
+      case (v: TimeSeriesExpr) :: _ => v
+      case _                        => throw new IllegalArgumentException("invalid expr")
+    }
+    System.out.println(expr.eval(context, input).data)
+  }
 }

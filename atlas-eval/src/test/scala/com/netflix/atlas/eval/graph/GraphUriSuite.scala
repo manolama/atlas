@@ -151,4 +151,9 @@ class GraphUriSuite extends FunSuite {
     val cfg = parseRequest(s"/api/v1/graph?q=name,foo,:eq,:sum", "http://[::1]:80")
     assertEquals(cfg.id, "default")
   }
+
+  test("stepless") {
+    val cfg = parseUri(s"/api/v1/graph?q=name,foo,:eq,:sum&stepless=true")
+    System.out.println(cfg.evalContext)
+  }
 }

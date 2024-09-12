@@ -28,7 +28,7 @@ case class EvalContext(
   end: Long,
   step: Long,
   state: Map[StatefulExpr, Any] = IdentityMap.empty,
-  parsedQuery: Try[List[StyleExpr]] = Failure(new RuntimeException("Parsed queries not set."))
+  steplessLimit: Option[Int] = None
 ) {
 
   require(start < end, s"start time must be less than end time ($start >= $end)")
@@ -48,7 +48,7 @@ case class EvalContext(
       val e = t + oneStep
       val stime = math.max(t, start)
       val etime = math.min(e, end)
-      builder += EvalContext(stime, etime, step)
+      builder += EvalContext(stime, etime, step, steplessLimit = steplessLimit)
       t = e
     }
     builder.result()
@@ -61,6 +61,6 @@ case class EvalContext(
 
   def withOffset(offset: Long): EvalContext = {
     val dur = offset / step * step
-    if (dur < step) this else EvalContext(start - dur, end - dur, step, state)
+    if (dur < step) this else EvalContext(start - dur, end - dur, step, state, steplessLimit)
   }
 }

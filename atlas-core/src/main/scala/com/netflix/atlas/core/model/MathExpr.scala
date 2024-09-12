@@ -921,7 +921,7 @@ object MathExpr {
 
         // Inputs are counters reported as a rate per second. We need to convert to a rate per
         // step to get the correct counts for the estimation
-        val multiple = context.step / 1000.0
+        val multiple = if (context.step >= 1000) context.step / 1000.0 else context.step.toDouble
 
         // If the input was a timer the unit for the buckets is nanoseconds. The type is reflected
         // by the prefix of T on the bucket key. After estimating the value we multiply by 1e-9 to

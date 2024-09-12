@@ -46,8 +46,8 @@ case class GraphConfig(
   isBrowser: Boolean,
   isAllowedFromBrowser: Boolean,
   uri: String,
-  stepLess: Boolean = false // TODO - use this flag to say our data doesn't adhere
-  // to a step.
+  steplessLimit: Option[Int] = None // used to indicate a query with arbitrary ranges
+  // between data points. Times change to be 0 based.
 ) {
 
   import GraphConfig.*
@@ -73,7 +73,13 @@ case class GraphConfig(
   val stepSize: Long = {
     val datapointWidth = math.min(settings.maxDatapoints, flags.width)
     val stepParam = roundedStepSize
-    Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
+    steplessLimit
+      .map {
+        Step.compute(1, datapointWidth, 0, _)
+      }
+      .getOrElse {
+        Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
+      }
   }
 
   // Final start and end time rounded to step boundaries
@@ -99,11 +105,12 @@ case class GraphConfig(
   def contentType: ContentType = settings.contentTypes(format)
 
   val evalContext: EvalContext = {
+    System.out.println("GONNA make the graph config here!@!!!!")
     EvalContext(
       fstart.toEpochMilli,
       fend.toEpochMilli + stepSize,
       stepSize,
-      parsedQuery = parsedQuery
+      steplessLimit = steplessLimit
     )
   }
 

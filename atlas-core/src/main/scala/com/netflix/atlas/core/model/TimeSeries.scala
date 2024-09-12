@@ -259,6 +259,40 @@ trait IrregularSeries extends TimeSeries {
 
 }
 
+case class IregTS(
+  val label: String,
+  val tags: Map[String, String],
+  val meta: List[Map[String, String]],
+  seq: TimeSeq
+) extends IrregularSeries {
+  override def datapoint(index: Long): Datapoint = {
+    Datapoint(tags, index, seq(index.toInt))
+  }
+
+  override val data: TimeSeq = seq
+  override def id: ItemId = ???
+
+  override def toString(): String = {
+    val buf = new StringBuffer("BatchTimeSeries(\n")
+      .append("  label = ")
+      .append(label)
+      .append(",\n")
+      .append("  tags = ")
+      .append(tags)
+      .append(",\n")
+      .append("  meta = \n")
+    meta.foreach { m =>
+      buf.append("      ").append(m).append(",\n")
+    }
+    buf
+      .append("  dps = ")
+      .append(seq)
+      .append("\n")
+      .append(")")
+      .toString
+  }
+}
+
 case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)
     extends TimeSeries
 
