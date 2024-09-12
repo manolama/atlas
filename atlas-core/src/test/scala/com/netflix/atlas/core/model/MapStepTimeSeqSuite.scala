@@ -125,4 +125,15 @@ class MapStepTimeSeqSuite extends FunSuite {
       map(DsType.Gauge, 4, 3, Sum, 1.0)
     }
   }
+
+  test("stepless") {
+    var seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0, 3.0, 4.0 ))
+
+    var mapped = new MapStepTimeSeq(seq, 2, Sum).bounded(0, 4)
+    System.out.println(mapped)
+
+    seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(Double.NaN, Double.NaN, 1.0, 2.0, 3.0, 4.0 ))
+    mapped = new MapStepTimeSeq(seq, 2, Sum).bounded(0, 6)
+    System.out.println(mapped)
+  }
 }
