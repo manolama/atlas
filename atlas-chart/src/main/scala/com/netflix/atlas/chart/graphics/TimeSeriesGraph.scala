@@ -21,7 +21,7 @@ import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineStyle
-import com.netflix.atlas.core.model.IrregularSeries
+//import com.netflix.atlas.core.model.IrregularSeries
 
 /**
   * Draws a time series graph.
@@ -61,30 +61,30 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val end: Long = graphDef.endTime.toEpochMilli
 
   val xAxes: List[XAxis] = {
-    graphDef.plots
-      .find(_.genericX)
-      .map { plot =>
-        // TODO - maybe multi-x. For now assume that all series have the same
-        // data point metadata. Initially we can have query param that lets users pick a label.
-        // Eventually some kind of templating system via query param would be nice if they want
-        // to combine name and timestamp for example.
-        val s = plot.lines.head.data.asInstanceOf[IrregularSeries]
-        val labels = s.meta.map(_.head._2)
-        List(GenericAxis(Style(color = graphDef.theme.axis.line.color), labels))
-      }
-      .getOrElse {
-        graphDef.timezones.zipWithIndex.map {
-          case (tz, i) =>
-            TimeAxis(
-              Style(color = graphDef.theme.axis.line.color),
-              start,
-              end,
-              graphDef.step,
-              tz,
-              if (i == 0) 40 else 0xFF
-            )
-        }
-      }
+//    graphDef.plots
+//      .find(_.genericX)
+//      .map { plot =>
+//        // TODO - maybe multi-x. For now assume that all series have the same
+//        // data point metadata. Initially we can have query param that lets users pick a label.
+//        // Eventually some kind of templating system via query param would be nice if they want
+//        // to combine name and timestamp for example.
+//        val s = plot.lines.head.data.asInstanceOf[IrregularSeries]
+//        val labels = s.meta.map(_.head._2)
+//        List(GenericAxis(Style(color = graphDef.theme.axis.line.color), labels))
+//      }
+//      .getOrElse {
+    graphDef.timezones.zipWithIndex.map {
+      case (tz, i) =>
+        TimeAxis(
+          Style(color = graphDef.theme.axis.line.color),
+          start,
+          end,
+          graphDef.step,
+          tz,
+          if (i == 0) 40 else 0xFF
+        )
+    }
+//      }
 
   }
 

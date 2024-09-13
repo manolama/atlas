@@ -24,9 +24,9 @@ import scala.util.Failure
 import scala.util.Try
 
 case class EvalContext(
-  start: Long,
-  end: Long,
-  step: Long,
+  var start: Long,
+  var end: Long, // oh Brian will HATE me but, this solves the issue of the limit vs actual data returned.
+  var step: Long,
   state: Map[StatefulExpr, Any] = IdentityMap.empty,
   steplessLimit: Option[Int] = None
 ) {

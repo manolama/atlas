@@ -136,4 +136,11 @@ class MapStepTimeSeqSuite extends FunSuite {
     mapped = new MapStepTimeSeq(seq, 2, Sum).bounded(0, 6)
     System.out.println(mapped)
   }
+
+  test("rewrite?") {
+    val ctx = EvalContext(1, 100, 1)
+    System.out.println(ctx)
+    ctx.end = 2
+    System.out.println(ctx)
+  }
 }
