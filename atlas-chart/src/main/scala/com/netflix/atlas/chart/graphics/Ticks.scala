@@ -581,7 +581,12 @@ object Ticks {
     * Generate value tick marks with approximately `n` major ticks for the range `[s, e]`. Tick
     * marks will be on significant time boundaries for the specified time zone.
     */
-  def time(s: Long, e: Long, zone: ZoneId, n: Int): List[TimeTick] = {
+  def time(s: Long, e: Long, zone: ZoneId, n: Int, stepless: Boolean): List[TimeTick] = {
+    if (stepless) {
+      return simple(s.toDouble, e.toDouble, n, Scale.LINEAR).map(t =>
+        TimeTick(t.v.toLong, zone, t.major, stepless = true)
+      )
+    }
 
     // To keep even placement of major grid lines the shift amount for the timezone is computed
     // based on the start. If there is a change such as DST during the interval, then labels
@@ -670,7 +675,8 @@ case class TimeTick(
   timestamp: Long,
   zone: ZoneId,
   major: Boolean = true,
-  formatter: Option[DateTimeFormatter] = None
+  formatter: Option[DateTimeFormatter] = None,
+  stepless: Boolean = false
 ) {
 
   private val datetime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
@@ -678,6 +684,9 @@ case class TimeTick(
   import Ticks.*
 
   def label: String = {
+    if (stepless) {
+      return timestamp.toString
+    }
     val fmt = formatter.getOrElse {
       timeBoundaries.find(f => datetime.get(f._1) != 0).fold(defaultTimeFmt)(_._2)
     }

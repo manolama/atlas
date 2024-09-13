@@ -731,7 +731,7 @@ class TicksSuite extends FunSuite {
   test("time: since 1970") {
     val s = 0L
     val e = 1498751868000L
-    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5, false)
     assertEquals(ticks.size, 6)
   }
 

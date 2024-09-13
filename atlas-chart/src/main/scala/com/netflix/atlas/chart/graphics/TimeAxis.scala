@@ -54,7 +54,8 @@ case class TimeAxis(
   step: Long,
   zone: ZoneId = ZoneOffset.UTC,
   alpha: Int = 40,
-  showZone: Boolean = true
+  showZone: Boolean = true,
+  stepless: Boolean = false
 ) extends XAxis {
 
   override def height: Int = 10 + ChartSettings.smallFontDims.height
@@ -65,7 +66,7 @@ case class TimeAxis(
   }
 
   private val transitionTime = {
-    if (transition == null) Long.MaxValue else transition.getInstant.toEpochMilli
+    if (stepless || transition == null) Long.MaxValue else transition.getInstant.toEpochMilli
   }
 
   def scale(p1: Int, p2: Int): Scales.LongScale = {
@@ -74,10 +75,10 @@ case class TimeAxis(
 
   def ticks(x1: Int, x2: Int): List[TimeTick] = {
 
-    // The first interval will displayed will end at the start time. For calculating ticks the
+    // The first interval displayed will end at the start time. For calculating ticks the
     // start time is adjusted so we can see minor ticks within the first interval
     val numTicks = (x2 - x1) / TimeAxis.minTickLabelWidth
-    Ticks.time(start - step, end, zone, numTicks)
+    Ticks.time(start - step, end, zone, numTicks, stepless)
   }
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {

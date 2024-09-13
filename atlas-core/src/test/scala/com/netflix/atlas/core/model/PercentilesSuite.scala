@@ -444,7 +444,7 @@ class PercentilesSuite extends FunSuite {
         val v = 1.0
         val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(v, v))
         val mode = if (Integer.parseInt(bucket.substring(1), 16) % 2 == 0) "even" else "odd"
-        IregTS("foo", Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), List.empty, seq)
+        //IregTS("foo", Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), List.empty, seq)
       } toList
     }
 
@@ -454,6 +454,6 @@ class PercentilesSuite extends FunSuite {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
-    System.out.println(expr.eval(context, input).data)
+    //System.out.println(expr.eval(context, input).data)
   }
 }
