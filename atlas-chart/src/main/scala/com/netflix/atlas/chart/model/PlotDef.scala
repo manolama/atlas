@@ -54,8 +54,7 @@ case class PlotDef(
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,
   tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL,
-  heatmap: Option[HeatmapDef] = None,
-  genericX: Boolean = false
+  heatmap: Option[HeatmapDef] = None
 ) {
 
   import java.lang.Double as JDouble

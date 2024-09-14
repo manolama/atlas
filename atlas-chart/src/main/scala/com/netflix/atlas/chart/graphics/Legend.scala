@@ -17,6 +17,7 @@ package com.netflix.atlas.chart.graphics
 
 import java.awt.Font
 import java.awt.Graphics2D
+import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.PlotDef
 
 /**
@@ -37,12 +38,14 @@ import com.netflix.atlas.chart.model.PlotDef
   *     Maximum number of entries to show in the legend.
   */
 case class Legend(
+  graphDef: GraphDef,
   styles: Styles,
   plot: PlotDef,
   heatmap: Option[Heatmap],
   label: Option[String],
   showStats: Boolean,
-  maxEntries: Int
+  maxEntries: Int,
+  stepless: Boolean
 ) extends Element
     with VariableHeight {
 
@@ -62,7 +65,11 @@ case class Legend(
   private val entries = plot.legendData
     .take(maxEntries)
     .flatMap { data =>
-      List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
+      if (stepless) {
+        List(HorizontalPadding(2), MetaLegendEntry(graphDef, styles, plot, data))
+      } else {
+        List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
+      }
     }
 
   private val footer =

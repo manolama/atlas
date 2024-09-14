@@ -56,7 +56,8 @@ case class TimeAxis(
   alpha: Int = 40,
   showZone: Boolean = true,
   stepless: Boolean = false
-) extends XAxis {
+) extends Element
+    with FixedHeight {
 
   override def height: Int = 10 + ChartSettings.smallFontDims.height
 
@@ -127,8 +128,6 @@ case class TimeAxis(
       zoneLabel.draw(g, x1 - labelW - padding, y1 + txtH / 2, x1 - padding, y1 + txtH)
     }
   }
-
-  override val size: Int = ((end - start) / step).toInt
 }
 
 object TimeAxis {

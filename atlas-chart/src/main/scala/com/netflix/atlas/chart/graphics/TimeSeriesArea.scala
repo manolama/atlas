@@ -32,7 +32,7 @@ import com.netflix.atlas.core.model.TimeSeq
   * @param yaxis
   *     Axis used to create the Y scale.
   */
-case class TimeSeriesArea(style: Style, ts: TimeSeq, xaxis: XAxis, yaxis: ValueAxis)
+case class TimeSeriesArea(style: Style, ts: TimeSeq, xaxis: TimeAxis, yaxis: ValueAxis)
     extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {

@@ -38,7 +38,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       }
     if (graphDef.onlyGraph || graphDef.layout.isFixedHeight) h
     else {
-      h + xAxes.map(_.height).sum
+      h + timeAxes.map(_.height).sum
     }
   }
 
@@ -60,37 +60,21 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val start: Long = graphDef.startTime.toEpochMilli
   val end: Long = graphDef.endTime.toEpochMilli
 
-  val xAxes: List[XAxis] = {
-//    graphDef.plots
-//      .find(_.genericX)
-//      .map { plot =>
-//        // TODO - maybe multi-x. For now assume that all series have the same
-//        // data point metadata. Initially we can have query param that lets users pick a label.
-//        // Eventually some kind of templating system via query param would be nice if they want
-//        // to combine name and timestamp for example.
-//        val s = plot.lines.head.data.asInstanceOf[IrregularSeries]
-//        val labels = s.meta.map(_.head._2)
-//        List(GenericAxis(Style(color = graphDef.theme.axis.line.color), labels))
-//      }
-//      .getOrElse {
-    graphDef.timezones.zipWithIndex.map {
-      case (tz, i) =>
-        TimeAxis(
-          Style(color = graphDef.theme.axis.line.color),
-          start,
-          end,
-          graphDef.step,
-          tz,
-          if (i == 0) 40 else 0xFF,
-          showZone = if (graphDef.stepless) false else true,
-          graphDef.stepless
-        )
-    }
-//      }
-
+  val timeAxes: List[TimeAxis] = graphDef.timezones.zipWithIndex.map {
+    case (tz, i) =>
+      TimeAxis(
+        Style(color = graphDef.theme.axis.line.color),
+        start,
+        end,
+        graphDef.step,
+        tz,
+        if (i == 0) 40 else 0xFF,
+        showZone = if (graphDef.stepless) false else true,
+        graphDef.stepless
+      )
   }
 
-  val xAxis: XAxis = xAxes.head
+  val timeAxis: TimeAxis = timeAxes.head
 
   val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
     case (plot, i) =>
@@ -110,7 +94,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           val heatmapData = plot.heatmapLines
           if (heatmapData.nonEmpty) {
             val settings = plot.heatmap.getOrElse(HeatmapDef())
-            val heatmap = Heatmap(settings, heatmapData, xAxis, axis, graphDef.height)
+            val heatmap = Heatmap(settings, heatmapData, timeAxis, axis, graphDef.height)
             Some(i -> heatmap)
           } else {
             None
@@ -139,10 +123,10 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     val leftOffset = if (showAxes) leftAxisW else TimeSeriesGraph.minRightSidePadding
     val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
 
-    val timeAxisH = if (graphDef.onlyGraph) 10 else xAxis.height
-    val timeGrid = TimeGrid(xAxis, graphDef.theme.majorGrid.line, graphDef.theme.minorGrid.line)
+    val timeAxisH = if (graphDef.onlyGraph) 10 else timeAxis.height
+    val timeGrid = TimeGrid(timeAxis, graphDef.theme.majorGrid.line, graphDef.theme.minorGrid.line)
 
-    val chartEnd = y2 - timeAxisH * xAxes.size
+    val chartEnd = y2 - timeAxisH * timeAxes.size
 
     val prevClip = g.getClip
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
@@ -153,14 +137,14 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           element.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
         }
 
-        val offsets = TimeSeriesStack.Offsets(xAxis)
+        val offsets = TimeSeriesStack.Offsets(timeAxis)
         plot.renderedLines.foreach { line =>
           val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
           val lineElement = line.lineStyle match {
-            case LineStyle.LINE    => TimeSeriesLine(style, line.data.data, xAxis, axis)
-            case LineStyle.AREA    => TimeSeriesArea(style, line.data.data, xAxis, axis)
-            case LineStyle.VSPAN   => TimeSeriesSpan(style, line.data.data, xAxis)
-            case LineStyle.STACK   => TimeSeriesStack(style, line.data.data, xAxis, axis, offsets)
+            case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
+            case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
+            case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
+            case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
             case LineStyle.HEATMAP => throw new IllegalStateException()
           }
 
@@ -175,7 +159,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
         plot.verticalSpans.foreach { vspan =>
           val style = Style(color = vspan.color)
-          val spanElement = TimeSpan(style, vspan.t1.toEpochMilli, vspan.t2.toEpochMilli, xAxis)
+          val spanElement = TimeSpan(style, vspan.t1.toEpochMilli, vspan.t2.toEpochMilli, timeAxis)
           spanElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
         }
     }
@@ -184,7 +168,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     timeGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
 
     if (!graphDef.onlyGraph) {
-      xAxes.zipWithIndex.foreach {
+      timeAxes.zipWithIndex.foreach {
         case (axis, i) =>
           val offset = chartEnd + 1 + timeAxisH * i
           axis.draw(g, x1 + leftOffset, offset, x2 - rightOffset, y2)

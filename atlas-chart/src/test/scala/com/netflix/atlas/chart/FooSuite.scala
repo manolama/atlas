@@ -8,11 +8,17 @@ import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.BasicTimeSeries
+import com.netflix.atlas.core.model.DataPointMeta
 import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.ItemId
+import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import munit.FunSuite
 
-import java.time.{Instant, ZoneOffset, ZonedDateTime}
+import java.awt.Color
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.util
 
 class FooSuite extends FunSuite {
@@ -29,7 +35,8 @@ class FooSuite extends FunSuite {
   test("foo") {
 
     val line = LineDef(series1, groupByKeys = List("k1"))
-    val plotDef = PlotDef(List(line), genericX = true)
+    val line2 = LineDef(series2, groupByKeys = List("k1"), color = Color.GREEN)
+    val plotDef = PlotDef(List(line, line2))
     val graphDef = GraphDef(
       width = 480,
       startTime = Instant.ofEpochMilli(0),
@@ -48,7 +55,34 @@ class FooSuite extends FunSuite {
 
   def series1: TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0, 3.0, 4.0, 5.0))
-    BasicTimeSeries(null, Map("k1" -> "v1"), "some.series", seq)
+    TSWithMeta(
+      Map("k1" -> "v1"),
+      "some.series",
+      seq,
+      List(
+        Map("job" -> "Batch job a", "ts" -> "1704068642000   asdfasdfadsfasadfadsfjlkajsdfslkjasdlkfjalskdfjfalskdjflkjasddlfkjasldkfjlkjasldkijfliasmldfimasldidmflaimsfdlimdslafimlasidmfloisdmf"),
+        Map("job" -> "Batch job b", "ts" -> "1704074514000"),
+        Map("job" -> "Batch job c", "ts" -> "1704080642000"),
+        Map("job" -> "Batch job d", "ts" -> "1704090907000"),
+        Map("job" -> "Batch job e", "ts" -> "1704092439000")
+      )
+    )
+  }
+
+  def series2: TimeSeries = {
+    val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(6.0, 4.0, 2.0, 5.0, 3.0))
+    TSWithMeta(
+      Map("k1" -> "v1"),
+      "second.metric",
+      seq,
+      List(
+        Map("job" -> "Batch job a", "ts" -> "1704068642000"),
+        Map("job" -> "Batch job b", "ts" -> "1704074514000"),
+        Map("job" -> "Batch job c", "ts" -> "1704080642000"),
+        Map("job" -> "Batch job d", "ts" -> "1704090907000"),
+        Map("job" -> "Batch job e", "ts" -> "1704092439000")
+      )
+    )
   }
 
 //  def series1: IregTS = {
@@ -68,6 +102,28 @@ class FooSuite extends FunSuite {
 //      )
 //    )
 //  }
+}
+
+case class TSWithMeta(
+  tags: Map[String, String],
+  label: String,
+  data: TimeSeq,
+  meta: List[Map[String, String]]
+) extends TimeSeries {
+
+  /** Unique id based on the tags. */
+  override def id: ItemId = ???
+
+  override def datapointMeta(timestamp: Long): DataPointMeta = {
+    new MapMeta(meta(timestamp.toInt))
+  }
+}
+
+class MapMeta(map: Map[String, String]) extends DataPointMeta {
+
+  override def keys: Seq[String] = map.keys.toSeq
+
+  override def get(key: String): Option[String] = map.get(key)
 }
 
 //case class IregTS(

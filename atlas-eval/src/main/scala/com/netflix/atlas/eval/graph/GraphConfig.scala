@@ -135,15 +135,20 @@ case class GraphConfig(
 
     val title = flags.title.map(s => Strings.substitute(s, getGraphTags(plots)))
 
+    val startTime = steplessLimit
+      .map(_ => Instant.ofEpochMilli(evalContext.start))
+      .getOrElse(fstart.plusMillis(stepSize))
+    val endTime = steplessLimit
+      .map(_ => Instant.ofEpochMilli(evalContext.end))
+      .getOrElse(fend.plusMillis(stepSize))
+    val step = steplessLimit.map(_ => evalContext.step).getOrElse(stepSize)
+
     var gdef = GraphDef(
       title = title,
       timezones = timezoneIds,
-//      startTime = fstart.plusMillis(stepSize),
-//      endTime = fend.plusMillis(stepSize),
-//      step = stepSize,
-      startTime = Instant.ofEpochMilli(evalContext.start),
-      endTime = Instant.ofEpochMilli(evalContext.end),
-      step = evalContext.step,
+      startTime = startTime,
+      endTime = endTime,
+      step = step,
       width = flags.width,
       height = flags.height,
       layout = flags.layout,

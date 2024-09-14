@@ -30,7 +30,7 @@ import java.awt.Graphics2D
   * @param xaxis
   *     Axis used for creating the scale.
   */
-case class TimeSpan(style: Style, t1: Long, t2: Long, xaxis: XAxis) extends Element {
+case class TimeSpan(style: Style, t1: Long, t2: Long, xaxis: TimeAxis) extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)
