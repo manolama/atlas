@@ -17,8 +17,6 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Math
 
-import java.util
-
 object TimeSeries {
 
   private val noDataTags = Map("name" -> "NO_DATA")
@@ -203,13 +201,19 @@ object TimeSeries {
   }
 }
 
-trait DataPointMeta {
+/**
+  * Useful for stepless series where each datapoint may have associated data like a
+  * job ID or timestamp to display in legends or hover-overs.
+  */
+trait DatapointMeta {
 
-  def keys: Seq[String]
+  def keys: List[String]
+
   def get(key: String): Option[String]
+
 }
 
-// TimeSeries can be lazy or eager. By default manipulations are done as a view over another
+// TimeSeries can be lazy or eager. By default, manipulations are done as a view over another
 // time series. This view can be materialized for a given range by calling the bounded method.
 trait TimeSeries extends TaggedItem {
 
@@ -221,7 +225,7 @@ trait TimeSeries extends TaggedItem {
     Datapoint(tags, timestamp, data(timestamp))
   }
 
-  def datapointMeta(timestamp: Long): DataPointMeta = ???
+  def datapointMeta(timestamp: Long): Option[DatapointMeta] = None
 
   def unaryOp(labelFmt: String, f: Double => Double): TimeSeries = {
     LazyTimeSeries(tags, labelFmt.format(label), new UnaryOpTimeSeq(data, f))
@@ -260,46 +264,6 @@ trait TimeSeries extends TaggedItem {
     LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur))
   }
 }
-
-//trait IrregularSeries extends TimeSeries {
-//
-//  def meta: List[Map[String, String]]
-//
-//}
-
-//case class IregTS(
-//  val label: String,
-//  val tags: Map[String, String],
-//  val meta: List[Map[String, String]],
-//  seq: TimeSeq
-//) extends IrregularSeries {
-//  override def datapoint(index: Long): Datapoint = {
-//    Datapoint(tags, index, seq(index.toInt))
-//  }
-//
-//  override val data: TimeSeq = seq
-//  override def id: ItemId = ???
-//
-//  override def toString(): String = {
-//    val buf = new StringBuffer("BatchTimeSeries(\n")
-//      .append("  label = ")
-//      .append(label)
-//      .append(",\n")
-//      .append("  tags = ")
-//      .append(tags)
-//      .append(",\n")
-//      .append("  meta = \n")
-//    meta.foreach { m =>
-//      buf.append("      ").append(m).append(",\n")
-//    }
-//    buf
-//      .append("  dps = ")
-//      .append(seq)
-//      .append("\n")
-//      .append(")")
-//      .toString
-//  }
-//}
 
 case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)
     extends TimeSeries

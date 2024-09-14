@@ -8,7 +8,7 @@ import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.BasicTimeSeries
-import com.netflix.atlas.core.model.DataPointMeta
+import com.netflix.atlas.core.model.DatapointMeta
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TimeSeq
@@ -60,7 +60,10 @@ class FooSuite extends FunSuite {
       "some.series",
       seq,
       List(
-        Map("job" -> "Batch job a", "ts" -> "1704068642000   asdfasdfadsfasadfadsfjlkajsdfslkjasdlkfjalskdfjfalskdjflkjasddlfkjasldkfjlkjasldkijfliasmldfimasldidmflaimsfdlimdslafimlasidmfloisdmf"),
+        Map(
+          "job" -> "Batch job a",
+          "ts" -> "1704068642000   asdfasdfadsfasadfadsfjlkajsdfslkjasdlkfjalskdfjfalskdjflkjasddlfkjasldkfjlkjasldkijfliasmldfimasldidmflaimsfdlimdslafimlasidmfloisdmf"
+        ),
         Map("job" -> "Batch job b", "ts" -> "1704074514000"),
         Map("job" -> "Batch job c", "ts" -> "1704080642000"),
         Map("job" -> "Batch job d", "ts" -> "1704090907000"),
@@ -114,14 +117,14 @@ case class TSWithMeta(
   /** Unique id based on the tags. */
   override def id: ItemId = ???
 
-  override def datapointMeta(timestamp: Long): DataPointMeta = {
-    new MapMeta(meta(timestamp.toInt))
+  override def datapointMeta(timestamp: Long): Option[DatapointMeta] = {
+    Some(new MapMeta(meta(timestamp.toInt)))
   }
 }
 
-class MapMeta(map: Map[String, String]) extends DataPointMeta {
+class MapMeta(map: Map[String, String]) extends DatapointMeta {
 
-  override def keys: Seq[String] = map.keys.toSeq
+  override def keys: List[String] = map.keys.toList
 
   override def get(key: String): Option[String] = map.get(key)
 }

@@ -90,19 +90,8 @@ case class PlotDef(
             max = math.max(max, mx)
         }
 
-      var s = start
-      var e = end
-//      if (genericX) {
-//        var gs = Long.MaxValue
-//        regular.foreach { line =>
-//            gs = math.min(gs, line.data.asInstanceOf[IrregularSeries].meta.size)
-//        }
-//        s = 0
-//        e = gs
-//      }
-
-      var t = s
-      while (t < e) {
+      var t = start
+      while (t < end) {
         regular.foreach { line =>
           val v = line.data.data(t)
           if (JDouble.isFinite(v)) {

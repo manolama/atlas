@@ -4,7 +4,7 @@ import com.netflix.atlas.chart.model.DataDef
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
-import com.netflix.atlas.core.model.DataPointMeta
+import com.netflix.atlas.core.model.DatapointMeta
 
 import java.awt.Graphics2D
 
@@ -38,7 +38,7 @@ case class MetaLegendEntry(graphDef: GraphDef, styles: Styles, plot: PlotDef, da
       data match {
         case line: LineDef =>
           val txt = Text(
-            s"$i) ${formatMeta(line.data.datapointMeta(i))}",
+            s"$i) ${line.data.datapointMeta(i).map(formatMeta).getOrElse("")}",
             font = ChartSettings.smallFont,
             alignment = TextAlignment.LEFT,
             style = styles.text
@@ -49,7 +49,7 @@ case class MetaLegendEntry(graphDef: GraphDef, styles: Styles, plot: PlotDef, da
     }
   }
 
-  def formatMeta(meta: DataPointMeta): String = {
+  def formatMeta(meta: DatapointMeta): String = {
     meta.keys.map { case k => s"$k=${meta.get(k).getOrElse("")}" }.mkString(", ")
   }
 
