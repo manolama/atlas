@@ -1,5 +1,6 @@
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.model.DataDef
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
@@ -8,23 +9,44 @@ import com.netflix.atlas.core.model.DatapointMeta
 
 import java.awt.Graphics2D
 
-case class MetaLegendEntry(graphDef: GraphDef, styles: Styles, plot: PlotDef, data: DataDef)
-    extends Element
+case class MetaLegendEntry(
+  graphDef: GraphDef,
+  styles: Styles,
+  plot: PlotDef,
+  data: DataDef,
+  graph: TimeSeriesGraph
+) extends Element
     with FixedHeight {
 
   val text = {
+    val leftAxisW = graph.yaxes.head.width
+    val rightAxisW = graph.yaxes.tail.foldLeft(0) { (acc, axis) =>
+      acc + axis.width
+    }
+    val rightSideW = if (rightAxisW > 0) rightAxisW else TimeSeriesGraph.minRightSidePadding
+    val axisW = leftAxisW + rightSideW
+    val width = graph.width - axisW // x2 - x1 - axisW
+    val showAxes = !graphDef.onlyGraph && width >= GraphConstants.MinCanvasWidth
+    val leftOffset = if (showAxes) leftAxisW else TimeSeriesGraph.minRightSidePadding
+    val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
+
     val list = List.newBuilder[Text]
+    val ticks =
+      graph.timeAxis
+        .ticks(leftOffset, graph.width - rightOffset)
+        .filter(_.major)
     for (i <- graphDef.startTime.toEpochMilli until graphDef.endTime.toEpochMilli) {
       data match {
         case line: LineDef =>
           line.data.datapointMeta(i).map { meta =>
-            list += Text(
-              s"$i) ${formatMeta(meta)}",
-              font = ChartSettings.smallFont,
-              alignment = TextAlignment.LEFT,
-              style = styles.text
-            )
-
+            ticks.find(_.timestamp == i).map { _ =>
+              list += Text(
+                s"$i) ${formatMeta(meta)}",
+                font = ChartSettings.smallFont,
+                alignment = TextAlignment.LEFT,
+                style = styles.text
+              )
+            }
           }
         case _ =>
       }
@@ -54,16 +76,21 @@ case class MetaLegendEntry(graphDef: GraphDef, styles: Styles, plot: PlotDef, da
 
     val offset = y1 + ChartSettings.normalFontDims.height
     val rowHeight = ChartSettings.smallFontDims.height
-    for (i <- graphDef.startTime.toEpochMilli until graphDef.endTime.toEpochMilli) {
-      data match {
-        case line: LineDef =>
-          line.data.datapointMeta(i).map { meta =>
-            val txt = text(i.toInt).truncate(x2 - x1 - d - 4)
-            txt.draw(g, x1 + d + 4, offset + i.toInt * rowHeight, x2, y2)
-          }
-        case _ =>
-      }
+
+    text.zipWithIndex.foreach {
+      case (txt, i) =>
+        txt.truncate(x2 - x1 - d - 4).draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
     }
+//    for (i <- graphDef.startTime.toEpochMilli until graphDef.endTime.toEpochMilli) {
+//      data match {
+//        case line: LineDef =>
+//          line.data.datapointMeta(i).map { meta =>
+//            val txt = text(i.toInt).truncate(x2 - x1 - d - 4)
+//            txt.draw(g, x1 + d + 4, offset + i.toInt * rowHeight, x2, y2)
+//          }
+//        case _ =>
+//      }
+//    }
   }
 
   def formatMeta(meta: DatapointMeta): String = {

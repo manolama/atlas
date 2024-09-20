@@ -194,5 +194,5 @@ object TimeSeriesGraph {
     * Allow at least 4 small characters on the right side to prevent the final tick mark label
     * from getting truncated.
     */
-  private val minRightSidePadding = ChartSettings.smallFontDims.width * 4
+  val minRightSidePadding = ChartSettings.smallFontDims.width * 4
 }

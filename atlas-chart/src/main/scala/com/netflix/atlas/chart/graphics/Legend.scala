@@ -41,6 +41,7 @@ case class Legend(
   graphDef: GraphDef,
   styles: Styles,
   plot: PlotDef,
+  graph: TimeSeriesGraph,
   heatmap: Option[Heatmap],
   label: Option[String],
   showStats: Boolean,
@@ -66,7 +67,7 @@ case class Legend(
     .take(maxEntries)
     .flatMap { data =>
       if (stepless) {
-        List(HorizontalPadding(2), MetaLegendEntry(graphDef, styles, plot, data))
+        List(HorizontalPadding(2), MetaLegendEntry(graphDef, styles, plot, data, graph))
       } else {
         List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
       }

@@ -2,6 +2,7 @@ package com.netflix.atlas.chart
 
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
@@ -49,19 +50,22 @@ class FooSuite extends BasePngGraphEngineSuite {
     name: String,
     series: TimeSeries,
     meta: List[String],
-    endTime: Long = 30
+    endTime: Long = 30,
+    f: GraphDef => GraphDef = identity
   ): Unit = {
     test(name) {
       val series1 = MetaWrapper(series, meta)
       val line = LineDef(series1)
       val plotDef = PlotDef(List(line))
-      val graphDef = GraphDef(
-        width = 480,
-        startTime = Instant.ofEpochMilli(0),
-        endTime = Instant.ofEpochMilli(endTime),
-        step = step,
-        plots = List(plotDef),
-        stepless = true
+      val graphDef = f.apply(
+        GraphDef(
+          width = 480,
+          startTime = Instant.ofEpochMilli(0),
+          endTime = Instant.ofEpochMilli(endTime),
+          step = step,
+          plots = List(plotDef),
+          stepless = true
+        )
       )
       check(name, graphDef)
     }
@@ -70,6 +74,13 @@ class FooSuite extends BasePngGraphEngineSuite {
   singleSeriesTest("constant", constant(42.5), List("job", "Batch job {i}"))
 
   singleSeriesTest("wave", wave(0, 1, Duration.ofMillis(5)), List("job", "Batch job {i}"))
+
+  singleSeriesTest(
+    "wave-stacked",
+    wave(0, 1, Duration.ofMillis(5)),
+    List("job", "Batch job {i}"),
+    f = v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK))
+  )
 
   def series1: TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0, 3.0, 4.0, 5.0))
