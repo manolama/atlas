@@ -584,7 +584,7 @@ object Ticks {
   def time(s: Long, e: Long, zone: ZoneId, n: Int, stepless: Boolean): List[TimeTick] = {
     if (stepless) {
       val start = if (s < 0) 0 else s
-      return simple(start.toDouble, e.toDouble, n, Scale.LINEAR)
+      return value(start.toDouble, e.toDouble, n, Scale.LINEAR)
         .map(t => TimeTick(t.v.toLong, zone, t.major, stepless = true))
     }
 

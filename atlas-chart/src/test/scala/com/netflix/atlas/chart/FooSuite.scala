@@ -45,25 +45,31 @@ class FooSuite extends BasePngGraphEngineSuite {
     check("_FOO.png", graphDef)
   }
 
-  test("wave") {
-    val series1 = MetaWrapper(wave(0, 1, Duration.ofMillis(5)), List("job", "Batch job {i}"))
-    val line = LineDef(series1, groupByKeys = List("k1"))
-    val plotDef = PlotDef(List(line))
-    val graphDef = GraphDef(
-      width = 480,
-      startTime = Instant.ofEpochMilli(0),
-      endTime = Instant.ofEpochMilli(30),
-      step = step,
-      plots = List(plotDef),
-      stepless = true
-    )
-    check("_FOO.png", graphDef)
+  def singleSeriesTest(
+    name: String,
+    series: TimeSeries,
+    meta: List[String],
+    endTime: Long = 30
+  ): Unit = {
+    test(name) {
+      val series1 = MetaWrapper(series, meta)
+      val line = LineDef(series1)
+      val plotDef = PlotDef(List(line))
+      val graphDef = GraphDef(
+        width = 480,
+        startTime = Instant.ofEpochMilli(0),
+        endTime = Instant.ofEpochMilli(endTime),
+        step = step,
+        plots = List(plotDef),
+        stepless = true
+      )
+      check(name, graphDef)
+    }
   }
 
-//  def singleSeries(
-//    series: TimeSeries,
-//
-//                  )
+  singleSeriesTest("constant", constant(42.5), List("job", "Batch job {i}"))
+
+  singleSeriesTest("wave", wave(0, 1, Duration.ofMillis(5)), List("job", "Batch job {i}"))
 
   def series1: TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0, 3.0, 4.0, 5.0))

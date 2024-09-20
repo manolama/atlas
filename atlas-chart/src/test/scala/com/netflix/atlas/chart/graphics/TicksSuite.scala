@@ -19,6 +19,8 @@ import com.netflix.atlas.chart.model.Scale
 
 import java.time.ZoneOffset
 import munit.FunSuite
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 
 import scala.util.Random
 
@@ -739,10 +741,13 @@ class TicksSuite extends FunSuite {
     val s = 0L
     val e = 30L
     val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5, true)
-    val expected = Array(0, 6, 12, 18, 24, 30)
-    for (i <- 0 until 6) {
-      assertEquals(ticks(i).label, expected(i).toString)
-      assertEquals(ticks(i).timestamp, expected(i).toLong)
+    assertEquals(ticks.size, 16)
+    for (i <- 0 until 16) {
+      assertEquals(ticks(i).label, (i * 2).toString)
+      assertEquals(ticks(i).timestamp, i * 2L)
+      if (i % 5 == 0) assertTrue(s"expected major tick at ${i}", ticks(i).major)
+      else
+        assertFalse(s"expected minor tick at ${i}", ticks(i).major)
     }
   }
 
