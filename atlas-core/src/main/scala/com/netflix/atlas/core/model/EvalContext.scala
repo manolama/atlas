@@ -24,9 +24,9 @@ import scala.util.Failure
 import scala.util.Try
 
 case class EvalContext(
-  var start: Long,
-  var end: Long, // oh Brian will HATE me but, this solves the issue of the limit vs actual data returned.
-  var step: Long,
+  start: Long,
+  end: Long,
+  step: Long,
   state: Map[StatefulExpr, Any] = IdentityMap.empty,
   steplessLimit: Option[Int] = None
 ) {
@@ -35,13 +35,21 @@ case class EvalContext(
 
   val noData: TimeSeries = TimeSeries.noData(step)
 
+  var steplessStart: Long = 0
+  var steplessEnd: Long = steplessLimit.getOrElse(0).toLong
+  var steplessStep: Long = step
+
   /**
     * Buffer size that would be need to represent the result set based on the start time,
     * end time, and step size.
     */
-  def bufferSize: Int = ((end - start) / step).toInt + 1
+  def bufferSize: Int = steplessLimit match {
+    case Some(_) => ((steplessEnd - steplessStart) / steplessStep).toInt + 1
+    case None    => ((end - start) / step).toInt + 1
+  }
 
   def partition(oneStep: Long, unit: ChronoUnit): List[EvalContext] = {
+    // TODO stepless
     val builder = List.newBuilder[EvalContext]
     var t = Instant.ofEpochMilli(start).truncatedTo(unit).toEpochMilli
     while (t < end) {
@@ -63,4 +71,8 @@ case class EvalContext(
     val dur = offset / step * step
     if (dur < step) this else EvalContext(start - dur, end - dur, step, state, steplessLimit)
   }
+
+  def getStart: Long = steplessLimit.map(_ => steplessStart).getOrElse(start)
+  def getEnd: Long = steplessLimit.map(_ => steplessEnd).getOrElse(end)
+  def getStep: Long = steplessLimit.map(_ => steplessStep).getOrElse(step)
 }

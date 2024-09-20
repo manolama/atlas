@@ -127,12 +127,12 @@ class MapStepTimeSeqSuite extends FunSuite {
   }
 
   test("stepless") {
-    var seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0, 3.0, 4.0 ))
+    var seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0, 3.0, 4.0))
 
     var mapped = new MapStepTimeSeq(seq, 2, Sum).bounded(0, 4)
     System.out.println(mapped)
 
-    seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(Double.NaN, Double.NaN, 1.0, 2.0, 3.0, 4.0 ))
+    seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(Double.NaN, Double.NaN, 1.0, 2.0, 3.0, 4.0))
     mapped = new MapStepTimeSeq(seq, 2, Sum).bounded(0, 6)
     System.out.println(mapped)
   }
@@ -140,7 +140,7 @@ class MapStepTimeSeqSuite extends FunSuite {
   test("rewrite?") {
     val ctx = EvalContext(1, 100, 1)
     System.out.println(ctx)
-    ctx.end = 2
+    ctx.steplessEnd = 2
     System.out.println(ctx)
   }
 }

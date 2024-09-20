@@ -583,15 +583,9 @@ object Ticks {
     */
   def time(s: Long, e: Long, zone: ZoneId, n: Int, stepless: Boolean): List[TimeTick] = {
     if (stepless) {
-      return simple(s.toDouble, e.toDouble, n, Scale.LINEAR).map { t =>
-        val v = t.v.toLong
-        if (v < 0) {
-          TimeTick(v, zone, false, stepless = true)
-        } else {
-          TimeTick(v, zone, t.major, stepless = true)
-        }
-      }
-
+      val start = if (s < 0) 0 else s
+      return simple(start.toDouble, e.toDouble, n, Scale.LINEAR)
+        .map(t => TimeTick(t.v.toLong, zone, t.major, stepless = true))
     }
 
     // To keep even placement of major grid lines the shift amount for the timezone is computed

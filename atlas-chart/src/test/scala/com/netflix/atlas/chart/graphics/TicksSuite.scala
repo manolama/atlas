@@ -735,6 +735,17 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.size, 6)
   }
 
+  test("time: stepless") {
+    val s = 0L
+    val e = 30L
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5, true)
+    val expected = Array(0, 6, 12, 18, 24, 30)
+    for (i <- 0 until 6) {
+      assertEquals(ticks(i).label, expected(i).toString)
+      assertEquals(ticks(i).timestamp, expected(i).toLong)
+    }
+  }
+
   test("issue-948: [6.667e-3, 0.01]") {
     val ticks = Ticks.value(6.667e-3, 0.01, 7)
     sanityCheck(ticks)
