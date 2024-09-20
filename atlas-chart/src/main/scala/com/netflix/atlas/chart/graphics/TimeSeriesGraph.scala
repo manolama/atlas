@@ -21,7 +21,6 @@ import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineStyle
-//import com.netflix.atlas.core.model.IrregularSeries
 
 /**
   * Draws a time series graph.
