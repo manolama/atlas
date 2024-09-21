@@ -58,7 +58,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
           stepless = true
         )
       )
-      check(name, graphDef)
+      check(s"${name}.png", graphDef)
     }
   }
 
@@ -139,7 +139,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
       stepless = true,
       timezones = List(ZoneOffset.UTC, ZoneId.of("America/Los_Angeles"))
     )
-    check("single_multix", graphDef)
+    check("single_multix.png", graphDef)
   }
 
   def multiSeriesTest(
@@ -169,7 +169,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
           stepless = true
         )
       )
-      check(name, graphDef)
+      check(s"${name}.png", graphDef)
     }
   }
 
@@ -247,7 +247,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
       plots = plotDefs,
       stepless = true
     )
-    check("multi_wave_multiy", graphDef)
+    check("multi_wave_multiy.png", graphDef)
   }
 
   def seriesFromArray(name: String, data: Array[Double]): TimeSeries = {
