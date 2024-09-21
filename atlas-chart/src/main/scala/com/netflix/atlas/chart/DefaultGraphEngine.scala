@@ -127,14 +127,16 @@ class DefaultGraphEngine extends PngGraphEngine {
       val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
       val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
       val step = Strings.toString(Duration.ofMillis(config.step))
-      val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
-      belowCanvas += HorizontalPadding(15)
-      belowCanvas += Text(
-        comment,
-        font = ChartSettings.smallFont,
-        alignment = TextAlignment.LEFT,
-        style = config.theme.legend.text
-      )
+      if (!config.stepless) {
+        val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
+        belowCanvas += HorizontalPadding(15)
+        belowCanvas += Text(
+          comment,
+          font = ChartSettings.smallFont,
+          alignment = TextAlignment.LEFT,
+          style = config.theme.legend.text
+        )
+      }
 
       if (config.loadTime > 0 && config.stats.inputLines > 0) {
         val graphLines = config.plots.map(_.data.size).sum

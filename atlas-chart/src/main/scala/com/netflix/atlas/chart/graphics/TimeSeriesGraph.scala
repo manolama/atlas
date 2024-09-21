@@ -22,6 +22,8 @@ import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineStyle
 
+import java.time.ZoneOffset
+
 /**
   * Draws a time series graph.
   */
@@ -59,18 +61,35 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val start: Long = graphDef.startTime.toEpochMilli
   val end: Long = graphDef.endTime.toEpochMilli
 
-  val timeAxes: List[TimeAxis] = graphDef.timezones.zipWithIndex.map {
-    case (tz, i) =>
-      TimeAxis(
-        Style(color = graphDef.theme.axis.line.color),
-        start,
-        end,
-        graphDef.step,
-        tz,
-        if (i == 0) 40 else 0xFF,
-        showZone = if (graphDef.stepless) false else true,
-        graphDef.stepless
+  val timeAxes: List[TimeAxis] = {
+    if (graphDef.stepless) {
+      List(
+        TimeAxis(
+          Style(color = graphDef.theme.axis.line.color),
+          start,
+          end,
+          graphDef.step,
+          ZoneOffset.UTC,
+          40,
+          showZone = if (graphDef.stepless) false else true,
+          graphDef.stepless
+        )
       )
+    } else {
+      graphDef.timezones.zipWithIndex.map {
+        case (tz, i) =>
+          TimeAxis(
+            Style(color = graphDef.theme.axis.line.color),
+            start,
+            end,
+            graphDef.step,
+            tz,
+            if (i == 0) 40 else 0xFF,
+            showZone = if (graphDef.stepless) false else true,
+            graphDef.stepless
+          )
+      }
+    }
   }
 
   val timeAxis: TimeAxis = timeAxes.head
