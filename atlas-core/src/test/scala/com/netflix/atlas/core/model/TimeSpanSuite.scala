@@ -25,7 +25,7 @@ class TimeSpanSuite extends FunSuite {
   private val step = 60000L
   private val start = 0L
   private val end = 10L * step
-  private val context = EvalContext(start, end, step, Map.empty)
+  private val context = new EvalContext(start, end, step, Map.empty)
 
   private val interpreter = Interpreter(MathVocabulary.allWords)
 

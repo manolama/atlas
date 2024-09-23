@@ -246,7 +246,7 @@ class TimeSeriesExprSuite extends FunSuite {
             var state = Map.empty[StatefulExpr, Any]
 
             val incrResults = ctxts.map { ctxt =>
-              val c = ctxt.copy(state = state)
+              val c = new EvalContext(ctxt.start, ctxt.end, ctxt.step, state)
               val results = expr.eval(c, bounded(p.input, ctxt))
               state = results.state
               val boundedResults = results.data.map(_.mapTimeSeq(_.bounded(ctxt.start, ctxt.end)))
@@ -374,6 +374,6 @@ object TimeSeriesExprSuite {
   case class Params(
     input: List[TimeSeries],
     output: List[TimeSeries],
-    ctxt: EvalContext = EvalContext(0, 10 * 60000, 60000)
+    ctxt: EvalContext = new EvalContext(0, 10 * 60000, 60000)
   )
 }

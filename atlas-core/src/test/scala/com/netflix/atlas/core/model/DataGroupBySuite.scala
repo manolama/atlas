@@ -34,7 +34,7 @@ class DataGroupBySuite extends FunSuite {
   }
 
   def groupBy(input: List[TimeSeries], ks: List[String]): List[TimeSeries] = {
-    val context = EvalContext(start, start + step * n, step)
+    val context = new EvalContext(start, start + step * n, step)
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), ks)
     expr.eval(context, input).data
   }
@@ -85,7 +85,7 @@ class DataGroupBySuite extends FunSuite {
 
   def binaryOp(ks1: List[String], ks2: List[String]): List[TimeSeries] = {
     val input = (0 until 10).map(ts).toList
-    val context = EvalContext(start, start + step * n, step)
+    val context = new EvalContext(start, start + step * n, step)
     val expr1 = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("mode", "even")), ks1)
     val expr2 = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), ks2)
     val binaryOpExpr = MathExpr.Add(expr1, expr2)

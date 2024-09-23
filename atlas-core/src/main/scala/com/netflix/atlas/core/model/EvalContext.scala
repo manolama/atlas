@@ -23,30 +23,26 @@ import com.netflix.atlas.core.util.IdentityMap
 import scala.util.Failure
 import scala.util.Try
 
-case class EvalContext(
-  start: Long,
-  end: Long,
-  step: Long,
-  state: Map[StatefulExpr, Any] = IdentityMap.empty,
-  steplessLimit: Option[Int] = None
+class EvalContext(
+  s: Long,
+  e: Long,
+  val step: Long,
+  val state: Map[StatefulExpr, Any] = IdentityMap.empty,
+  val steplessLimit: Option[Long] = None
 ) {
 
-  require(start < end, s"start time must be less than end time ($start >= $end)")
+  require(s < e, s"start time must be less than end time ($s >= $e)")
 
   val noData: TimeSeries = TimeSeries.noData(step)
 
-  var steplessStart: Long = 0
-  var steplessEnd: Long = steplessLimit.getOrElse(0).toLong
-  var steplessStep: Long = step
+  private var computedStart: Long = s
+  private var computedEnd: Long = steplessLimit.getOrElse(e)
 
   /**
     * Buffer size that would be need to represent the result set based on the start time,
     * end time, and step size.
     */
-  def bufferSize: Int = steplessLimit match {
-    case Some(_) => ((steplessEnd - steplessStart) / steplessStep).toInt + 1
-    case None    => ((end - start) / step).toInt + 1
-  }
+  def bufferSize: Int = ((start - end) / step).toInt + 1
 
   def partition(oneStep: Long, unit: ChronoUnit): List[EvalContext] = {
     // TODO stepless
@@ -56,7 +52,7 @@ case class EvalContext(
       val e = t + oneStep
       val stime = math.max(t, start)
       val etime = math.min(e, end)
-      builder += EvalContext(stime, etime, step, steplessLimit = steplessLimit)
+      builder += new EvalContext(stime, etime, step, steplessLimit = steplessLimit)
       t = e
     }
     builder.result()
@@ -69,10 +65,21 @@ case class EvalContext(
 
   def withOffset(offset: Long): EvalContext = {
     val dur = offset / step * step
-    if (dur < step) this else EvalContext(start - dur, end - dur, step, state, steplessLimit)
+    if (dur < step) this else new EvalContext(start - dur, end - dur, step, state, steplessLimit)
   }
 
-  def getStart: Long = steplessLimit.map(_ => steplessStart).getOrElse(start)
-  def getEnd: Long = steplessLimit.map(_ => steplessEnd).getOrElse(end)
-  def getStep: Long = steplessLimit.map(_ => steplessStep).getOrElse(step)
+  def start: Long = computedStart
+  def end: Long = computedEnd
+
+  def update(start: Long, end: Long): Unit = {
+    computedStart = start
+    computedEnd = end
+  }
+
+  def update(context: EvalContext): Unit = {
+    if (context.computedStart > computedStart)
+      computedStart = context.computedStart
+    if (context.computedEnd < computedEnd)
+      computedEnd = context.computedEnd
+  }
 }

@@ -41,7 +41,7 @@ class StreamSuite extends FunSuite {
     val state = Map.empty[StatefulExpr, Any]
     data.map { ts =>
       val t = ts.head.timestamp
-      val context = EvalContext(t, t + 10, 10, state)
+      val context = new EvalContext(t, t + 10, 10, state)
       expr.eval(context, ts).data
     }
   }

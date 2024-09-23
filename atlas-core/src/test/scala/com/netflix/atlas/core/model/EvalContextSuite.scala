@@ -29,7 +29,7 @@ class EvalContextSuite extends FunSuite {
     val e = Instant.parse("2017-05-17T20:46:50Z").toEpochMilli
     val step = 10000L
     val size = 60 * step
-    val partitions = EvalContext(s, e, step).partition(size, ChronoUnit.MILLIS)
+    val partitions = new EvalContext(s, e, step).partition(size, ChronoUnit.MILLIS)
     assertEquals(partitions.size, 3)
   }
 }

@@ -60,7 +60,7 @@ class TrendSuite extends FunSuite {
     var state = Map.empty[StatefulExpr, Any]
     data.map { ts =>
       val t = ts.head.timestamp
-      val context = EvalContext(t, t + step, step, state)
+      val context = new EvalContext(t, t + step, step, state)
       val rs = expr.eval(context, ts)
       state = rs.state
       rs.data
@@ -70,7 +70,7 @@ class TrendSuite extends FunSuite {
   test("trend: incremental exec matches global") {
     val s = 0L
     val e = 14L * step
-    val context = EvalContext(s, e, step, Map.empty)
+    val context = new EvalContext(s, e, step, Map.empty)
     val expected = trend.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
     val result = eval(trend, alignedStream)
 

@@ -22,7 +22,7 @@ class FilterSuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
-  private val context = EvalContext(start, start + step, step)
+  private val context = new EvalContext(start, start + step, step)
 
   test("empty result from filtering constant expression") {
     val expr = FilterExpr.Filter(

@@ -50,7 +50,7 @@ lazy val `atlas-pekko-testkit` = project
 
 lazy val `atlas-chart` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`, `atlas-json`)
+  .dependsOn(`atlas-core`, `atlas-core` % "test", `atlas-json`)
 
 lazy val `atlas-core` = project
   .configure(BuildSettings.profile)

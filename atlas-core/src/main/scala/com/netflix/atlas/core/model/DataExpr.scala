@@ -147,7 +147,7 @@ object DataExpr {
           val aggr = aggregator(context.start, context.end)
           filtered.foreach(aggr.update)
           val t = aggr.result()
-          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
+          TimeSeries(tags, TimeSeries.toLabel(tags), t.data, t.meta)
         }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
@@ -304,7 +304,7 @@ object DataExpr {
         case (k, ts) =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           af.eval(context, ts).data.map { t =>
-            TimeSeries(tags, k, t.data)
+            TimeSeries(tags, k, t.data, t.meta)
           }
       }
       val rs = consolidate(context.step, newData)

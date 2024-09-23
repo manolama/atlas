@@ -5,7 +5,7 @@ import com.netflix.atlas.chart.model.DataDef
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
-import com.netflix.atlas.core.model.DatapointMeta
+import com.netflix.atlas.core.model.DatapointMetaEntry
 
 import java.awt.Graphics2D
 
@@ -38,14 +38,16 @@ case class MetaLegendEntry(
     for (i <- graphDef.startTime.toEpochMilli until graphDef.endTime.toEpochMilli) {
       data match {
         case line: LineDef =>
-          line.data.datapointMeta(i).map { meta =>
-            ticks.find(_.timestamp == i).map { _ =>
-              list += Text(
-                s"$i) ${formatMeta(meta)}",
-                font = ChartSettings.smallFont,
-                alignment = TextAlignment.LEFT,
-                style = styles.text
-              )
+          line.data.meta.map { meta =>
+            meta.datapointMeta(i).map { meta =>
+              ticks.find(_.timestamp == i).map { _ =>
+                list += Text(
+                  s"$i) ${formatMeta(meta)}",
+                  font = ChartSettings.smallFont,
+                  alignment = TextAlignment.LEFT,
+                  style = styles.text
+                )
+              }
             }
           }
         case _ =>
@@ -93,7 +95,7 @@ case class MetaLegendEntry(
 //    }
   }
 
-  def formatMeta(meta: DatapointMeta): String = {
+  def formatMeta(meta: DatapointMetaEntry): String = {
     meta.keys.map { case k => s"$k=${meta.get(k).getOrElse("")}" }.mkString(", ")
   }
 

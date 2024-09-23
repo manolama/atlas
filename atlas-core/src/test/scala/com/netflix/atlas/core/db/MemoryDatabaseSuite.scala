@@ -49,7 +49,7 @@ class MemoryDatabaseSuite extends FunSuite {
   addRollupData("c", 5.0, 6.0, 7.0)
   addRollupData("c", 6.0, 7.0, 8.0)
 
-  private val context = EvalContext(0, 3 * step, step)
+  private val context = new EvalContext(0, 3 * step, step)
 
   private def addData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
@@ -83,7 +83,7 @@ class MemoryDatabaseSuite extends FunSuite {
   }
 
   private def exec(str: String, s: Long = step): List[TimeSeries] = {
-    val ctxt = context.copy(step = s)
+    val ctxt = new EvalContext(0, 3 * step, s)
     db.execute(ctxt, expr(str)).sortWith(_.label < _.label).map { t =>
       t.mapTimeSeq(s => s.bounded(context.start, context.end))
     }

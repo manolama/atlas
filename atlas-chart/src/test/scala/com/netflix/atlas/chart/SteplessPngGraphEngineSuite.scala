@@ -9,13 +9,7 @@ import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
-import com.netflix.atlas.core.model.ArrayTimeSeq
-import com.netflix.atlas.core.model.BasicTimeSeries
-import com.netflix.atlas.core.model.DatapointMeta
-import com.netflix.atlas.core.model.DsType
-import com.netflix.atlas.core.model.ItemId
-import com.netflix.atlas.core.model.TimeSeq
-import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.model.{ArrayTimeSeq, BasicTimeSeries, DatapointMeta, DsType, ItemId, MetaWrapper, TimeSeq, TimeSeries}
 import munit.FunSuite
 
 import java.awt.Color
@@ -254,42 +248,4 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
     BasicTimeSeries(null, Map.empty, name, new ArrayTimeSeq(DsType.Gauge, 0, 1, data))
   }
 
-}
-
-case class MetaWrapper(
-  timeSeries: TimeSeries,
-  meta: List[String],
-  metaSkips: List[Boolean] = Nil
-) extends TimeSeries {
-
-  override def datapointMeta(timestamp: Long): Option[DatapointMeta] = {
-    if (metaSkips.nonEmpty && !metaSkips(timestamp.toInt)) {
-      return None
-    }
-
-    val map = Map.newBuilder[String, String]
-    for (i <- 0 until meta.size by 2) {
-      val key = meta(i)
-      val value = meta(i + 1).replaceAll("\\{i\\}", timestamp.toString)
-      map += key -> value
-    }
-    Some(new MapMeta(map.result()))
-  }
-
-  override def label: String = timeSeries.label
-
-  override def data: TimeSeq = timeSeries.data
-
-  /** Unique id based on the tags. */
-  override def id: ItemId = timeSeries.id
-
-  /** The tags associated with this item. */
-  override def tags: Map[String, String] = timeSeries.tags
-}
-
-class MapMeta(map: Map[String, String]) extends DatapointMeta {
-
-  override def keys: List[String] = map.keys.toList
-
-  override def get(key: String): Option[String] = map.get(key)
 }

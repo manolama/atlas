@@ -50,15 +50,39 @@ object TimeSeries {
   def noData(query: Query, step: Long): TimeSeries = {
     val tags = Query.tags(query)
     val data = new FunctionTimeSeq(DsType.Gauge, step, _ => Double.NaN)
-    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data)
+    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data, null)
   }
 
-  def apply(tags: Map[String, String], label: String, data: TimeSeq): TimeSeries = {
-    LazyTimeSeries(tags, label, data)
+  def apply(
+    tags: Map[String, String],
+    label: String,
+    data: TimeSeq
+  ): TimeSeries = {
+    LazyTimeSeries(tags, label, data, None)
   }
 
-  def apply(tags: Map[String, String], data: TimeSeq): TimeSeries = {
+  def apply(
+    tags: Map[String, String],
+    label: String,
+    data: TimeSeq,
+    meta: Option[DatapointMeta]
+  ): TimeSeries = {
+    LazyTimeSeries(tags, label, data, meta)
+  }
+
+  def apply(
+    tags: Map[String, String],
+    data: TimeSeq
+  ): TimeSeries = {
     TimeSeries(tags, toLabel(tags), data)
+  }
+
+  def apply(
+    tags: Map[String, String],
+    data: TimeSeq,
+    meta: Option[DatapointMeta]
+  ): TimeSeries = {
+    TimeSeries(tags, toLabel(tags), data, meta)
   }
 
   def toLabel(tags: Map[String, String]): String = {
@@ -119,8 +143,10 @@ object TimeSeries {
 
     private[this] var aggrBuffer: ArrayTimeSeq = _
     private[this] var aggrTags: Map[String, String] = _
+    private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
+      meta = DatapointMeta.consolidate(start, end, meta, t.meta)
       if (aggrBuffer == null) {
         aggrBuffer = t.data.bounded(start, end)
         aggrTags = t.tags
@@ -136,7 +162,7 @@ object TimeSeries {
 
     override def result(): TimeSeries = {
       require(aggrBuffer != null, "must have 1 or more time series to perform aggregation")
-      TimeSeries(aggrTags, aggrBuffer)
+      TimeSeries(aggrTags, aggrBuffer, meta)
     }
   }
 
@@ -148,8 +174,10 @@ object TimeSeries {
 
     private[this] var aggrBuffer: ArrayTimeSeq = _
     private[this] var aggrTags: Map[String, String] = _
+    private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
+      meta = DatapointMeta.consolidate(start, end, meta, t.meta)
       if (aggrBuffer == null) {
         aggrBuffer = t.data
           .mapValues(v => if (v.isNaN) Double.NaN else 1.0)
@@ -171,7 +199,7 @@ object TimeSeries {
 
     override def result(): TimeSeries = {
       require(aggrBuffer != null, "must have 1 or more time series to perform aggregation")
-      TimeSeries(aggrTags, aggrBuffer)
+      TimeSeries(aggrTags, aggrBuffer, meta)
     }
   }
 
@@ -182,8 +210,10 @@ object TimeSeries {
 
     private[this] val sumAggregator = new SimpleAggregator(start, end, Math.addNaN)
     private[this] val countAggregator = new CountAggregator(start, end)
+    private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
+      meta = DatapointMeta.consolidate(start, end, meta, t.meta)
       sumAggregator.update(t)
       countAggregator.update(t)
     }
@@ -196,21 +226,9 @@ object TimeSeries {
       val sum = sumAggregator.result()
       val count = countAggregator.result()
       val seq = new BinaryOpTimeSeq(sum.data, count.data, _ / _)
-      TimeSeries(sum.tags, seq)
+      TimeSeries(sum.tags, seq, meta)
     }
   }
-}
-
-/**
-  * Useful for stepless series where each datapoint may have associated data like a
-  * job ID or timestamp to display in legends or hover-overs.
-  */
-trait DatapointMeta {
-
-  def keys: List[String]
-
-  def get(key: String): Option[String]
-
 }
 
 // TimeSeries can be lazy or eager. By default, manipulations are done as a view over another
@@ -225,50 +243,55 @@ trait TimeSeries extends TaggedItem {
     Datapoint(tags, timestamp, data(timestamp))
   }
 
-  def datapointMeta(timestamp: Long): Option[DatapointMeta] = None
+  def meta: Option[DatapointMeta] = None
 
   def unaryOp(labelFmt: String, f: Double => Double): TimeSeries = {
-    LazyTimeSeries(tags, labelFmt.format(label), new UnaryOpTimeSeq(data, f))
+    LazyTimeSeries(tags, labelFmt.format(label), new UnaryOpTimeSeq(data, f), meta)
   }
 
   def binaryOp(ts: TimeSeries, labelFmt: String, f: BinaryOp): TimeSeries = {
     val newData = new BinaryOpTimeSeq(data, ts.data, f)
-    LazyTimeSeries(tags, labelFmt.format(label, ts.label), newData)
+    LazyTimeSeries(tags, labelFmt.format(label, ts.label), newData, meta)
   }
 
   def withTags(ts: Map[String, String]): TimeSeries = {
-    LazyTimeSeries(ts, label, data)
+    LazyTimeSeries(ts, label, data, meta)
   }
 
   def withLabel(s: String): TimeSeries = {
     // If the specified label is empty, then fallback to the default
-    if (s.isEmpty) this else LazyTimeSeries(tags, s, data)
+    if (s.isEmpty) this else LazyTimeSeries(tags, s, data, meta)
   }
 
   def consolidate(step: Long, cf: ConsolidationFunction): TimeSeries = {
     val newData = new MapStepTimeSeq(data, step, cf)
-    LazyTimeSeries(tags, label, newData)
+    LazyTimeSeries(tags, label, newData, meta)
   }
 
   def blend(ts: TimeSeries): TimeSeries = {
     val newData = new BinaryOpTimeSeq(data, ts.data, Math.maxNaN)
-    LazyTimeSeries(ts.tags, ts.label, newData)
+    LazyTimeSeries(ts.tags, ts.label, newData, meta)
   }
 
   // Create a copy with a modified time sequence.
   def mapTimeSeq(f: TimeSeq => TimeSeq): TimeSeries = {
-    LazyTimeSeries(tags, label, f(data))
+    LazyTimeSeries(tags, label, f(data), meta)
   }
 
   def offset(dur: Long): TimeSeries = {
-    LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur))
+    LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur), meta)
   }
 }
 
 case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)
     extends TimeSeries
 
-case class LazyTimeSeries(tags: Map[String, String], label: String, data: TimeSeq)
-    extends TimeSeries {
+case class LazyTimeSeries(
+  tags: Map[String, String],
+  label: String,
+  data: TimeSeq,
+  override val meta: Option[DatapointMeta]
+) extends TimeSeries {
+
   lazy val id: ItemId = TaggedItem.computeId(tags)
 }

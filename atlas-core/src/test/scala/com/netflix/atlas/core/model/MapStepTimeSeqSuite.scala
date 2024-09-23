@@ -137,10 +137,10 @@ class MapStepTimeSeqSuite extends FunSuite {
     System.out.println(mapped)
   }
 
-  test("rewrite?") {
-    val ctx = EvalContext(1, 100, 1)
-    System.out.println(ctx)
-    ctx.steplessEnd = 2
-    System.out.println(ctx)
-  }
+//  test("rewrite?") {
+//    val ctx = EvalContext(1, 100, 1)
+//    System.out.println(ctx)
+//    ctx.steplessEnd = 2
+//    System.out.println(ctx)
+//  }
 }
