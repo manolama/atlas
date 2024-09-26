@@ -423,39 +423,24 @@ class PercentilesSuite extends FunSuite {
     assertEqualsDouble(t.data(0L), 0.9, 1e-6)
   }
 
-  test("TEMP ptile") {
-    val counts = new Array[Long](PercentileBuckets.asArray().size)
-    counts(25) = 1
-    counts(26) = 2
-    System.out.println("Bucket at 25: " + PercentileBuckets.get(25))
-    System.out.println("Bucket at 26: " + PercentileBuckets.get(26))
-    val ptiles = new Array[Double](1)
-    ptiles(0) = 50.0
-    val results = new Array[Double](1)
-    PercentileBuckets.percentiles(counts, ptiles, results)
-    System.out.println("Result: " + results(0))
+  def steplessData(asTimer: Boolean): List[TimeSeries] = {
+    (25 until 27).map { i =>
+      val bucket = if (asTimer) f"T$i%04X" else f"D$i%04X"
+      val v = 1.0
+      val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(v, v))
+      MetaWrapper(
+        TimeSeries(
+          Map("name" -> "test", "percentile" -> bucket),
+          seq
+        ),
+        List("job", s"UT Job {i}"),
+        List.empty
+      )
+    } toList
   }
 
-  test("TEMP stepless ") {
-    val input = {
-      (25 until 27).map { i =>
-        System.out.println("Bucket: " + PercentileBuckets.get(i))
-        val bucket = f"D$i%04X"
-        val v = 1.0
-        val seq = new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(v, v))
-        val mode = if (Integer.parseInt(bucket.substring(1), 16) % 2 == 0) "even" else "odd"
-        MetaWrapper(
-          TimeSeries(
-            Map("name" -> "test", "mode" -> mode, "percentile" -> bucket),
-            seq
-          ),
-          List("job", s"My job {i}"),
-          List.empty
-        )
-      // IregTS("foo", Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), List.empty, seq)
-      } toList
-    }
-
+  test("stepless distribution") {
+    val input = steplessData(false)
     val context = new EvalContext(0, 2, 1)
     val str = "name,test,:eq,(,25,50,90,),:percentiles"
     val expr = interpreter.execute(str).stack match {
@@ -463,10 +448,31 @@ class PercentilesSuite extends FunSuite {
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
     val rs = expr.eval(context, input).data
-    rs.foreach { ts =>
-      System.out.println(s"Series: ${ts.label}, tags: ${ts.tags}")
-      for (i <- context.start until context.end) {
-        System.out.println(s"  ${ts.data(i)}  ${ts.meta.map(_.datapointMeta(i).getOrElse("")).getOrElse("")}")
+    assertEquals(rs.size, 3)
+    val expected = List(95.5, 106, 122.8)
+    for (i <- 0 until rs.size) {
+      for (x <- 0 until 2) {
+        assertEqualsDouble(rs(i).data(x), expected(i), 0.001)
+        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"UT Job ${x}")
+      }
+    }
+  }
+
+  test("stepless timer") {
+    val input = steplessData(true)
+    val context = new EvalContext(0, 2, 1)
+    val str = "name,test,:eq,(,25,50,90,),:percentiles"
+    val expr = interpreter.execute(str).stack match {
+      case (v: TimeSeriesExpr) :: _ => v
+      case _                        => throw new IllegalArgumentException("invalid expr")
+    }
+    val rs = expr.eval(context, input).data
+    assertEquals(rs.size, 3)
+    val expected = List(9.55e-8, 1.06e-7, 1.228e-7)
+    for (i <- 0 until rs.size) {
+      for (x <- 0 until 2) {
+        assertEqualsDouble(rs(i).data(x), expected(i), 0.001)
+        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"UT Job ${x}")
       }
     }
   }

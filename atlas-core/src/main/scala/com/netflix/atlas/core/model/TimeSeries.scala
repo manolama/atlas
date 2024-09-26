@@ -146,7 +146,7 @@ object TimeSeries {
     private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.consolidate(start, end, meta, t.meta)
+      meta = DatapointMeta.intersect(start, end, meta, t.meta)
       if (aggrBuffer == null) {
         aggrBuffer = t.data.bounded(start, end)
         aggrTags = t.tags
@@ -177,7 +177,7 @@ object TimeSeries {
     private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.consolidate(start, end, meta, t.meta)
+      meta = DatapointMeta.intersect(start, end, meta, t.meta)
       if (aggrBuffer == null) {
         aggrBuffer = t.data
           .mapValues(v => if (v.isNaN) Double.NaN else 1.0)
@@ -213,7 +213,7 @@ object TimeSeries {
     private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.consolidate(start, end, meta, t.meta)
+      meta = DatapointMeta.intersect(start, end, meta, t.meta)
       sumAggregator.update(t)
       countAggregator.update(t)
     }
