@@ -28,9 +28,9 @@ class DataGroupBySuite extends FunSuite {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v.toDouble))
     val value = "value" -> v.toString
     if (v % 2 == 0)
-      TimeSeries(Map("name" -> "test", "mode" -> "even", value), seq)
+      TimeSeries(Map("name" -> "test", "mode" -> "even", value), seq, None)
     else
-      TimeSeries(Map("name" -> "test", value), seq)
+      TimeSeries(Map("name" -> "test", value), seq, None)
   }
 
   def groupBy(input: List[TimeSeries], ks: List[String]): List[TimeSeries] = {

@@ -15,7 +15,8 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Stepless.{assertEqualsWithMeta, steplessContext}
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.steplessContext
 
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
@@ -40,7 +41,7 @@ class PercentilesSuite extends FunSuite {
   def ts(bucket: String, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
     val mode = if (Integer.parseInt(bucket.substring(1), 16) % 2 == 0) "even" else "odd"
-    TimeSeries(Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), seq)
+    TimeSeries(Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), seq, None)
   }
 
   def eval(str: String, input: List[TimeSeries]): List[TimeSeries] = {
@@ -97,7 +98,7 @@ class PercentilesSuite extends FunSuite {
       val v = c.count / 60.0
       val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v, v))
       val tags = c.id.tags.asScala.map(t => t.key -> t.value).toMap + ("name" -> c.id.name)
-      TimeSeries(tags, seq)
+      TimeSeries(tags, seq, None)
     }
   }
 
@@ -114,7 +115,7 @@ class PercentilesSuite extends FunSuite {
       val v = c.count / 60.0
       val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v, v))
       val tags = c.id.tags.asScala.map(t => t.key -> t.value).toMap + ("name" -> c.id.name)
-      TimeSeries(tags, seq)
+      TimeSeries(tags, seq, None)
     }
   }
 
@@ -433,7 +434,8 @@ class PercentilesSuite extends FunSuite {
       MetaWrapper(
         TimeSeries(
           Map("name" -> "test", "percentile" -> bucket),
-          seq
+          seq,
+          None
         )
       )
     } toList

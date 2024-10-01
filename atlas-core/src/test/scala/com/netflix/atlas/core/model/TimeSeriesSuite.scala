@@ -1,18 +1,21 @@
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.model.MetaWrapper.assertMeta
 import com.netflix.atlas.core.model.TimeSeriesSuite.ts
+import munit.Assertions.assertEqualsDouble
 import munit.FunSuite
+import org.junit.Assert.assertFalse
 
 object TimeSeriesSuite {
 
   def ts(context: EvalContext, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, context.start, context.step, values.toArray)
-    TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq)
+    TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq, None)
   }
 
   def ts(start: Long, step: Long, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
-    TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq)
+    TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq, None)
   }
 
 }
@@ -35,6 +38,29 @@ class TimeSeriesSuite extends FunSuite {
     val expected = Stepless.ts(context, 2.5, 4.5, 6.5, 8.5, 10.5)
     val actual = input1.binaryOp(input2, "UT: %s", (a, b) => a + b)
     Stepless.assertEqualsWithMeta(context, actual, expected)
+    assertEquals(actual.label, "UT: name=cpu, node=i-1")
+  }
+
+  test("timeseries w meta: binaryOp - one with offset") {
+    val context = Stepless.steplessContext(5)
+    val seq = new ArrayTimeSeq(DsType.Gauge, -5, 1, Array(1.0, 2.0, 3.0, 4.0, 5.0))
+    val input1 = MetaWrapper(
+      TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq, None),
+      List("job", s"Different {i}")
+    ).offset(5)
+    val input2 = Stepless.ts(context, 1.5, 2.5, 3.5, 4.5, 5.5)
+    val expected = Stepless.ts(context, 2.5, 4.5, 6.5, 8.5, 10.5)
+    val actual = input1.binaryOp(input2, "UT: %s", (a, b) => a + b)
+    for (i <- context.start until context.end) {
+      assertEqualsDouble(
+        actual.data(i),
+        expected.data(i),
+        0.00001,
+        s"values are not the same at index ${i}"
+      )
+      // with offsets, the meta will be different so we'll likely wind up losing it.
+      assertFalse(actual.meta.get.datapointMeta(i).isDefined)
+    }
     assertEquals(actual.label, "UT: name=cpu, node=i-1")
   }
 

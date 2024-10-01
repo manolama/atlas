@@ -17,12 +17,12 @@ object Stepless {
 
   def ts(context: EvalContext, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, context.start, context.step, values.toArray)
-    MetaWrapper(TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq))
+    MetaWrapper(TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq, None))
   }
 
   def ts(start: Long, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, 1, values.toArray)
-    MetaWrapper(TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq))
+    MetaWrapper(TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq, None))
   }
 
   def assertEqualsWithMeta(context: EvalContext, actual: TimeSeries, expected: TimeSeries): Unit = {

@@ -27,7 +27,7 @@ class DerivativeSuite extends FunSuite {
 
   def ts(values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
-    TimeSeries(Map("name" -> "test"), seq)
+    TimeSeries(Map("name" -> "test"), seq, None)
   }
 
   def eval(input: TimeSeries, n: Int): TimeSeries = {
@@ -63,7 +63,7 @@ class DerivativeSuite extends FunSuite {
         val e = s + step
         val context = new EvalContext(s, e, step, state)
         val seq = new ArrayTimeSeq(DsType.Gauge, s, step, Array(v))
-        val input = TimeSeries(Map("name" -> "test"), seq)
+        val input = TimeSeries(Map("name" -> "test"), seq, None)
         val result = expr.eval(context, List(input))
         state = result.state
 

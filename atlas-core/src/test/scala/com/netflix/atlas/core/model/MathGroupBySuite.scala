@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
 import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
@@ -30,7 +31,7 @@ class MathGroupBySuite extends FunSuite {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v.toDouble))
     val mode = "mode"   -> (if (v % 2 == 0) "even" else "odd")
     val value = "value" -> v.toString
-    TimeSeries(Map("name" -> "test", mode, value), seq)
+    TimeSeries(Map("name" -> "test", mode, value), seq, None)
   }
 
   def groupBy(
@@ -315,5 +316,17 @@ class MathGroupBySuite extends FunSuite {
     val expr = eval(input)
     val exprExplicit = eval(inputExplicit)
     assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("stepless") {
+    val context = Stepless.steplessContext(5)
+    val input1 = Stepless.ts(context, 1.0, 2.0, 3.0, 4.0, 5.0)
+    val seq =
+      new ArrayTimeSeq(DsType.Gauge, context.start, context.step, Array(1.0, 2.0, 3.0, 4.0, 5.0))
+    val input2 = MetaWrapper(TimeSeries(Map("name" -> "cpu", "node" -> "i-2"), seq, None))
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("name"))
+    val expected = Stepless.ts(context, 2.0, 4.0, 6.0, 8.0, 10.0)
+    val actual = expr.eval(context, List(input1, input2)).data.head
+    assertEqualsWithMeta(context, actual, expected)
   }
 }

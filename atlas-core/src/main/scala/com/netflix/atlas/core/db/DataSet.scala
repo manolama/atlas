@@ -142,7 +142,11 @@ private[db] object DataSet {
     def max(t: Long): Double = offsets((t % size).toInt)
 
     def stat(name: String, f: Long => Double): TimeSeries = {
-      TimeSeries(series.tags + ("statistic" -> name), new FunctionTimeSeq(DsType.Gauge, step, f))
+      TimeSeries(
+        series.tags + ("statistic" -> name),
+        new FunctionTimeSeq(DsType.Gauge, step, f),
+        series.meta
+      )
     }
 
     List(
@@ -172,7 +176,8 @@ private[db] object DataSet {
     def bucketSeries(bucket: Int): TimeSeries =
       TimeSeries(
         Map("name" -> name, TagKey.percentile -> f"D$bucket%04X"),
-        new FunctionTimeSeq(DsType.Gauge, step, counts(bucket))
+        new FunctionTimeSeq(DsType.Gauge, step, counts(bucket)),
+        None
       )
 
     usedBuckets.map(bucketSeries).toList
@@ -285,7 +290,7 @@ private[db] object DataSet {
   val step = 60000
 
   def constant(v: Double): TimeSeries = {
-    TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v))
+    TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v), None)
   }
 
   def noise(size: Int, noise: Double, series: TimeSeries): TimeSeries = {
@@ -306,7 +311,7 @@ private[db] object DataSet {
       val v = series.data(t) + offset
       if (v < 0.0) 0.0 else v
     }
-    TimeSeries(Map("name" -> "noise"), new FunctionTimeSeq(DsType.Gauge, step, f))
+    TimeSeries(Map("name" -> "noise"), new FunctionTimeSeq(DsType.Gauge, step, f), None)
   }
 
   def wave(min: Double, max: Double, wavelength: Duration): TimeSeries = {
@@ -317,7 +322,7 @@ private[db] object DataSet {
       val yoffset = min + amp
       amp * sin(t) + yoffset
     }
-    TimeSeries(Map("name" -> "wave"), new FunctionTimeSeq(DsType.Gauge, step, f))
+    TimeSeries(Map("name" -> "wave"), new FunctionTimeSeq(DsType.Gauge, step, f), None)
   }
 
   def interval(ts1: TimeSeries, ts2: TimeSeries, s: Long, e: Long): TimeSeries = {
@@ -326,7 +331,7 @@ private[db] object DataSet {
       val ts = if (t >= s && t < e) ts2 else ts1
       ts.data(t)
     }
-    TimeSeries(Map("name" -> "interval"), new FunctionTimeSeq(DsType.Gauge, step, f))
+    TimeSeries(Map("name" -> "interval"), new FunctionTimeSeq(DsType.Gauge, step, f), None)
   }
 
   /**

@@ -54,7 +54,7 @@ object FilterExpr {
       val newData = rs.data.map { t =>
         val v = SummaryStats(t, context.start, context.end).get(stat)
         val seq = new FunctionTimeSeq(DsType.Gauge, context.step, _ => v)
-        TimeSeries(t.tags, s"stat-$stat(${t.label})", seq)
+        TimeSeries(t.tags, s"stat-$stat(${t.label})", seq, t.meta)
       }
       ResultSet(this, newData, rs.state)
     }

@@ -25,7 +25,7 @@ class SummaryStatsSuite extends FunSuite {
 
   def ts(values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
-    TimeSeries(Map("name" -> "test"), seq)
+    TimeSeries(Map("name" -> "test"), seq, None)
   }
 
   test("constant") {

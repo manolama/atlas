@@ -18,7 +18,7 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
-class FilterSuite extends FunSuite {
+class FilterExprSuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
@@ -83,5 +83,14 @@ class FilterSuite extends FunSuite {
     val filter = ":stat-max,:stat-avg,5.0,:const,:add,:div,:stat-min,:gt"
     val expr = s"name,sps,:eq,:sum,(,app,),:by,$filter,:filter"
     assertEquals(parse(expr).toString, expr)
+  }
+
+  test("stepless - stat") {
+    val expr = FilterExpr.Stat(DataExpr.Sum(Query.Equal("name", "cpu")), "max")
+    val context = Stepless.steplessContext(5)
+    val input = Stepless.ts(context, 1.0, 2.0, 3.0, 4.0, 5.0)
+    val expected = Stepless.ts(context, 5.0, 5.0, 5.0, 5.0, 5.0)
+    val actual = expr.eval(context, List(input)).data.head
+    Stepless.assertEqualsWithMeta(context, actual, expected)
   }
 }

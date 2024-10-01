@@ -93,7 +93,7 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, _ => v)
-      val ts = TimeSeries(Map("name" -> v.toString), v.toString, seq)
+      val ts = TimeSeries(Map("name" -> v.toString), v.toString, seq, None)
       ResultSet(this, List(ts), context.state)
     }
   }
@@ -117,7 +117,7 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, rand)
-      val ts = TimeSeries(Map("name" -> "random"), "random", seq)
+      val ts = TimeSeries(Map("name" -> "random"), "random", seq, None)
       ResultSet(this, List(ts), context.state)
     }
 
@@ -146,7 +146,7 @@ object MathExpr {
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, rand)
       val label = s"seeded-random($seed)"
-      val ts = TimeSeries(Map("name" -> label), label, seq)
+      val ts = TimeSeries(Map("name" -> label), label, seq, None)
       ResultSet(this, List(ts), context.state)
     }
 
@@ -206,7 +206,7 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, valueFunc)
-      val ts = TimeSeries(Map("name" -> mode), mode, seq)
+      val ts = TimeSeries(Map("name" -> mode), mode, seq, None)
       ResultSet(this, List(ts), context.state)
     }
   }
@@ -275,7 +275,7 @@ object MathExpr {
       }
 
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, contains)
-      val ts = TimeSeries(Map("name" -> s"$s to $e"), s"$s to $e", seq)
+      val ts = TimeSeries(Map("name" -> s"$s to $e"), s"$s to $e", seq, None)
       ResultSet(this, List(ts), context.state)
     }
   }
@@ -696,7 +696,7 @@ object MathExpr {
           val aggr = aggregator(context.start, context.end)
           rs.data.foreach(aggr.update)
           val t = aggr.result()
-          List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
+          List(TimeSeries(t.tags, s"$name(${t.label})", t.data, t.meta))
         }
       ResultSet(this, ts, rs.state)
     }
@@ -792,7 +792,7 @@ object MathExpr {
           val aggr = expr.aggregator(context.start, context.end)
           ts.foreach(aggr.update)
           val t = aggr.result()
-          List(TimeSeries(tags, k, t.data))
+          List(TimeSeries(tags, k, t.data, t.meta))
       }
 
       ResultSet(this, newData, inner.state)

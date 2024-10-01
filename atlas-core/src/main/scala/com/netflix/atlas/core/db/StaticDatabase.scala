@@ -40,7 +40,7 @@ object StaticDatabase {
       if (probablyPrime(i))
         tagsBuilder += "prime" -> "probably"
       val seq = new FunctionTimeSeq(DsType.Gauge, DefaultSettings.stepSize, _ => i)
-      TimeSeries(tagsBuilder.result(), seq)
+      TimeSeries(tagsBuilder.result(), seq, None)
     }
     new SimpleStaticDatabase(ts.toList, config)
   }

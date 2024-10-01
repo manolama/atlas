@@ -34,4 +34,14 @@ class DataExprSuite extends FunSuite {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("k1", "v1")), List("k1", "k2"))
     assertEquals(DataExpr.allKeys(expr), Set("k1", "k2"))
   }
+
+  test("stepless - consolidate") {
+    val expr = DataExpr.Sum(Query.Equal("name", "cpu"))
+    val context = Stepless.steplessContext(5)
+    val input = Stepless.ts(context, 1.0, 2.0, 3.0, 4.0, 5.0)
+    val cctxt = new EvalContext(context.start, context.end, 2, steplessLimit = Some(3))
+    val expected = Stepless.ts(cctxt, 1.5, 3.0, 5.0)
+    val actual = expr.eval(cctxt, List(input)).data.head
+    Stepless.assertEqualsWithMeta(cctxt, actual, expected)
+  }
 }

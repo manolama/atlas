@@ -2,8 +2,6 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DatapointMeta.checkForDifferences
 
-import scala.collection.mutable
-
 trait DatapointMetaEntry {
 
   def keys: List[String]
@@ -61,21 +59,6 @@ object DatapointMeta {
       case _                  => None
     }
   }
-
-//  def intersect(
-//    start: Long,
-//    end: Long,
-//    metaA: Option[DatapointMeta],
-//    metaB: Option[DatapointMeta]
-//  ): Option[DatapointMeta] = {
-//    (metaA, metaB) match {
-//      case (Some(a), Some(b)) =>
-//        checkForDifferences(start, end, a, b)
-//      case (Some(a), None) => Some(a)
-//      case (None, Some(b)) => Some(b)
-//      case (None, None)    => None
-//    }
-//  }
 
   def checkForDifferences(
     a: DatapointMetaEntry,

@@ -54,13 +54,13 @@ object TimeSeries {
     LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data, null)
   }
 
-  def apply(
-    tags: Map[String, String],
-    label: String,
-    data: TimeSeq
-  ): TimeSeries = {
-    LazyTimeSeries(tags, label, data, None)
-  }
+//  def apply(
+//    tags: Map[String, String],
+//    label: String,
+//    data: TimeSeq
+//  ): TimeSeries = {
+//    LazyTimeSeries(tags, label, data, None)
+//  }
 
   def apply(
     tags: Map[String, String],
@@ -69,13 +69,6 @@ object TimeSeries {
     meta: Option[DatapointMeta]
   ): TimeSeries = {
     LazyTimeSeries(tags, label, data, meta)
-  }
-
-  def apply(
-    tags: Map[String, String],
-    data: TimeSeq
-  ): TimeSeries = {
-    TimeSeries(tags, toLabel(tags), data)
   }
 
   def apply(
@@ -144,10 +137,14 @@ object TimeSeries {
 
     private[this] var aggrBuffer: ArrayTimeSeq = _
     private[this] var aggrTags: Map[String, String] = _
-    private[this] var meta: Option[DatapointMeta] = None
+    private[this] var meta: Option[DatapointMeta] = null
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.intersect(meta, t.meta)
+      if (meta == null) {
+        meta = t.meta
+      } else {
+        meta = DatapointMeta.intersect(meta, t.meta)
+      }
       if (aggrBuffer == null) {
         aggrBuffer = t.data.bounded(start, end)
         aggrTags = t.tags
@@ -175,10 +172,14 @@ object TimeSeries {
 
     private[this] var aggrBuffer: ArrayTimeSeq = _
     private[this] var aggrTags: Map[String, String] = _
-    private[this] var meta: Option[DatapointMeta] = None
+    private[this] var meta: Option[DatapointMeta] = null
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.intersect(meta, t.meta)
+      if (meta == null) {
+        meta = t.meta
+      } else {
+        meta = DatapointMeta.intersect(meta, t.meta)
+      }
       if (aggrBuffer == null) {
         aggrBuffer = t.data
           .mapValues(v => if (v.isNaN) Double.NaN else 1.0)
@@ -211,10 +212,14 @@ object TimeSeries {
 
     private[this] val sumAggregator = new SimpleAggregator(start, end, Math.addNaN)
     private[this] val countAggregator = new CountAggregator(start, end)
-    private[this] var meta: Option[DatapointMeta] = None
+    private[this] var meta: Option[DatapointMeta] = null
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.intersect(meta, t.meta)
+      if (meta == null) {
+        meta = t.meta
+      } else {
+        meta = DatapointMeta.intersect(meta, t.meta)
+      }
       sumAggregator.update(t)
       countAggregator.update(t)
     }

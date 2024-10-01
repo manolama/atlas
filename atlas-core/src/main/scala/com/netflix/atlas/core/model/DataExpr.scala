@@ -46,7 +46,7 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
       val label = if (offset.isZero) t.label else s"${t.label} (offset=$offsetStr)"
       if (step == t.data.step) t.withLabel(label)
       else {
-        TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
+        TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf), t.meta)
       }
     }
   }
