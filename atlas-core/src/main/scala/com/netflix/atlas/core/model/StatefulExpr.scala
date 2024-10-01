@@ -265,7 +265,7 @@ object StatefulExpr {
           state -= t.id
         else
           state(t.id) = algo.state
-        TimeSeries(t.tags, s"$name(${t.label})", bounded)
+        TimeSeries(t.tags, s"$name(${t.label})", bounded, t.meta)
       }
 
       // Update the stateful buffers for expressions that do not have an explicit value for

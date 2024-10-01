@@ -24,19 +24,19 @@ import scala.util.Failure
 import scala.util.Try
 
 class EvalContext(
-  s: Long,
-  e: Long,
+  val queryStart: Long,
+  val queryEnd: Long,
   val step: Long,
   val state: Map[StatefulExpr, Any] = IdentityMap.empty,
   val steplessLimit: Option[Long] = None
 ) {
 
-  require(s < e, s"start time must be less than end time ($s >= $e)")
+  require(queryStart < queryEnd, s"start time must be less than end time ($queryStart >= $queryEnd)")
 
   val noData: TimeSeries = TimeSeries.noData(step)
 
-  private var computedStart: Long = s
-  private var computedEnd: Long = steplessLimit.getOrElse(e)
+  private var computedStart: Long = steplessLimit.map(_ => 0L).getOrElse(queryStart)
+  private var computedEnd: Long = steplessLimit.getOrElse(queryEnd)
 
   /**
     * Buffer size that would be need to represent the result set based on the start time,
@@ -81,5 +81,12 @@ class EvalContext(
       computedStart = context.computedStart
     if (context.computedEnd < computedEnd)
       computedEnd = context.computedEnd
+  }
+
+  def cloneWithState(state: Map[StatefulExpr, Any]): EvalContext = {
+    val ctx = new EvalContext(queryStart, queryEnd, step, state, steplessLimit)
+    ctx.computedStart = computedStart
+    ctx.computedEnd = computedEnd
+    ctx
   }
 }

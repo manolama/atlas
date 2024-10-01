@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.model.Stepless.{assertEqualsWithMeta, steplessContext}
+
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -432,16 +434,14 @@ class PercentilesSuite extends FunSuite {
         TimeSeries(
           Map("name" -> "test", "percentile" -> bucket),
           seq
-        ),
-        List("job", s"UT Job {i}"),
-        List.empty
+        )
       )
     } toList
   }
 
   test("stepless distribution") {
     val input = steplessData(false)
-    val context = new EvalContext(0, 2, 1)
+    val context = steplessContext(2)
     val str = "name,test,:eq,(,25,50,90,),:percentiles"
     val expr = interpreter.execute(str).stack match {
       case (v: TimeSeriesExpr) :: _ => v
@@ -451,16 +451,16 @@ class PercentilesSuite extends FunSuite {
     assertEquals(rs.size, 3)
     val expected = List(95.5, 106, 122.8)
     for (i <- 0 until rs.size) {
-      for (x <- 0 until 2) {
+      for (x <- 0 until context.end.toInt) {
         assertEqualsDouble(rs(i).data(x), expected(i), 0.001)
-        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"UT Job ${x}")
+        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"My job ${x}")
       }
     }
   }
 
   test("stepless timer") {
     val input = steplessData(true)
-    val context = new EvalContext(0, 2, 1)
+    val context = steplessContext(2)
     val str = "name,test,:eq,(,25,50,90,),:percentiles"
     val expr = interpreter.execute(str).stack match {
       case (v: TimeSeriesExpr) :: _ => v
@@ -470,10 +470,46 @@ class PercentilesSuite extends FunSuite {
     assertEquals(rs.size, 3)
     val expected = List(9.55e-8, 1.06e-7, 1.228e-7)
     for (i <- 0 until rs.size) {
-      for (x <- 0 until 2) {
+      for (x <- 0 until context.end.toInt) {
         assertEqualsDouble(rs(i).data(x), expected(i), 0.001)
-        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"UT Job ${x}")
+        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"My job ${x}")
       }
     }
+  }
+
+  test("stepless sample count: dist, range") {
+    val input = steplessData(false)
+    val context = steplessContext(2)
+    val str = "name,test,:eq,50,106,:sample-count"
+    val expr = interpreter.execute(str).stack match {
+      case (v: TimeSeriesExpr) :: _ => v
+      case _                        => throw new IllegalArgumentException("invalid expr")
+    }
+    val rs = expr.eval(context, input).data
+    assertEqualsWithMeta(context, rs.head, Stepless.ts(context, 2.0, 2.0))
+  }
+
+  test("stepless sample count: dist, out of range") {
+    val input = steplessData(false)
+    val context = steplessContext(2)
+    val str = "name,test,:eq,5,50,:sample-count"
+    val expr = interpreter.execute(str).stack match {
+      case (v: TimeSeriesExpr) :: _ => v
+      case _                        => throw new IllegalArgumentException("invalid expr")
+    }
+    val rs = expr.eval(context, input).data
+    assertEquals(rs.head.label, context.noData.label)
+  }
+
+  test("stepless sample count: timer, range") {
+    val input = steplessData(true)
+    val context = steplessContext(2)
+    val str = "name,test,:eq,9.00e-8, 1.06e-7,:sample-count"
+    val expr = interpreter.execute(str).stack match {
+      case (v: TimeSeriesExpr) :: _ => v
+      case _                        => throw new IllegalArgumentException("invalid expr")
+    }
+    val rs = expr.eval(context, input).data
+    assertEqualsWithMeta(context, rs.head, Stepless.ts(context, 2.0, 2.0))
   }
 }

@@ -1,6 +1,7 @@
 package com.netflix.atlas.core.model
 
 import munit.FunSuite
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 
@@ -49,7 +50,7 @@ class DatapointMetaSuite extends FunSuite {
 
 case class MetaWrapper(
   timeSeries: TimeSeries,
-  metaData: List[String],
+  metaData: List[String] = List("job", s"My job {i}"),
   metaSkips: List[Boolean] = Nil
 ) extends TimeSeries {
 
@@ -81,4 +82,29 @@ case class MetaWrapper(
 
   /** The tags associated with this item. */
   override def tags: Map[String, String] = timeSeries.tags
+}
+
+object MetaWrapper {
+
+  def assertMeta(series: TimeSeries, timestamp: Long, metaData: List[String]): Unit = {
+    var map = Map.newBuilder[String, String]
+    for (i <- 0 until metaData.size by 2) {
+      val key = metaData(i)
+      val value = metaData(i + 1).replaceAll("\\{i\\}", timestamp.toString)
+      map += key -> value
+    }
+    val expected = map.result()
+    if (series.meta.isEmpty) {
+      throw new AssertionError("no meta object")
+    }
+    val actual = series.meta.get.datapointMeta(timestamp).getOrElse {
+      throw new AssertionError(s"no meta for $timestamp")
+    }
+
+    map = Map.newBuilder[String, String]
+    actual.keys.foreach { k =>
+      map += k -> actual.get(k).get
+    }
+    assertEquals(map.result(), expected)
+  }
 }

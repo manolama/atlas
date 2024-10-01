@@ -15,6 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.model.MetaWrapper.assertMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.steplessContext
 import munit.FunSuite
 
 class DesSuite extends FunSuite {
@@ -136,8 +139,6 @@ class DesSuite extends FunSuite {
     val expected = sdes.eval(context, List(unalignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(sdes, unalignedStream)
-    // println(expected.mkString(", "))
-    // println(result.map { case v => v(0).data.asInstanceOf[ArrayTimeSeq].data(0) }.mkString(", "))
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
         assertEquals(ts.size, 1)
@@ -149,5 +150,30 @@ class DesSuite extends FunSuite {
             assertEqualsDouble(v, r, 0.00001)
         }
     }
+  }
+
+  test("sdes: stepless") {
+    val context = steplessContext(14)
+    val ts =
+      Stepless.ts(context, 1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)
+    val results = sdes.eval(context, List(ts)).data.head
+    val expected = Stepless.ts(
+      context,
+      Double.NaN,
+      Double.NaN,
+      1.05,
+      1.1059,
+      1.61,
+      1.58918,
+      1.3900000000000001,
+      1.3708200000000001,
+      1.1800000000000002,
+      1.0616400000000001,
+      0.0,
+      0.1,
+      1.01,
+      1.02918
+    )
+    assertEqualsWithMeta(context, results, expected)
   }
 }

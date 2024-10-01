@@ -15,8 +15,10 @@
  */
 package com.netflix.atlas.core.model
 
-import java.time.Duration
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.steplessContext
 
+import java.time.Duration
 import munit.FunSuite
 
 class TrendSuite extends FunSuite {
@@ -73,7 +75,6 @@ class TrendSuite extends FunSuite {
     val context = new EvalContext(s, e, step, Map.empty)
     val expected = trend.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
     val result = eval(trend, alignedStream)
-
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
         assertEquals(ts.size, 1)
@@ -85,5 +86,34 @@ class TrendSuite extends FunSuite {
             assertEqualsDouble(v, r, 0.00001)
         }
     }
+  }
+
+  test("stepless") {
+    val context = steplessContext(14)
+    val input =
+      Stepless.ts(context, 1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)
+    val trend = StatefulExpr.Trend(
+      DataExpr.Sum(Query.Equal("name", "cpu")),
+      Duration.ofMillis(3)
+    )
+    val results = trend.eval(context, List(input)).data.head
+    val expected = Stepless.ts(
+      context,
+      Double.NaN,
+      Double.NaN,
+      1.3666666666666665,
+      1.5999999999999999,
+      1.5666666666666664,
+      1.4666666666666666,
+      1.2999999999999998,
+      1.1666666666666665,
+      0.7333333333333331,
+      0.3333333333333331,
+      0.3333333333333331,
+      0.6999999999999998,
+      1.0999999999999999,
+      1.1666666666666667
+    )
+    assertEqualsWithMeta(context, results, expected)
   }
 }
