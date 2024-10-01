@@ -164,6 +164,10 @@ class OffsetTimeSeq(seq: TimeSeq, offset: Long) extends TimeSeq {
   def step: Long = seq.step
 
   def apply(timestamp: Long): Double = seq(timestamp - offset)
+
+  override def toString: String = {
+    s"OffsetTimeSeq(offset=$offset,$seq)"
+  }
 }
 
 class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) extends TimeSeq {

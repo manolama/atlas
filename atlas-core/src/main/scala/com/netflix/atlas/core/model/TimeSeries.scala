@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.model.DatapointMeta.intersect
 import com.netflix.atlas.core.util.Math
 
 object TimeSeries {
@@ -146,7 +147,7 @@ object TimeSeries {
     private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.intersect(start, end, meta, t.meta)
+      meta = DatapointMeta.intersect(meta, t.meta)
       if (aggrBuffer == null) {
         aggrBuffer = t.data.bounded(start, end)
         aggrTags = t.tags
@@ -177,7 +178,7 @@ object TimeSeries {
     private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.intersect(start, end, meta, t.meta)
+      meta = DatapointMeta.intersect(meta, t.meta)
       if (aggrBuffer == null) {
         aggrBuffer = t.data
           .mapValues(v => if (v.isNaN) Double.NaN else 1.0)
@@ -213,7 +214,7 @@ object TimeSeries {
     private[this] var meta: Option[DatapointMeta] = None
 
     override def update(t: TimeSeries): Unit = {
-      meta = DatapointMeta.intersect(start, end, meta, t.meta)
+      meta = DatapointMeta.intersect(meta, t.meta)
       sumAggregator.update(t)
       countAggregator.update(t)
     }
@@ -251,7 +252,7 @@ trait TimeSeries extends TaggedItem {
 
   def binaryOp(ts: TimeSeries, labelFmt: String, f: BinaryOp): TimeSeries = {
     val newData = new BinaryOpTimeSeq(data, ts.data, f)
-    LazyTimeSeries(tags, labelFmt.format(label, ts.label), newData, meta)
+    LazyTimeSeries(tags, labelFmt.format(label, ts.label), newData, intersect(meta, ts.meta))
   }
 
   def withTags(ts: Map[String, String]): TimeSeries = {
@@ -270,7 +271,7 @@ trait TimeSeries extends TaggedItem {
 
   def blend(ts: TimeSeries): TimeSeries = {
     val newData = new BinaryOpTimeSeq(data, ts.data, Math.maxNaN)
-    LazyTimeSeries(ts.tags, ts.label, newData, meta)
+    LazyTimeSeries(ts.tags, ts.label, newData, intersect(meta, ts.meta))
   }
 
   // Create a copy with a modified time sequence.

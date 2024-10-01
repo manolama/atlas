@@ -1,6 +1,7 @@
 package com.netflix.atlas.core.model
 
-import java.util
+import com.netflix.atlas.core.model.DatapointMeta.checkForDifferences
+
 import scala.collection.mutable
 
 trait DatapointMetaEntry {
@@ -35,98 +36,81 @@ class MapMeta(data: Map[Long, Map[String, String]]) extends DatapointMeta {
 
 }
 
+case class LazyIntersection(
+  metaA: DatapointMeta,
+  metaB: DatapointMeta
+) extends DatapointMeta {
+
+  override def datapointMeta(timestamp: Long): Option[DatapointMetaEntry] = {
+    (metaA.datapointMeta(timestamp), metaB.datapointMeta(timestamp)) match {
+      case (Some(a), Some(b)) => checkForDifferences(a, b)
+      case _                  => None
+    }
+  }
+
+}
+
 object DatapointMeta {
 
   def intersect(
-    start: Long,
-    end: Long,
     metaA: Option[DatapointMeta],
     metaB: Option[DatapointMeta]
   ): Option[DatapointMeta] = {
     (metaA, metaB) match {
-      case (Some(a), Some(b)) =>
-        checkForDifferences(start, end, a, b)
-      case (Some(a), None) => Some(a)
-      case (None, Some(b)) => Some(b)
-      case (None, None)    => None
+      case (Some(a), Some(b)) => Some(LazyIntersection(a, b))
+      case _                  => None
     }
   }
 
-  private def checkForDifferences(
-    start: Long,
-    end: Long,
-    metaA: DatapointMeta,
-    metaB: DatapointMeta
-  ): Option[DatapointMeta] = {
-    // same ref, so no need to check
-    if (metaA == metaB) {
-      return Some(metaA)
+//  def intersect(
+//    start: Long,
+//    end: Long,
+//    metaA: Option[DatapointMeta],
+//    metaB: Option[DatapointMeta]
+//  ): Option[DatapointMeta] = {
+//    (metaA, metaB) match {
+//      case (Some(a), Some(b)) =>
+//        checkForDifferences(start, end, a, b)
+//      case (Some(a), None) => Some(a)
+//      case (None, Some(b)) => Some(b)
+//      case (None, None)    => None
+//    }
+//  }
+
+  def checkForDifferences(
+    a: DatapointMetaEntry,
+    b: DatapointMetaEntry
+  ): Option[DatapointMetaEntry] = {
+    // May not be worth it, but the assumption here is that we're dealing with metrics
+    // for the same set of meta. In that case we just validate the set is the same
+    // without creating a new object.
+    if (a.keys != b.keys) {
+      return merge(a, b)
     }
-
-    // for series with meta, we currently assume a step of 1
-    for (i <- start until end) {
-      (metaA.datapointMeta(i), metaB.datapointMeta(i)) match {
-        case (Some(a), Some(b)) =>
-          if (a.keys != b.keys) {
-            return merge(start, end, metaA, metaB)
-          }
-          a.keys.foreach { key =>
-            if (a.get(key) != b.get(key)) {
-              return merge(start, end, metaA, metaB)
-            }
-          }
-
-        case (Some(a), None) =>
-          if (a.keys.nonEmpty) {
-            return merge(start, end, metaA, metaB)
-          }
-
-        case (None, Some(b)) =>
-          if (b.keys.nonEmpty) {
-            return merge(start, end, metaA, metaB)
-          }
-        case (None, None) => // No-op
+    a.keys.foreach { key =>
+      if (a.get(key) != b.get(key)) {
+        return merge(a, b)
       }
     }
-    // same so just return one ref.
-    Some(metaA)
+    Some(a)
   }
 
   private def merge(
-    start: Long,
-    end: Long,
-    metaA: DatapointMeta,
-    metaB: DatapointMeta
-  ): Option[DatapointMeta] = {
-    val datapointMeta = Map.newBuilder[Long, Map[String, String]]
-    // for series with meta, we currently assume a step of 1
-    for (i <- start until end) {
-      var innerMap: mutable.Builder[(String, String), Map[String, String]] = null
-      (metaA.datapointMeta(i), metaB.datapointMeta(i)) match {
-        case (Some(a), Some(b)) =>
-          val intersection = a.keys.intersect(b.keys)
-          intersection.foreach { key =>
-            if (a.get(key) == b.get(key)) {
-              if (innerMap == null) {
-                innerMap = Map.newBuilder[String, String]
-              }
-              innerMap += key -> a.get(key).get
-            }
-          }
-        case (Some(_), None) =>
-        case (None, Some(_)) =>
-        case (None, None)    => // No-op
-      }
-      if (innerMap != null) {
-        datapointMeta += i -> innerMap.result()
+    a: DatapointMetaEntry,
+    b: DatapointMetaEntry
+  ): Option[DatapointMetaEntry] = {
+    val builder = Map.newBuilder[String, String]
+    val intersection = a.keys.intersect(b.keys)
+    intersection.foreach { key =>
+      if (a.get(key) == b.get(key)) {
+        builder += key -> a.get(key).get
       }
     }
-
-    val results = datapointMeta.result()
+    val results = builder.result()
     if (results.isEmpty) {
       None
     } else {
-      Some(new MapMeta(results))
+      Some(new MapMetaEntry(results))
     }
   }
 }
