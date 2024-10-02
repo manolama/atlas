@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
 import com.netflix.atlas.core.model.Stepless.steplessContext
 import munit.FunSuite
 
@@ -56,6 +56,6 @@ class IntegralSuite extends FunSuite {
     val input = Stepless.ts(context, Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0)
     val results = expr.eval(context, List(input)).data.head
     val expected = Stepless.ts(context, Double.NaN, 35.0, 35.0, 35.0, -6.0, -3.0)
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 }

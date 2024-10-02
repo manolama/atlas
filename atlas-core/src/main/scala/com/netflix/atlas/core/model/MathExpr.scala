@@ -892,9 +892,13 @@ object MathExpr {
 
         // Count for each bucket
         val counts = new Array[Long](PercentileBuckets.length())
-        var meta: Option[DatapointMeta] = None
+        var meta: Option[DatapointMeta] = null
         val byBucket = filtered.groupBy { t =>
-          meta = DatapointMeta.intersect(meta, t.meta)
+          if (meta == null) {
+            meta = t.meta
+          } else {
+            meta = DatapointMeta.intersect(meta, t.meta)
+          }
           // Value should have a prefix of T or D, followed by 4 digit hex integer indicating the
           // bucket index
           val idx = t.tags(TagKey.percentile).substring(1)

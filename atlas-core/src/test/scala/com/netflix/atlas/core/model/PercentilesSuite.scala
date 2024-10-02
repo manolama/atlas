@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
 import com.netflix.atlas.core.model.Stepless.steplessContext
 
 import java.util.concurrent.TimeUnit
@@ -453,10 +453,8 @@ class PercentilesSuite extends FunSuite {
     assertEquals(rs.size, 3)
     val expected = List(95.5, 106, 122.8)
     for (i <- 0 until rs.size) {
-      for (x <- 0 until context.end.toInt) {
-        assertEqualsDouble(rs(i).data(x), expected(i), 0.001)
-        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"My job ${x}")
-      }
+      val ts = Stepless.ts(context, expected(i), expected(i))
+      Stepless.assertEqualsWithMetaFunc(context, rs(i), ts)
     }
   }
 
@@ -472,10 +470,8 @@ class PercentilesSuite extends FunSuite {
     assertEquals(rs.size, 3)
     val expected = List(9.55e-8, 1.06e-7, 1.228e-7)
     for (i <- 0 until rs.size) {
-      for (x <- 0 until context.end.toInt) {
-        assertEqualsDouble(rs(i).data(x), expected(i), 0.001)
-        assertEquals(rs(i).meta.get.datapointMeta(x).get.get("job").get, s"My job ${x}")
-      }
+      val ts = Stepless.ts(context, expected(i), expected(i))
+      Stepless.assertEqualsWithMetaFunc(context, rs(i), ts)
     }
   }
 
@@ -488,7 +484,7 @@ class PercentilesSuite extends FunSuite {
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
     val rs = expr.eval(context, input).data
-    assertEqualsWithMeta(context, rs.head, Stepless.ts(context, 2.0, 2.0))
+    assertEqualsWithMetaFunc(context, rs.head, Stepless.ts(context, 2.0, 2.0))
   }
 
   test("stepless sample count: dist, out of range") {
@@ -512,6 +508,6 @@ class PercentilesSuite extends FunSuite {
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
     val rs = expr.eval(context, input).data
-    assertEqualsWithMeta(context, rs.head, Stepless.ts(context, 2.0, 2.0))
+    assertEqualsWithMetaFunc(context, rs.head, Stepless.ts(context, 2.0, 2.0))
   }
 }

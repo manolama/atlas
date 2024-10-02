@@ -153,7 +153,7 @@ class GraphUriSuite extends FunSuite {
   }
 
   test("stepless") {
-    val cfg = parseUri(s"/api/v1/graph?q=name,foo,:eq,:sum&stepless=true")
+    val cfg = parseUri(s"/api/v1/graph?q=name,foo,:eq,:sum&stepless=30")
     System.out.println(cfg.evalContext)
   }
 }

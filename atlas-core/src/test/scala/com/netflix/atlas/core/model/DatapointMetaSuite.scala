@@ -1,9 +1,8 @@
 package com.netflix.atlas.core.model
 
+import munit.Assertions.assertEquals
 import munit.FunSuite
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertSame
 
 class DatapointMetaSuite extends FunSuite {
 
@@ -114,5 +113,31 @@ object MetaWrapper {
       map += k -> actual.get(k).get
     }
     assertEquals(map.result(), expected)
+  }
+
+  def assertMeta(series: TimeSeries, timestamp: Long, metaData: DatapointMeta): Unit = {
+    if (series.meta.isEmpty) {
+      throw new AssertionError("no meta object")
+    }
+    val expMeta = metaData.datapointMeta(timestamp)
+    val actualMeta = series.meta.get.datapointMeta(timestamp)
+    (expMeta, actualMeta) match {
+      case (Some(e), Some(a)) =>
+        assertEquals(metaToMap(a), metaToMap(e), s"Mismatch at ${timestamp}")
+      case (None, None) =>
+      // all good
+      case _ =>
+        throw new AssertionError(
+          s"meta mismatch: actual: $actualMeta != expected: $expMeta @ ${timestamp}"
+        )
+    }
+  }
+
+  def metaToMap(meta: DatapointMetaEntry): Map[String, String] = {
+    val map = Map.newBuilder[String, String]
+    meta.keys.foreach { k =>
+      map += k -> meta.get(k).get
+    }
+    map.result()
   }
 }

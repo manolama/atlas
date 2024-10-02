@@ -91,6 +91,6 @@ class FilterExprSuite extends FunSuite {
     val input = Stepless.ts(context, 1.0, 2.0, 3.0, 4.0, 5.0)
     val expected = Stepless.ts(context, 5.0, 5.0, 5.0, 5.0, 5.0)
     val actual = expr.eval(context, List(input)).data.head
-    Stepless.assertEqualsWithMeta(context, actual, expected)
+    Stepless.assertEqualsWithMetaFunc(context, actual, expected)
   }
 }

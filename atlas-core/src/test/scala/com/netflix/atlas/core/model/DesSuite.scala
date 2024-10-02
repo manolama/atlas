@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MetaWrapper.assertMeta
-import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
 import com.netflix.atlas.core.model.Stepless.steplessContext
 import munit.FunSuite
 
@@ -176,6 +176,6 @@ class DesSuite extends FunSuite {
       1.01,
       1.02918
     )
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 }

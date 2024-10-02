@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
 import com.netflix.atlas.core.model.Stepless.steplessContext
 
 import java.time.Duration
@@ -115,6 +115,6 @@ class TrendSuite extends FunSuite {
       1.0999999999999999,
       1.1666666666666667
     )
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 }

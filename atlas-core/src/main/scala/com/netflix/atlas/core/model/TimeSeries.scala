@@ -51,16 +51,16 @@ object TimeSeries {
   def noData(query: Query, step: Long): TimeSeries = {
     val tags = Query.tags(query)
     val data = new FunctionTimeSeq(DsType.Gauge, step, _ => Double.NaN)
-    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data, null)
+    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data, None)
   }
 
-//  def apply(
-//    tags: Map[String, String],
-//    label: String,
-//    data: TimeSeq
-//  ): TimeSeries = {
-//    LazyTimeSeries(tags, label, data, None)
-//  }
+  def apply(
+    tags: Map[String, String],
+    label: String,
+    data: TimeSeq
+  ): TimeSeries = {
+    LazyTimeSeries(tags, label, data, None)
+  }
 
   def apply(
     tags: Map[String, String],
@@ -74,7 +74,7 @@ object TimeSeries {
   def apply(
     tags: Map[String, String],
     data: TimeSeq,
-    meta: Option[DatapointMeta]
+    meta: Option[DatapointMeta] = None
   ): TimeSeries = {
     TimeSeries(tags, toLabel(tags), data, meta)
   }
@@ -160,7 +160,7 @@ object TimeSeries {
 
     override def result(): TimeSeries = {
       require(aggrBuffer != null, "must have 1 or more time series to perform aggregation")
-      TimeSeries(aggrTags, aggrBuffer, meta)
+      TimeSeries(aggrTags, aggrBuffer, if (meta == null) None else meta)
     }
   }
 
@@ -201,7 +201,7 @@ object TimeSeries {
 
     override def result(): TimeSeries = {
       require(aggrBuffer != null, "must have 1 or more time series to perform aggregation")
-      TimeSeries(aggrTags, aggrBuffer, meta)
+      TimeSeries(aggrTags, aggrBuffer, if (meta == null) None else meta)
     }
   }
 
@@ -232,7 +232,7 @@ object TimeSeries {
       val sum = sumAggregator.result()
       val count = countAggregator.result()
       val seq = new BinaryOpTimeSeq(sum.data, count.data, _ / _)
-      TimeSeries(sum.tags, seq, meta)
+      TimeSeries(sum.tags, seq, if (meta == null) None else meta)
     }
   }
 }
@@ -285,12 +285,15 @@ trait TimeSeries extends TaggedItem {
   }
 
   def offset(dur: Long): TimeSeries = {
-    LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur), meta)
+    val offsetMeta = meta.map(m => OffsetMeta(dur, m))
+    LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur), offsetMeta)
   }
 }
 
 case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)
-    extends TimeSeries
+    extends TimeSeries {
+  override val meta: Option[DatapointMeta] = None
+}
 
 case class LazyTimeSeries(
   tags: Map[String, String],

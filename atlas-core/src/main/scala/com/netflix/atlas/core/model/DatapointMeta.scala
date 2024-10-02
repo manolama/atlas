@@ -16,6 +16,14 @@ trait DatapointMeta {
 
 }
 
+case class OffsetMeta(offset: Long, meta: DatapointMeta) extends DatapointMeta {
+
+  override def datapointMeta(timestamp: Long): Option[DatapointMetaEntry] = {
+    meta.datapointMeta(timestamp - offset)
+  }
+
+}
+
 class MapMetaEntry(map: Map[String, String]) extends DatapointMetaEntry {
 
   override def keys: List[String] = map.keys.toList
@@ -26,7 +34,7 @@ class MapMetaEntry(map: Map[String, String]) extends DatapointMetaEntry {
     keys.map { case k => s"$k=${get(k).getOrElse("")}" }.mkString(", ")
 }
 
-class MapMeta(data: Map[Long, Map[String, String]]) extends DatapointMeta {
+case class MapMeta(data: Map[Long, Map[String, String]]) extends DatapointMeta {
 
   override def datapointMeta(timestamp: Long): Option[DatapointMetaEntry] = {
     data.get(timestamp.toInt).map(new MapMetaEntry(_))

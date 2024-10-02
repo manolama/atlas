@@ -42,6 +42,6 @@ class DataExprSuite extends FunSuite {
     val cctxt = new EvalContext(context.start, context.end, 2, steplessLimit = Some(3))
     val expected = Stepless.ts(cctxt, 1.5, 3.0, 5.0)
     val actual = expr.eval(cctxt, List(input)).data.head
-    Stepless.assertEqualsWithMeta(cctxt, actual, expected)
+    Stepless.assertEqualsWithMetaFunc(cctxt, actual, expected)
   }
 }

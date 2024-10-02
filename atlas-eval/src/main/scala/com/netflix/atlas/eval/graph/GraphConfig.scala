@@ -46,7 +46,7 @@ case class GraphConfig(
   isBrowser: Boolean,
   isAllowedFromBrowser: Boolean,
   uri: String,
-  steplessLimit: Option[Int] = None // used to indicate a query with arbitrary ranges
+  steplessLimit: Option[Long] = None // used to indicate a query with arbitrary ranges
   // between data points. Times change to be 0 based.
 ) {
 
@@ -106,7 +106,7 @@ case class GraphConfig(
 
   val evalContext: EvalContext = {
     System.out.println("GONNA make the graph config here!@!!!!")
-    EvalContext(
+    new EvalContext(
       fstart.toEpochMilli,
       fend.toEpochMilli + stepSize,
       stepSize,
@@ -138,9 +138,10 @@ case class GraphConfig(
     var gdef = GraphDef(
       title = title,
       timezones = timezoneIds,
-      startTime = Instant.ofEpochMilli(evalContext.getStart),
-      endTime = Instant.ofEpochMilli(evalContext.getEnd),
-      step = evalContext.getStep,
+      // for stepless graphs, this will pass the synthetic time at 0 instead of query time.
+      startTime = Instant.ofEpochMilli(evalContext.start),
+      endTime = Instant.ofEpochMilli(evalContext.end),
+      step = evalContext.step,
       width = flags.width,
       height = flags.height,
       layout = flags.layout,

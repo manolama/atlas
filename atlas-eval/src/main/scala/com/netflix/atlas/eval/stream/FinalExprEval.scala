@@ -205,7 +205,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
             // Use an identity map for the state to ensure that multiple equivalent stateful
             // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
             val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
-            val context = EvalContext(timestamp, timestamp + step, step, state)
+            val context = new EvalContext(timestamp, timestamp + step, step, state)
             try {
               val result = styleExpr.expr.eval(context, dataExprToDatapoints)
               states(styleExpr) = result.state

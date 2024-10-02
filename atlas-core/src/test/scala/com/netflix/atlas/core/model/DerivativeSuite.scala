@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MetaWrapper.assertMeta
-import com.netflix.atlas.core.model.Stepless.{assertEqualsWithMeta, steplessContext}
+import com.netflix.atlas.core.model.Stepless.{assertEqualsWithMetaFunc, steplessContext}
 import com.netflix.atlas.core.util.IdentityMap
 import munit.FunSuite
 
@@ -89,6 +89,6 @@ class DerivativeSuite extends FunSuite {
     val input = Stepless.ts(context, 7.0, 42.0, Double.NaN, 43.0, 2.0, 5.0)
     val results = expr.eval(context, List(input)).data.head
     val expected = Stepless.ts(context, Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0)
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 }

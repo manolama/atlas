@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
-import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
 import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
@@ -327,6 +327,6 @@ class MathGroupBySuite extends FunSuite {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("name"))
     val expected = Stepless.ts(context, 2.0, 4.0, 6.0, 8.0, 10.0)
     val actual = expr.eval(context, List(input1, input2)).data.head
-    assertEqualsWithMeta(context, actual, expected)
+    assertEqualsWithMetaFunc(context, actual, expected)
   }
 }

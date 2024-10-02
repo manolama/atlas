@@ -1,6 +1,6 @@
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Stepless.assertEqualsWithMeta
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
 import com.netflix.atlas.core.model.Stepless.steplessContext
 import munit.FunSuite
 
@@ -29,7 +29,7 @@ class StatefulExprSuite extends FunSuite {
       0.0,
       1.0
     )
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 
   test("rolling-count: stepless") {
@@ -40,7 +40,7 @@ class StatefulExprSuite extends FunSuite {
     val results = trend.eval(context, List(input)).data.head
     val expected =
       Stepless.ts(context, 1.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 2.0, 1.0, 1.0, 2.0, 3.0, 3.0)
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 
   test("rolling-min: stepless") {
@@ -51,7 +51,7 @@ class StatefulExprSuite extends FunSuite {
     val results = trend.eval(context, List(input)).data.head
     val expected =
       Stepless.ts(context, 1.0, 1.0, 1.0, 1.0, 1.0, 1.3, 1.2, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 
   test("rolling-max: stepless") {
@@ -62,7 +62,7 @@ class StatefulExprSuite extends FunSuite {
     val results = trend.eval(context, List(input)).data.head
     val expected =
       Stepless.ts(context, 1.0, 1.5, 1.6, 1.7, 1.7, 1.7, 1.7, 1.7, 1.4, 1.3, 1.2, 1.1, 1.2, 1.2)
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 
   test("rolling-mean: stepless") {
@@ -89,6 +89,6 @@ class StatefulExprSuite extends FunSuite {
         1.09999,
         1.16666
       )
-    assertEqualsWithMeta(context, results, expected)
+    assertEqualsWithMetaFunc(context, results, expected)
   }
 }

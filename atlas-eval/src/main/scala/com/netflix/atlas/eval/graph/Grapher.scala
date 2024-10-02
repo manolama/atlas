@@ -115,7 +115,7 @@ case class Grapher(settings: DefaultSettings) {
       .map(v => Features.valueOf(v.toUpperCase(Locale.US)))
       .getOrElse(Features.STABLE)
 
-    val steplessLimit = params.get("stepless").map(Integer.parseInt)
+    val steplessLimit = params.get("stepless").map(Integer.parseInt).map(_.toLong)
 
     import com.netflix.atlas.chart.GraphConstants.*
     val axes = (0 until MaxYAxis).map(i => i -> newAxis(params, i)).toMap
@@ -260,9 +260,11 @@ case class Grapher(settings: DefaultSettings) {
     if (offset == 0) expr.eval(context, matches).data
     else {
       val offsetContext = context.withOffset(expr.offset.toMillis)
-      expr.eval(offsetContext, matches).data.map { t =>
+      val results = expr.eval(offsetContext, matches).data.map { t =>
         t.offset(offset)
       }
+      context.steplessLimit.map(_ => context.update(offsetContext))
+      results
     }
   }
 
