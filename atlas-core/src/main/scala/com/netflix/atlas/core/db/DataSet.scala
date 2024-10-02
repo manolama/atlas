@@ -290,7 +290,7 @@ private[db] object DataSet {
   val step = 60000
 
   def constant(v: Double): TimeSeries = {
-    TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v), None)
+    TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v))
   }
 
   def noise(size: Int, noise: Double, series: TimeSeries): TimeSeries = {
@@ -311,7 +311,7 @@ private[db] object DataSet {
       val v = series.data(t) + offset
       if (v < 0.0) 0.0 else v
     }
-    TimeSeries(Map("name" -> "noise"), new FunctionTimeSeq(DsType.Gauge, step, f), None)
+    TimeSeries(Map("name" -> "noise"), new FunctionTimeSeq(DsType.Gauge, step, f))
   }
 
   def wave(min: Double, max: Double, wavelength: Duration): TimeSeries = {
@@ -322,7 +322,7 @@ private[db] object DataSet {
       val yoffset = min + amp
       amp * sin(t) + yoffset
     }
-    TimeSeries(Map("name" -> "wave"), new FunctionTimeSeq(DsType.Gauge, step, f), None)
+    TimeSeries(Map("name" -> "wave"), new FunctionTimeSeq(DsType.Gauge, step, f))
   }
 
   def interval(ts1: TimeSeries, ts2: TimeSeries, s: Long, e: Long): TimeSeries = {
@@ -331,7 +331,7 @@ private[db] object DataSet {
       val ts = if (t >= s && t < e) ts2 else ts1
       ts.data(t)
     }
-    TimeSeries(Map("name" -> "interval"), new FunctionTimeSeq(DsType.Gauge, step, f), None)
+    TimeSeries(Map("name" -> "interval"), new FunctionTimeSeq(DsType.Gauge, step, f))
   }
 
   /**

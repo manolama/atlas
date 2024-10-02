@@ -29,8 +29,7 @@ class ClampSuite extends FunSuite {
       0L,
       step,
       Array[Double](1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0)
-    ),
-    None
+    )
   )
 
   private val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)

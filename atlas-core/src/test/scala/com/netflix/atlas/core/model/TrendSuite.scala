@@ -50,8 +50,7 @@ class TrendSuite extends FunSuite {
       0L,
       step,
       Array[Double](1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)
-    ),
-    None
+    )
   )
 
   private val trend = StatefulExpr.Trend(

@@ -260,7 +260,7 @@ class TimeSeriesExprSuite extends FunSuite {
                 incrResults.tail.foreach { m =>
                   seq.update(m(t.id).head.data)(Math.maxNaN)
                 }
-                TimeSeries(t.tags, t.label, seq, None)
+                TimeSeries(t.tags, t.label, seq)
               }
             )
             assertEquals(incrRS.expr, expr)
@@ -283,7 +283,7 @@ class TimeSeriesExprSuite extends FunSuite {
 
   def rollingCount2: TimeSeries = {
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, t => if (t == 0L) 1.0 else 2.0)
-    TimeSeries(Map("name" -> "1.0"), "rolling-count(1.0)", seq, None)
+    TimeSeries(Map("name" -> "1.0"), "rolling-count(1.0)", seq)
   }
 
   def byName: List[TimeSeries] = constants.zipWithIndex.map {
@@ -325,12 +325,12 @@ class TimeSeriesExprSuite extends FunSuite {
 
     // Assumes starting at time 0, for amount calculation
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, t => amount + amount * (t / 60000))
-    TimeSeries(tags, label, seq, None)
+    TimeSeries(tags, label, seq)
   }
 
   def integralDerivative: TimeSeries = {
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, t => if (t == 0L) Double.NaN else 1.0)
-    TimeSeries(Map("name" -> "1.0"), "derivative(integral(1.0))", seq, None)
+    TimeSeries(Map("name" -> "1.0"), "derivative(integral(1.0))", seq)
   }
 
   def const(t: TimeSeries): Params = Params(constants, List(t))
@@ -343,17 +343,17 @@ class TimeSeriesExprSuite extends FunSuite {
 
   def ts(tags: Map[String, String], v: Double): TimeSeries = {
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, _ => v)
-    TimeSeries(tags, seq, None)
+    TimeSeries(tags, seq)
   }
 
   def ts(tags: Map[String, String], label: String, v: Double): TimeSeries = {
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, _ => v)
-    TimeSeries(tags, label, seq, None)
+    TimeSeries(tags, label, seq)
   }
 
   def ts(v: Double): TimeSeries = {
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, _ => v)
-    TimeSeries(Map("name" -> v.toString), v.toString, seq, None)
+    TimeSeries(Map("name" -> v.toString), v.toString, seq)
   }
 
   def bounded(data: List[TimeSeries], ctxt: EvalContext): List[TimeSeries] = {
@@ -366,7 +366,7 @@ class TimeSeriesExprSuite extends FunSuite {
 
     val ts = (0 to 10).map { i =>
       val seq = new FunctionTimeSeq(DsType.Gauge, 60000, _ => i)
-      TimeSeries(Map("name" -> i.toString, "type" -> "constant"), seq, None)
+      TimeSeries(Map("name" -> i.toString, "type" -> "constant"), seq)
     }
     ts.toList
   }

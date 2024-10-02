@@ -125,5 +125,4 @@ class MapStepTimeSeqSuite extends FunSuite {
       map(DsType.Gauge, 4, 3, Sum, 1.0)
     }
   }
-
 }
