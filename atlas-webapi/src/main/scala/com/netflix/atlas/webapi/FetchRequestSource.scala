@@ -76,7 +76,7 @@ object FetchRequestSource {
     val chunks = {
       val step = graphCfg.roundedStepSize
       val (fstart, fend) = roundToStep(step, graphCfg.resStart, graphCfg.resEnd)
-      EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
+      new EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
         .partition(60 * step, ChronoUnit.MILLIS)
     }
 
@@ -202,7 +202,7 @@ object FetchRequestSource {
                 if (metadata)
                   Some(graphCfg.flags.axisPalette(graphCfg.settings, s.axis.getOrElse(0)))
                 else None
-              val context = chunk.context.copy(state = state)
+              val context = chunk.context.cloneWithState(state)
               val result = s.expr.eval(context, chunk.data)
               state = result.state
               result.data

@@ -119,7 +119,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("sum") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
     val expr = DataExpr.Sum(Query.Equal("name", "cpu"))
     val results = db.execute(context, expr)
 
@@ -134,7 +134,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("sum, no matching data") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
     val expr = DataExpr.Sum(Query.Equal("name", "foo"))
     val results = db.execute(context, expr)
 
@@ -149,7 +149,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("sum, no tables for part of range") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(600).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(600).toEpochMilli, step)
     val expr = DataExpr.Sum(Query.Equal("name", "cpu"))
     val results = db.execute(context, expr)
 
@@ -164,7 +164,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("requests sum") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
     val expr = DataExpr.Sum(Query.Equal("name", "requests"))
     val results = db.execute(context, expr)
 
@@ -179,7 +179,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("requests sum db only") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
     val expr = DataExpr.Sum(Query.Equal("name", "requests").and(Query.Equal("nf.app", "db")))
     val results = db.execute(context, expr)
 
@@ -194,7 +194,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("requests sum group by app") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "requests")), List("nf.app"))
     val results = db.execute(context, expr)
 
@@ -211,7 +211,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("requests sum with cpu") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, step)
     val expr =
       DataExpr.Sum(Query.In("name", List("requests", "cpu")).and(Query.Equal("nf.app", "www")))
     val results = db.execute(context, expr)
@@ -227,7 +227,7 @@ class PostgresDatabaseSuite extends PostgresSuite {
   test("requests sum consolidated") {
     populateSelectTables()
     val db = new PostgresDatabase(service)
-    val context = EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, 2 * step)
+    val context = new EvalContext(time.toEpochMilli, time.plusSeconds(360).toEpochMilli, 2 * step)
     val expr =
       DataExpr.Sum(Query.In("name", List("requests", "cpu")).and(Query.Equal("nf.app", "www")))
     val results = db.execute(context, expr)
