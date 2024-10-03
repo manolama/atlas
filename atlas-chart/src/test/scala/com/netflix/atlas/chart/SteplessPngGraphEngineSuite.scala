@@ -9,7 +9,14 @@ import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
-import com.netflix.atlas.core.model.{ArrayTimeSeq, BasicTimeSeries, DatapointMeta, DsType, ItemId, MetaWrapper, TimeSeq, TimeSeries}
+import com.netflix.atlas.core.model.ArrayTimeSeq
+import com.netflix.atlas.core.model.BasicTimeSeries
+import com.netflix.atlas.core.model.DatapointMeta
+import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.ItemId
+import com.netflix.atlas.core.model.MetaWrapper
+import com.netflix.atlas.core.model.TimeSeq
+import com.netflix.atlas.core.model.TimeSeries
 import munit.FunSuite
 
 import java.awt.Color
@@ -49,7 +56,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
           endTime = Instant.ofEpochMilli(endTime),
           step = step,
           plots = List(plotDef),
-          stepless = true
+          steplessLimit = Some(30)
         )
       )
       check(s"${name}.png", graphDef)
@@ -130,7 +137,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
       endTime = Instant.ofEpochMilli(30),
       step = step,
       plots = List(plotDef),
-      stepless = true,
+      steplessLimit = Some(30),
       timezones = List(ZoneOffset.UTC, ZoneId.of("America/Los_Angeles"))
     )
     check("single_multix.png", graphDef)
@@ -160,7 +167,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
           endTime = Instant.ofEpochMilli(endTime),
           step = step,
           plots = List(plotDef),
-          stepless = true
+          steplessLimit = Some(30)
         )
       )
       check(s"${name}.png", graphDef)
@@ -239,7 +246,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
       endTime = Instant.ofEpochMilli(30),
       step = step,
       plots = plotDefs,
-      stepless = true
+      steplessLimit = Some(30)
     )
     check("multi_wave_multiy.png", graphDef)
   }

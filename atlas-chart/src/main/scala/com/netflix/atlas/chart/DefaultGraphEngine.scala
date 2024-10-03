@@ -103,7 +103,7 @@ class DefaultGraphEngine extends PngGraphEngine {
               Some(label),
               showStats,
               entriesPerPlot,
-              config.stepless
+              config.steplessLimit
             )
         }
       } else {
@@ -117,7 +117,7 @@ class DefaultGraphEngine extends PngGraphEngine {
             None,
             showStats,
             entriesPerPlot,
-            config.stepless
+            config.steplessLimit
           )
         }
       }
@@ -127,7 +127,7 @@ class DefaultGraphEngine extends PngGraphEngine {
       val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
       val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
       val step = Strings.toString(Duration.ofMillis(config.step))
-      if (!config.stepless) {
+      if (config.steplessLimit.getOrElse(0L) < 1) {
         val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
         belowCanvas += HorizontalPadding(15)
         belowCanvas += Text(

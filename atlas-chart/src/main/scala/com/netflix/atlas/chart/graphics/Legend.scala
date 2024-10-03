@@ -46,7 +46,7 @@ case class Legend(
   label: Option[String],
   showStats: Boolean,
   maxEntries: Int,
-  stepless: Boolean
+  steplessLimit: Option[Long]
 ) extends Element
     with VariableHeight {
 
@@ -66,7 +66,7 @@ case class Legend(
   private val entries = plot.legendData
     .take(maxEntries)
     .flatMap { data =>
-      if (stepless) {
+      if (steplessLimit.getOrElse(0L) > 0L) {
         List(HorizontalPadding(2), MetaLegendEntry(graphDef, styles, plot, data, graph))
       } else {
         List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))

@@ -144,7 +144,7 @@ object JsonCodec {
     gen.writeStringField("legendType", config.legendType.name())
     gen.writeBooleanField("onlyGraph", config.onlyGraph)
     gen.writeStringField("theme", config.themeName)
-    gen.writeBooleanField("stepless", config.stepless)
+    config.steplessLimit.map(v => gen.writeNumberField("steplessLimit", v))
 
     if (config.loadTime > 0) {
       gen.writeNumberField("loadTime", config.loadTime)
@@ -427,7 +427,7 @@ object JsonCodec {
       warnings       = node.get("warnings").elements.asScala.map(_.asText()).toList,
       themeName      = Option(node.get("theme")).fold(ChartSettings.defaultTheme)(_.asText()),
       renderingHints = processRenderingHints(node.get("renderingHints")),
-      stepless       = Option(node.get("stepless")).fold(false)(_.asBoolean())
+      steplessLimit  = Option(node.get("steplessLimit")).map(_.asLong())
     )
     // format: on
   }
