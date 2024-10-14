@@ -6,14 +6,14 @@ import org.junit.Assert.assertTrue
 
 object Stepless {
 
-  val s = 1704067200000L
+  //val s = 1704067200000L
 
   def steplessContext(n: Int): EvalContext = {
     val step = 1L
 
-    val e = s + (n * step * 1000L)
-    val context = new EvalContext(s, e, step, steplessLimit = Some(n))
-    context.update(0, n)
+    val s = 0L
+    val e = n * step
+    val context = EvalContext(s, e, step, steplessLimit = Some(n))
     context
   }
 
@@ -27,7 +27,11 @@ object Stepless {
     MetaWrapper(TimeSeries(Map("name" -> "cpu", "node" -> "i-1"), seq, None))
   }
 
-  def assertEqualsWithMetaFunc(context: EvalContext, actual: TimeSeries, expected: TimeSeries): Unit = {
+  def assertEqualsWithMetaFunc(
+    context: EvalContext,
+    actual: TimeSeries,
+    expected: TimeSeries
+  ): Unit = {
     for (i <- context.start until context.end) {
       assertEqualsDouble(
         actual.data(i),
@@ -51,6 +55,7 @@ object Stepless {
         0.00001,
         s"values are not the same at index ${i}"
       )
+      System.out.println(s"Act: ${actual.data(i)}  Exp: ${expected.data(i)}")
       assertMeta(actual, i, expected.meta.get)
     }
   }

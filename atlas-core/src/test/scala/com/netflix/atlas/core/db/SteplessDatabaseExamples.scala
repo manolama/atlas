@@ -21,9 +21,9 @@ import scala.collection.mutable
 
 class SteplessDatabaseExamples extends FunSuite {
 
-  val end = 1706572800000L
   val limit = 5
   val dtFormat = DateTimeFormatter.ofPattern("dd'T'HH:mm").withZone(ZoneId.of("UTC"))
+  val end = 1706572800000L
 
   val db = new Database {
 
@@ -68,7 +68,7 @@ class SteplessDatabaseExamples extends FunSuite {
             max = tuple._1
           }
           series += offsetMaybe(offset, tuple._2)
-          tuple = toSeries(ctxt, offset, hourlySeries2, hourlyTags2, Some(max))
+          tuple = toSeries(ctxt, offset, hourlySeries2, hourlyTags2)
           if (tuple._1 > max) {
             max = tuple._1
           }
@@ -80,11 +80,6 @@ class SteplessDatabaseExamples extends FunSuite {
         case _ => // no-data
       }
 
-      if (max > 0) {
-        ctxt.update(0, max)
-      } else {
-        ctxt.update(0, ctxt.steplessLimit.get)
-      }
       expr.eval(ctxt, series.result()).data
     }
 
@@ -100,22 +95,25 @@ class SteplessDatabaseExamples extends FunSuite {
       eval: EvalContext,
       offset: Long,
       data: TreeMap[Long, Double],
-      tags: Map[String, String],
-      expected: Option[Int] = None
+      tags: Map[String, String]
     ): (Int, TimeSeries) = {
-      val slice = data.range(eval.queryEnd, eval.queryStart)
-      if (slice.isEmpty) {
+      if (data.isEmpty) {
         return (0, eval.noData)
       }
 
-      val range = offset + eval.steplessLimit.get
+      val start = eval.start + (offset * 2)
+      val end = eval.end + (offset * 2)
       var read = 0
-      val it = slice.iterator
+      val it = data.iterator
       val builder = List.newBuilder[(Long, Double)]
+      val meta = Map.newBuilder[Long, Map[String, String]]
+      var invert = end - 1L
       while (it.hasNext) {
         val (t, v) = it.next()
-        if (read >= offset && read < range) {
-          builder += (t -> v)
+        if (read < end && read >= start) {
+          builder += (t   -> v)
+          meta += (invert -> Map("timestamp" -> dtFormat.format(Instant.ofEpochMilli(t))))
+          invert -= 1
         }
         read += 1
       }
@@ -124,7 +122,7 @@ class SteplessDatabaseExamples extends FunSuite {
       if (results.isEmpty) {
         return (0, eval.noData)
       }
-      val padding = expected.map(e => e - results.size).getOrElse(0)
+      val padding = (end - start).toInt - results.size
       val array = if (padding > 0) {
         val pad = Array.fill(padding + results.size)(Double.NaN)
         var i = padding
@@ -137,24 +135,14 @@ class SteplessDatabaseExamples extends FunSuite {
         results.map(_._2).toArray.reverse
       }
 
-      val seq = new ArrayTimeSeq(DsType.Gauge, -offset, eval.step, array)
-      val metaMaps = results.map { tuple =>
-        val ts = tuple._1
-        Map("timestamp" -> dtFormat.format(Instant.ofEpochMilli(ts)))
-      }
-      val meta = Map.newBuilder[Long, Map[String, String]]
-      for (i <- 0 until metaMaps.size) {
-        val ts = results.size - 1 - i - offset + padding
-        meta += (ts -> metaMaps(i))
-      }
+      val seq = new ArrayTimeSeq(DsType.Gauge, start, eval.step, array)
       val res = meta.result()
       (results.size, TimeSeries(tags, seq, Some(MapMeta(res))))
     }
   }
 
-  test("single series - full limit") {
-    val ctxt =
-      new EvalContext(endMinusHours(5), end, 1, steplessLimit = Some(limit))
+  test("single series - 0 to 5") {
+    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     val expected =
@@ -178,70 +166,60 @@ class SteplessDatabaseExamples extends FunSuite {
     assertEqualsWithMeta(ctxt, actual, expected)
   }
 
-  test("single series - full limit, query window") {
-    val ctxt =
-      new EvalContext(endMinusHours(10), endMinusHours(5), 1, steplessLimit = Some(limit))
+  test("single series - 5 to 10") {
+    val ctxt = EvalContext(5, 10, 1, steplessLimit = Some(limit))
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     val expected =
       TimeSeries(
         Map("name" -> "hourly"),
-        new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(16.0, 17.0, 18.0, 19.0, 20.0)),
+        new ArrayTimeSeq(DsType.Gauge, 5, 1, Array(16.0, 17.0, 18.0, 19.0, 20.0)),
         Some(
           MapMeta(
             Map(
-              4L -> Map("timestamp" -> "29T19:00"),
-              3L -> Map("timestamp" -> "29T18:00"),
-              2L -> Map("timestamp" -> "29T17:00"),
-              1L -> Map("timestamp" -> "29T16:00"),
-              0L -> Map("timestamp" -> "29T15:00")
+              9L -> Map("timestamp" -> "29T19:00"),
+              8L -> Map("timestamp" -> "29T18:00"),
+              7L -> Map("timestamp" -> "29T17:00"),
+              6L -> Map("timestamp" -> "29T16:00"),
+              5L -> Map("timestamp" -> "29T15:00")
             )
           )
         )
       )
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 5L)
     assertEqualsWithMeta(ctxt, actual, expected)
   }
 
-  test("single series - under limit, partial query window") {
-    val ctxt =
-      new EvalContext(endMinusHours(30), endMinusHours(23), 1, steplessLimit = Some(limit))
+  test("single series - 23 to 28, partial range") {
+    val ctxt = EvalContext(23, 28, 1, steplessLimit = Some(limit))
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     val expected =
       TimeSeries(
         Map("name" -> "hourly"),
-        new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0)),
+        new ArrayTimeSeq(DsType.Gauge, 23, 1, Array(Double.NaN, Double.NaN, Double.NaN, 1.0, 2.0)),
         Some(
           MapMeta(
             Map(
-              1L -> Map("timestamp" -> "29T01:00"),
-              0L -> Map("timestamp" -> "29T00:00")
+              27L -> Map("timestamp" -> "29T01:00"),
+              26L -> Map("timestamp" -> "29T00:00")
             )
           )
         )
       )
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 2L)
     assertEqualsWithMeta(ctxt, actual, expected)
   }
 
-  test("single series - no data in window") {
-    val ctxt =
-      new EvalContext(endMinusHours(30), endMinusHours(25), 1, steplessLimit = Some(limit))
+  test("single series - 25 to 30, out of range") {
+    val ctxt = EvalContext(25, 30, 1, steplessLimit = Some(limit))
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 5L)
     assertEquals(actual.label, "NO DATA")
   }
 
-  test("single series - with full offset") {
-    val ctxt =
-      new EvalContext(endMinusHours(10), end, 1, steplessLimit = Some(limit))
+  test("single series - 0 to 5 with offset in range") {
+    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
     val offsetCtx = ctxt.withOffset(5)
-    val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(4))
+    val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(5))
     val actual = db.execute(offsetCtx, expr).head
     val expected =
       TimeSeries(
@@ -250,72 +228,57 @@ class SteplessDatabaseExamples extends FunSuite {
         Some(
           MapMeta(
             Map(
-              4L -> Map("timestamp" -> "29T19:00"),
-              3L -> Map("timestamp" -> "29T18:00"),
-              2L -> Map("timestamp" -> "29T17:00"),
-              1L -> Map("timestamp" -> "29T16:00"),
-              0L -> Map("timestamp" -> "29T15:00")
+              4L -> Map("timestamp" -> "30T00:00"),
+              3L -> Map("timestamp" -> "29T23:00"),
+              2L -> Map("timestamp" -> "29T22:00"),
+              1L -> Map("timestamp" -> "29T21:00"),
+              0L -> Map("timestamp" -> "29T20:00")
             )
           )
         )
-      )
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 5L)
+      ).offset(5)
     assertEqualsWithMeta(ctxt, actual, expected)
   }
 
-  test("single series - offset limited due to query window") {
-    val ctxt =
-      new EvalContext(endMinusHours(5), end, 1, steplessLimit = Some(limit))
-    val offsetCtx = ctxt.withOffset(5)
-    val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(4))
-    val actual = db.execute(offsetCtx, expr).head
-    ctxt.update(offsetCtx)
-    val expected =
-      TimeSeries(
-        Map("name" -> "hourly"),
-        new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(20.0)),
-        Some(
-          MapMeta(
-            Map(
-              0L -> Map("timestamp" -> "29T19:00")
-            )
-          )
-        )
-      )
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 1L)
-    assertEqualsWithMeta(ctxt, actual, expected)
-  }
-
-  test("single series with partial offset") {
-    val ctxt =
-      new EvalContext(endMinusHours(25), end, 1, steplessLimit = Some(limit))
+  test("single series - 0 to 5 with offset in partial range") {
+    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
     val offsetCtx = ctxt.withOffset(23)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(23))
-    val actual = db.execute(ctxt, expr).head
-    ctxt.update(offsetCtx)
+    val actual = db.execute(offsetCtx, expr).head
     val expected =
       TimeSeries(
         Map("name" -> "hourly"),
-        new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(1.0, 2.0)),
+        new ArrayTimeSeq(DsType.Gauge, 23, 1, Array(Double.NaN, Double.NaN, Double.NaN, 1.0, 2.0)),
         Some(
           MapMeta(
             Map(
-              1L -> Map("timestamp" -> "29T01:00"),
-              0L -> Map("timestamp" -> "29T00:00")
+              27L -> Map("timestamp" -> "29T01:00"),
+              26L -> Map("timestamp" -> "29T00:00")
             )
           )
         )
-      )
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 2L)
+      ).offset(23)
     assertEqualsWithMeta(ctxt, actual, expected)
   }
 
-  test("group by - full limit") {
-    val ctxt =
-      new EvalContext(endMinusHours(5), end, 1, steplessLimit = Some(limit))
+  test("single series - 0 to 5 with offset in out of range") {
+    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
+    val offsetCtx = ctxt.withOffset(25)
+    val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(25))
+    val actual = db.execute(offsetCtx, expr).head
+    assertEquals(actual.label, "NO DATA (offset=PT0.025S)")
+  }
+
+  test("single series - 20 to 25 with offset in out of range") {
+    val ctxt = EvalContext(20, 25, 1, steplessLimit = Some(limit))
+    val offsetCtx = ctxt.withOffset(25)
+    val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(25))
+    val actual = db.execute(offsetCtx, expr).head
+    assertEquals(actual.label, "NO DATA (offset=PT0.025S)")
+  }
+
+  test("group by - 0 to 5") {
+    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "hourly")), List("name"))
     val actual = db.execute(ctxt, expr).head
     val expected = TimeSeries(
@@ -339,31 +302,24 @@ class SteplessDatabaseExamples extends FunSuite {
     assertEqualsWithMeta(ctxt, actual, expected)
   }
 
-  test("group by - full limit, one series missing at start") {
-    val ctxt =
-      new EvalContext(endMinusHours(15), endMinusHours(10), 1, steplessLimit = Some(limit))
+  test("group by - 5 to 10, one series missing at start") {
+    val ctxt = EvalContext(10, 15, 1, steplessLimit = Some(limit))
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "hourly")), List("name"))
     val actual = db.execute(ctxt, expr).head
     val expected = TimeSeries(
       Map("name" -> "hourly"),
       "(name=hourly)",
-      new ArrayTimeSeq(DsType.Gauge, 0, 1, Array(11.0, 12.0, 13.0, 28.0, 30.0)),
+      new ArrayTimeSeq(DsType.Gauge, 10, 1, Array(11.0, 12.0, 13.0, 28.0, 30.0)),
       Some(
         MapMeta(
           Map(
             // TODOD - do we want this behavior? In this case we _could_ keep it, but not in other cases.
-            4L -> Map("timestamp" -> "29T14:00"),
-            3L -> Map("timestamp" -> "29T13:00")
+            14L -> Map("timestamp" -> "29T14:00"),
+            13L -> Map("timestamp" -> "29T13:00")
           )
         )
       )
     )
-    assertEquals(ctxt.start, 0L)
-    assertEquals(ctxt.end, 5L)
     assertEqualsWithMeta(ctxt, actual, expected)
-  }
-
-  def endMinusHours(hours: Long): Long = {
-    end - (3600_000L * hours)
   }
 }

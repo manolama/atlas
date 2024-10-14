@@ -106,7 +106,7 @@ case class GraphConfig(
 
   val evalContext: EvalContext = {
     System.out.println("GONNA make the graph config here!@!!!!")
-    new EvalContext(
+    EvalContext(
       fstart.toEpochMilli,
       fend.toEpochMilli + stepSize,
       stepSize,

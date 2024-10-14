@@ -1,6 +1,5 @@
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Stepless.s
 import com.netflix.atlas.core.model.TimeSeriesSuite.ts
 import munit.FunSuite
 import org.junit.Assert.assertFalse
@@ -96,7 +95,7 @@ class TimeSeriesSuite extends FunSuite {
   test("timeseries w meta: consolidate") {
     val context = Stepless.steplessContext(5)
     val input = Stepless.ts(context, 1.0, 2.0, 3.0, 4.0, 5.0)
-    val cctxt = new EvalContext(context.start, context.end, 2, steplessLimit = Some(3))
+    val cctxt = EvalContext(context.start, context.end, 2, steplessLimit = Some(3))
     val expected = Stepless.ts(cctxt, 3.0, 7.0, 5.0)
     val actual = input.consolidate(2, ConsolidationFunction.Sum)
     Stepless.assertEqualsWithMetaFunc(cctxt, actual, expected)
@@ -129,8 +128,7 @@ class TimeSeriesSuite extends FunSuite {
   }
 
   test("timeseries w meta: offset") {
-    val e = s + (5 * 1 * 1000L)
-    val context = new EvalContext(s, e, 1, steplessLimit = Some(5))
+    val context = EvalContext(0, 5, 1, steplessLimit = Some(5))
     val input = Stepless.ts(-5, 1.0, 2.0, 3.0, 4.0, 5.0)
     val expected = TimeSeries(
       Map("name" -> "hourly"),

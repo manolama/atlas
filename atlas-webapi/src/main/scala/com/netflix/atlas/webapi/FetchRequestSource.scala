@@ -76,7 +76,7 @@ object FetchRequestSource {
     val chunks = {
       val step = graphCfg.roundedStepSize
       val (fstart, fend) = roundToStep(step, graphCfg.resStart, graphCfg.resEnd)
-      new EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
+      EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
         .partition(60 * step, ChronoUnit.MILLIS)
     }
 

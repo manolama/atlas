@@ -85,7 +85,7 @@ class DesSuite extends FunSuite {
     var state = Map.empty[StatefulExpr, Any]
     data.map { ts =>
       val t = ts.head.timestamp
-      val context = new EvalContext(t, t + step, step, state)
+      val context = EvalContext(t, t + step, step, state)
       val rs = expr.eval(context, ts)
       state = rs.state
       rs.data
@@ -95,7 +95,7 @@ class DesSuite extends FunSuite {
   test("des: incremental exec matches global") {
     val s = 0L
     val e = 14L * step
-    val context = new EvalContext(s, e, step, Map.empty)
+    val context = EvalContext(s, e, step, Map.empty)
     val expected = des.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(des, alignedStream)
@@ -115,7 +115,7 @@ class DesSuite extends FunSuite {
   test("sdes: aligned incremental exec matches global") {
     val s = 0L
     val e = 14L * step
-    val context = new EvalContext(s, e, step, Map.empty)
+    val context = EvalContext(s, e, step, Map.empty)
     val expected = sdes.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(sdes, alignedStream)
@@ -135,7 +135,7 @@ class DesSuite extends FunSuite {
   test("sdes: unaligned incremental exec matches global") {
     val s = 1L * step // offset by one step, half a training window used
     val e = 14L * step
-    val context = new EvalContext(s, e, step, Map.empty)
+    val context = EvalContext(s, e, step, Map.empty)
     val expected = sdes.eval(context, List(unalignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(sdes, unalignedStream)

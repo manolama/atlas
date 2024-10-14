@@ -30,7 +30,7 @@ class IntegralSuite extends FunSuite {
   }
 
   def eval(input: TimeSeries, n: Int): TimeSeries = {
-    val context = new EvalContext(start, start + step * n, step)
+    val context = EvalContext(start, start + step * n, step)
     val expr = StatefulExpr.Integral(DataExpr.Sum(Query.True))
     expr.eval(context, List(input)).data.head
   }

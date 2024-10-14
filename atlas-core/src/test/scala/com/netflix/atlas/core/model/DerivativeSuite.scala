@@ -16,7 +16,8 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MetaWrapper.assertMeta
-import com.netflix.atlas.core.model.Stepless.{assertEqualsWithMetaFunc, steplessContext}
+import com.netflix.atlas.core.model.Stepless.assertEqualsWithMetaFunc
+import com.netflix.atlas.core.model.Stepless.steplessContext
 import com.netflix.atlas.core.util.IdentityMap
 import munit.FunSuite
 
@@ -31,7 +32,7 @@ class DerivativeSuite extends FunSuite {
   }
 
   def eval(input: TimeSeries, n: Int): TimeSeries = {
-    val context = new EvalContext(start, start + step * n, step)
+    val context = EvalContext(start, start + step * n, step)
     val expr = StatefulExpr.Derivative(DataExpr.Sum(Query.True))
     expr.eval(context, List(input)).data.head
   }
@@ -61,7 +62,7 @@ class DerivativeSuite extends FunSuite {
       case (v, i) =>
         val s = start + step * i
         val e = s + step
-        val context = new EvalContext(s, e, step, state)
+        val context = EvalContext(s, e, step, state)
         val seq = new ArrayTimeSeq(DsType.Gauge, s, step, Array(v))
         val input = TimeSeries(Map("name" -> "test"), seq)
         val result = expr.eval(context, List(input))
@@ -77,7 +78,7 @@ class DerivativeSuite extends FunSuite {
   test("state will expire and get cleaned up") {
     val expr = StatefulExpr.Derivative(DataExpr.Sum(Query.True))
 
-    val context = new EvalContext(start, start + step * 4, step)
+    val context = EvalContext(start, start + step * 4, step)
     val rs = expr.eval(context, List(ts(1.0, 2.0, 3.0, Double.NaN)))
 
     assert(rs.state(expr).asInstanceOf[scala.collection.mutable.Map[?, ?]].isEmpty)

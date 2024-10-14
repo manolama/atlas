@@ -40,7 +40,7 @@ class MathGroupBySuite extends FunSuite {
     k2: List[String],
     aggr: TimeSeriesExpr => AggrMathExpr
   ): List[TimeSeries] = {
-    val context = new EvalContext(start, start + step * n, step)
+    val context = EvalContext(start, start + step * n, step)
     val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.True), k1)
     val expr = MathExpr.GroupBy(aggr(dataBy), k2)
     expr.eval(context, input).data
@@ -112,7 +112,7 @@ class MathGroupBySuite extends FunSuite {
       ts(2),
       ts(3)
     )
-    val context = new EvalContext(start, start + step * n, step)
+    val context = EvalContext(start, start + step * n, step)
     val dataBy =
       DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("name", "mode", "value"))
     val mathBy1 = MathExpr.GroupBy(MathExpr.Sum(dataBy), List("name", "mode"))
@@ -132,7 +132,7 @@ class MathGroupBySuite extends FunSuite {
       ts(2),
       ts(3)
     )
-    val context = new EvalContext(start, start + step * n, step)
+    val context = EvalContext(start, start + step * n, step)
     val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("mode"))
     val expr = MathExpr.GroupBy(MathExpr.Sum(dataBy), List("mode"))
     val rs = expr.eval(context, input).data

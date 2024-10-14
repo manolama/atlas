@@ -39,8 +39,8 @@ class DataExprSuite extends FunSuite {
     val expr = DataExpr.Sum(Query.Equal("name", "cpu"))
     val context = Stepless.steplessContext(5)
     val input = Stepless.ts(context, 1.0, 2.0, 3.0, 4.0, 5.0)
-    val cctxt = new EvalContext(context.start, context.end, 2, steplessLimit = Some(3))
-    val expected = Stepless.ts(cctxt, 1.5, 3.0, 5.0)
+    val cctxt = context.copy(step = 2)
+    val expected = Stepless.ts(cctxt, 1.5, 3.5, 5.0)
     val actual = expr.eval(cctxt, List(input)).data.head
     Stepless.assertEqualsWithMetaFunc(cctxt, actual, expected)
   }

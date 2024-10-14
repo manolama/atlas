@@ -23,24 +23,20 @@ import com.netflix.atlas.core.util.IdentityMap
 import scala.util.Failure
 import scala.util.Try
 
-class EvalContext(
-  val queryStart: Long,
-  val queryEnd: Long,
-  val step: Long,
-  val state: Map[StatefulExpr, Any] = IdentityMap.empty,
-  val steplessLimit: Option[Long] = None
+case class EvalContext(
+  start: Long,
+  end: Long,
+  step: Long,
+  state: Map[StatefulExpr, Any] = IdentityMap.empty,
+  steplessLimit: Option[Long] = None
 ) {
 
   require(
-    queryStart < queryEnd,
-    s"start time must be less than end time ($queryStart >= $queryEnd)"
+    start < end,
+    s"start time must be less than end time ($start >= $end)"
   )
 
   val noData: TimeSeries = TimeSeries.noData(step)
-
-  private var computedStart: Option[Long] =
-    None // = steplessLimit.map(_ => 0L).getOrElse(queryStart)
-  private var computedEnd: Option[Long] = None // = steplessLimit.getOrElse(queryEnd)
 
   /**
     * Buffer size that would be need to represent the result set based on the start time,
@@ -56,7 +52,7 @@ class EvalContext(
       val e = t + oneStep
       val stime = math.max(t, start)
       val etime = math.min(e, end)
-      builder += new EvalContext(stime, etime, step, steplessLimit = steplessLimit)
+      builder += EvalContext(stime, etime, step, steplessLimit = steplessLimit)
       t = e
     }
     builder.result()
@@ -70,42 +66,7 @@ class EvalContext(
   def withOffset(offset: Long): EvalContext = {
     val dur = offset / step * step
     if (dur < step) this
-    else new EvalContext(queryStart - dur, queryEnd - dur, step, state, steplessLimit)
+    else EvalContext(start - dur, end - dur, step, state, steplessLimit)
   }
 
-  def start: Long = computedStart.getOrElse(steplessLimit.map(_ => 0L).getOrElse(queryStart))
-  def end: Long = computedEnd.getOrElse(steplessLimit.getOrElse(queryEnd))
-
-  def update(start: Long, end: Long): Unit = {
-    if (computedStart.isDefined) {
-      computedStart = Some(math.max(start, computedStart.get))
-    } else {
-      computedStart = Some(start)
-    }
-    if (computedEnd.isDefined) {
-      computedEnd = Some(math.max(end, computedEnd.get))
-    } else {
-      computedEnd = Some(end)
-    }
-  }
-
-  def update(context: EvalContext): Unit = {
-    (computedStart, context.computedStart) match {
-      case (Some(cs), Some(ocs)) => computedStart = Some(math.max(cs, ocs))
-      case (None, Some(ocs))     => computedStart = Some(ocs)
-      case _                     =>
-    }
-    (computedEnd, context.computedEnd) match {
-      case (Some(ce), Some(oce)) => computedEnd = Some(math.max(ce, oce))
-      case (None, Some(oce))     => computedEnd = Some(oce)
-      case _                     =>
-    }
-  }
-
-  def cloneWithState(state: Map[StatefulExpr, Any]): EvalContext = {
-    val ctx = new EvalContext(queryStart, queryEnd, step, state, steplessLimit)
-    ctx.computedStart = computedStart
-    ctx.computedEnd = computedEnd
-    ctx
-  }
 }
