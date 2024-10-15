@@ -21,7 +21,6 @@ import scala.collection.mutable
 
 class SteplessDatabaseExamples extends FunSuite {
 
-  val limit = 5
   val dtFormat = DateTimeFormatter.ofPattern("dd'T'HH:mm").withZone(ZoneId.of("UTC"))
   val end = 1706572800000L
 
@@ -32,8 +31,8 @@ class SteplessDatabaseExamples extends FunSuite {
 
     val hourlySeries1 = {
       val tree = mutable.TreeMap.newBuilder[Long, Double](Ordering.Long.reverse)
-      for (i <- limit * 5 until 0 by -1) {
-        val factor = (limit * 5) - i
+      for (i <- 5 * 5 until 0 by -1) {
+        val factor = (5 * 5) - i
         tree += (end - (3600_000L * factor)) -> i
       }
       tree.result()
@@ -42,9 +41,9 @@ class SteplessDatabaseExamples extends FunSuite {
     // doesn't report until the 13th hour
     val hourlySeries2 = {
       val tree = mutable.TreeMap.newBuilder[Long, Double](Ordering.Long.reverse)
-      for (i <- limit * 5 until 0 by -1) {
+      for (i <- 5 * 5 until 0 by -1) {
         if (i > 13) {
-          val factor = (limit * 5) - i
+          val factor = (5 * 5) - i
           tree += (end - (3600_000L * factor)) -> i
         }
       }
@@ -54,8 +53,8 @@ class SteplessDatabaseExamples extends FunSuite {
     override def index: TagIndex[_ <: TaggedItem] = ???
 
     override def execute(ctxt: EvalContext, expr: DataExpr): List[TimeSeries] = {
-      if (ctxt.steplessLimit.isEmpty) {
-        throw new IllegalArgumentException("steplessLimit is required")
+      if (!ctxt.runMode) {
+        throw new IllegalArgumentException("Must run in runmode")
       }
       val offset = expr.offset.getNano / 1_000_000L
 
@@ -142,7 +141,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 0 to 5") {
-    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(0, 5, 1, runMode = true)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     val expected =
@@ -167,7 +166,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 5 to 10") {
-    val ctxt = EvalContext(5, 10, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(5, 10, 1, runMode = true)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     val expected =
@@ -190,7 +189,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 23 to 28, partial range") {
-    val ctxt = EvalContext(23, 28, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(23, 28, 1, runMode = true)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     val expected =
@@ -210,14 +209,14 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 25 to 30, out of range") {
-    val ctxt = EvalContext(25, 30, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(25, 30, 1, runMode = true)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"))
     val actual = db.execute(ctxt, expr).head
     assertEquals(actual.label, "NO DATA")
   }
 
   test("single series - 0 to 5 with offset in range") {
-    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(0, 5, 1, runMode = true)
     val offsetCtx = ctxt.withOffset(5)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(5))
     val actual = db.execute(offsetCtx, expr).head
@@ -241,7 +240,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 0 to 5 with offset in partial range") {
-    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(0, 5, 1, runMode = true)
     val offsetCtx = ctxt.withOffset(23)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(23))
     val actual = db.execute(offsetCtx, expr).head
@@ -262,7 +261,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 0 to 5 with offset in out of range") {
-    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(0, 5, 1, runMode = true)
     val offsetCtx = ctxt.withOffset(25)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(25))
     val actual = db.execute(offsetCtx, expr).head
@@ -270,7 +269,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("single series - 20 to 25 with offset in out of range") {
-    val ctxt = EvalContext(20, 25, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(20, 25, 1, runMode = true)
     val offsetCtx = ctxt.withOffset(25)
     val expr = DataExpr.Sum(Query.Equal("name", "hourly"), offset = Duration.ofMillis(25))
     val actual = db.execute(offsetCtx, expr).head
@@ -278,7 +277,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("group by - 0 to 5") {
-    val ctxt = EvalContext(0, 5, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(0, 5, 1, runMode = true)
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "hourly")), List("name"))
     val actual = db.execute(ctxt, expr).head
     val expected = TimeSeries(
@@ -303,7 +302,7 @@ class SteplessDatabaseExamples extends FunSuite {
   }
 
   test("group by - 5 to 10, one series missing at start") {
-    val ctxt = EvalContext(10, 15, 1, steplessLimit = Some(limit))
+    val ctxt = EvalContext(10, 15, 1, runMode = true)
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "hourly")), List("name"))
     val actual = db.execute(ctxt, expr).head
     val expected = TimeSeries(

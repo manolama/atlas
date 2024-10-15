@@ -115,7 +115,7 @@ case class Grapher(settings: DefaultSettings) {
       .map(v => Features.valueOf(v.toUpperCase(Locale.US)))
       .getOrElse(Features.STABLE)
 
-    val steplessLimit = params.get("stepless").map(Integer.parseInt).map(_.toLong)
+    val runMode = params.get("runMode").map(_.toBoolean).getOrElse(false)
 
     import com.netflix.atlas.chart.GraphConstants.*
     val axes = (0 until MaxYAxis).map(i => i -> newAxis(params, i)).toMap
@@ -182,7 +182,7 @@ case class Grapher(settings: DefaultSettings) {
       isBrowser = false,
       isAllowedFromBrowser = true,
       uri = uri.toString,
-      steplessLimit = steplessLimit
+      runMode = runMode
     )
   }
 
@@ -263,7 +263,6 @@ case class Grapher(settings: DefaultSettings) {
       val results = expr.eval(offsetContext, matches).data.map { t =>
         t.offset(offset)
       }
-      context.steplessLimit.map(_ => context.update(offsetContext))
       results
     }
   }

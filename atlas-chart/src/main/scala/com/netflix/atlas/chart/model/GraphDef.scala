@@ -93,7 +93,7 @@ case class GraphDef(
   source: Option[String] = None,
   themeName: String = ChartSettings.defaultTheme,
   renderingHints: Set[String] = Set.empty,
-  steplessLimit: Option[Long] = None
+  runMode: Boolean = false
 ) {
 
   /** Total number of lines for all plots. */

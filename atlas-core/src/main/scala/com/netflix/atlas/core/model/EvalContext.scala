@@ -28,7 +28,7 @@ case class EvalContext(
   end: Long,
   step: Long,
   state: Map[StatefulExpr, Any] = IdentityMap.empty,
-  steplessLimit: Option[Long] = None
+  runMode: Boolean = false
 ) {
 
   require(
@@ -52,7 +52,7 @@ case class EvalContext(
       val e = t + oneStep
       val stime = math.max(t, start)
       val etime = math.min(e, end)
-      builder += EvalContext(stime, etime, step, steplessLimit = steplessLimit)
+      builder += EvalContext(stime, etime, step, runMode = runMode)
       t = e
     }
     builder.result()
@@ -66,7 +66,7 @@ case class EvalContext(
   def withOffset(offset: Long): EvalContext = {
     val dur = offset / step * step
     if (dur < step) this
-    else EvalContext(start - dur, end - dur, step, state, steplessLimit)
+    else EvalContext(start - dur, end - dur, step, state, runMode)
   }
 
 }

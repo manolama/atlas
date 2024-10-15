@@ -46,8 +46,9 @@ case class GraphConfig(
   isBrowser: Boolean,
   isAllowedFromBrowser: Boolean,
   uri: String,
-  steplessLimit: Option[Long] = None // used to indicate a query with arbitrary ranges
-  // between data points. Times change to be 0 based.
+  runMode: Boolean = false // used to indicate a query with arbitrary ranges
+  // between data points. Times change to be 0 based indices into an array of
+  // executions.
 ) {
 
   import GraphConfig.*
@@ -73,13 +74,16 @@ case class GraphConfig(
   val stepSize: Long = {
     val datapointWidth = math.min(settings.maxDatapoints, flags.width)
     val stepParam = roundedStepSize
-    steplessLimit
-      .map {
-        Step.compute(1, datapointWidth, 0, _)
-      }
-      .getOrElse {
-        Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
-      }
+    if (runMode) {
+      Step.compute(1, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
+    } else {
+      Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
+    }
+//    if (runMode) {
+//      Step.compute(1, datapointWidth, 0, _)
+//    } else {
+//      Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
+//    }
   }
 
   // Final start and end time rounded to step boundaries
@@ -110,7 +114,7 @@ case class GraphConfig(
       fstart.toEpochMilli,
       fend.toEpochMilli + stepSize,
       stepSize,
-      steplessLimit = steplessLimit
+      runMode = runMode
     )
   }
 
@@ -153,7 +157,7 @@ case class GraphConfig(
       source = if (settings.metadataEnabled) Some(uri) else None,
       warnings = warnings,
       renderingHints = flags.hints,
-      stepless = steplessLimit.isDefined
+      runMode = runMode
     )
 
     gdef = gdef.withVisionType(flags.vision)

@@ -62,8 +62,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val end: Long = graphDef.endTime.toEpochMilli
 
   val timeAxes: List[TimeAxis] = {
-    graphDef.steplessLimit
-      .map { limit =>
+    if (graphDef.runMode) {
         List(
           TimeAxis(
             Style(color = graphDef.theme.axis.line.color),
@@ -73,11 +72,10 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             ZoneOffset.UTC,
             40,
             showZone = false,
-            graphDef.steplessLimit
+            true
           )
         )
-      }
-      .getOrElse {
+      } else {
         graphDef.timezones.zipWithIndex.map {
           case (tz, i) =>
             TimeAxis(
@@ -88,7 +86,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
               tz,
               if (i == 0) 40 else 0xFF,
               showZone = true,
-              graphDef.steplessLimit
+              graphDef.runMode
             )
         }
       }

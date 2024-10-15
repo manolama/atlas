@@ -10,10 +10,9 @@ object Stepless {
 
   def steplessContext(n: Int): EvalContext = {
     val step = 1L
-
     val s = 0L
     val e = n * step
-    val context = EvalContext(s, e, step, steplessLimit = Some(n))
+    val context = EvalContext(s, e, step, runMode = true)
     context
   }
 

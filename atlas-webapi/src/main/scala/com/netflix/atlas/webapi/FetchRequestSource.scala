@@ -202,7 +202,7 @@ object FetchRequestSource {
                 if (metadata)
                   Some(graphCfg.flags.axisPalette(graphCfg.settings, s.axis.getOrElse(0)))
                 else None
-              val context = chunk.context.cloneWithState(state)
+              val context = chunk.context.copy(state = state)
               val result = s.expr.eval(context, chunk.data)
               state = result.state
               result.data

@@ -56,7 +56,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
           endTime = Instant.ofEpochMilli(endTime),
           step = step,
           plots = List(plotDef),
-          steplessLimit = Some(30)
+          runMode = true
         )
       )
       check(s"${name}.png", graphDef)
@@ -137,7 +137,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
       endTime = Instant.ofEpochMilli(30),
       step = step,
       plots = List(plotDef),
-      steplessLimit = Some(30),
+      runMode = true,
       timezones = List(ZoneOffset.UTC, ZoneId.of("America/Los_Angeles"))
     )
     check("single_multix.png", graphDef)
@@ -167,7 +167,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
           endTime = Instant.ofEpochMilli(endTime),
           step = step,
           plots = List(plotDef),
-          steplessLimit = Some(30)
+          runMode = true
         )
       )
       check(s"${name}.png", graphDef)
@@ -246,7 +246,7 @@ class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
       endTime = Instant.ofEpochMilli(30),
       step = step,
       plots = plotDefs,
-      steplessLimit = Some(30)
+      runMode = true
     )
     check("multi_wave_multiy.png", graphDef)
   }
