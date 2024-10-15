@@ -64,8 +64,9 @@ case class TimeAxis(
     zone.getRules.nextTransition(s)
   }
 
-  private val transitionTime =
+  private val transitionTime = {
     if (transition == null) Long.MaxValue else transition.getInstant.toEpochMilli
+  }
 
   def scale(p1: Int, p2: Int): Scales.LongScale = {
     Scales.time(start - step, end - step, step, p1, p2)

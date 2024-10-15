@@ -18,7 +18,7 @@ case class LinearXAxis(
     Scales.time(start - step, end - step, step, p1, p2)
   }
 
-  def ticks(x1: Int, x2: Int): List[IntValueTick] = {
+  def ticks(x1: Int, x2: Int): List[LongTick] = {
 
     // The first interval displayed will end at the start time. For calculating ticks the
     // start time is adjusted so we can see minor ticks within the first interval
@@ -28,7 +28,7 @@ case class LinearXAxis(
     val n = ((end - s) / step).toInt
     Ticks
       .value(s.toDouble, end.toDouble, n, Scale.LINEAR)
-      .map(t => IntValueTick(t.v.toInt, t.major))
+      .map(t => LongTick(t.v.toInt, if (t.v >= 0) t.major else false))
   }
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {

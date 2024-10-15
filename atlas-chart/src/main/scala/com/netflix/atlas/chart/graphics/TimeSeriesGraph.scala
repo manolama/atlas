@@ -22,8 +22,6 @@ import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineStyle
 
-import java.time.ZoneOffset
-
 /**
   * Draws a time series graph.
   */

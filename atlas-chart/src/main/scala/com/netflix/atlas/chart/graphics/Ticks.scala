@@ -582,6 +582,7 @@ object Ticks {
     * marks will be on significant time boundaries for the specified time zone.
     */
   def time(s: Long, e: Long, zone: ZoneId, n: Int): List[TimeTick] = {
+
     // To keep even placement of major grid lines the shift amount for the timezone is computed
     // based on the start. If there is a change such as DST during the interval, then labels
     // after the change may be on less significant boundaries.
@@ -659,7 +660,7 @@ trait Tick {
   def label: String
 }
 
-case class IntValueTick(
+case class LongTick(
   value: Long,
   major: Boolean = true
 ) extends Tick {

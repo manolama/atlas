@@ -28,7 +28,7 @@ import java.time.ZonedDateTime
 import java.util
 import scala.concurrent.duration.DurationInt
 
-class SteplessPngGraphEngineSuite extends BasePngGraphEngineSuite {
+class ExecutionModePngGraphEngineSuite extends BasePngGraphEngineSuite {
 
   protected val start: Long = 1704067200000L
 
