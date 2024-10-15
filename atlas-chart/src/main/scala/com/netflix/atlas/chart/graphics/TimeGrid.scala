@@ -28,7 +28,7 @@ import java.awt.Graphics2D
   * @param minor
   *     Style to use for drawing the minor tick lines.
   */
-case class TimeGrid(xaxis: TimeAxis, major: Style, minor: Style) extends Element {
+case class TimeGrid(xaxis: XAxis, major: Style, minor: Style) extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val ticks = xaxis.ticks(x1, x2)
@@ -36,7 +36,7 @@ case class TimeGrid(xaxis: TimeAxis, major: Style, minor: Style) extends Element
 
     ticks.foreach { tick =>
       if (tick.major) major.configure(g) else minor.configure(g)
-      val px = xscale(tick.timestamp)
+      val px = xscale(tick.value)
       if (px > x1 && px < x2) {
         g.drawLine(px, y1, px, y2)
       }

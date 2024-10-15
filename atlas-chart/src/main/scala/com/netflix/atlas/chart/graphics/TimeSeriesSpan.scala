@@ -19,7 +19,7 @@ import java.awt.Graphics2D
 
 import com.netflix.atlas.core.model.TimeSeq
 
-case class TimeSeriesSpan(style: Style, ts: TimeSeq, xaxis: TimeAxis) extends Element {
+case class TimeSeriesSpan(style: Style, ts: TimeSeq, xaxis: XAxis) extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)

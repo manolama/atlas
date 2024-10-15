@@ -79,11 +79,6 @@ case class GraphConfig(
     } else {
       Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
     }
-//    if (runMode) {
-//      Step.compute(1, datapointWidth, 0, _)
-//    } else {
-//      Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
-//    }
   }
 
   // Final start and end time rounded to step boundaries

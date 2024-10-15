@@ -39,10 +39,10 @@ import com.netflix.atlas.chart.model.PlotDef
   */
 case class Legend(
   graphDef: GraphDef,
+  index: Int,
   styles: Styles,
   plot: PlotDef,
   graph: TimeSeriesGraph,
-  heatmap: Option[Heatmap],
   label: Option[String],
   showStats: Boolean,
   maxEntries: Int,
@@ -57,8 +57,7 @@ case class Legend(
     val headerColor = plot.getAxisColor(styles.text.color)
     Text(str, font = bold, alignment = TextAlignment.LEFT, style = Style(headerColor))
   }
-
-  private val heatmapEntry = heatmap.toList
+  private val heatmapEntry = graph.heatmaps.get(index).toList
     .flatMap { h =>
       List(HorizontalPadding(2), HeatmapLegendEntry(styles, plot, h, showStats))
     }

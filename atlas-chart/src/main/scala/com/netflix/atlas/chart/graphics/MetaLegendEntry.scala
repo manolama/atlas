@@ -40,7 +40,7 @@ case class MetaLegendEntry(
         case line: LineDef =>
           line.data.meta.map { meta =>
             meta.datapointMeta(i).map { meta =>
-              ticks.find(_.timestamp == i).map { _ =>
+              ticks.find(_.value == i).map { _ =>
                 list += Text(
                   s"$i) ${formatMeta(meta)}",
                   font = ChartSettings.smallFont,
@@ -83,16 +83,6 @@ case class MetaLegendEntry(
       case (txt, i) =>
         txt.truncate(x2 - x1 - d - 4).draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
     }
-//    for (i <- graphDef.startTime.toEpochMilli until graphDef.endTime.toEpochMilli) {
-//      data match {
-//        case line: LineDef =>
-//          line.data.datapointMeta(i).map { meta =>
-//            val txt = text(i.toInt).truncate(x2 - x1 - d - 4)
-//            txt.draw(g, x1 + d + 4, offset + i.toInt * rowHeight, x2, y2)
-//          }
-//        case _ =>
-//      }
-//    }
   }
 
   def formatMeta(meta: DatapointMetaEntry): String = {

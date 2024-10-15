@@ -733,22 +733,8 @@ class TicksSuite extends FunSuite {
   test("time: since 1970") {
     val s = 0L
     val e = 1498751868000L
-    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5, false)
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
     assertEquals(ticks.size, 6)
-  }
-
-  test("time: stepless") {
-    val s = 0L
-    val e = 30L
-    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5, true)
-    assertEquals(ticks.size, 16)
-    for (i <- 0 until 16) {
-      assertEquals(ticks(i).label, (i * 2).toString)
-      assertEquals(ticks(i).timestamp, i * 2L)
-      if (i % 5 == 0) assertTrue(s"expected major tick at ${i}", ticks(i).major)
-      else
-        assertFalse(s"expected minor tick at ${i}", ticks(i).major)
-    }
   }
 
   test("issue-948: [6.667e-3, 0.01]") {

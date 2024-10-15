@@ -37,7 +37,7 @@ import com.netflix.atlas.core.model.TimeSeq
 case class TimeSeriesStack(
   style: Style,
   ts: TimeSeq,
-  xaxis: TimeAxis,
+  xaxis: XAxis,
   yaxis: ValueAxis,
   offsets: TimeSeriesStack.Offsets
 ) extends Element {
@@ -87,7 +87,7 @@ object TimeSeriesStack {
 
   object Offsets {
 
-    def apply(axis: TimeAxis): Offsets = {
+    def apply(axis: XAxis): Offsets = {
       val size = ((axis.end - axis.start) / axis.step).toInt
       val posY = new Array[Double](size)
       val negY = new Array[Double](size)

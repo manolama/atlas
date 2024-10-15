@@ -581,13 +581,7 @@ object Ticks {
     * Generate value tick marks with approximately `n` major ticks for the range `[s, e]`. Tick
     * marks will be on significant time boundaries for the specified time zone.
     */
-  def time(s: Long, e: Long, zone: ZoneId, n: Int, stepless: Boolean): List[TimeTick] = {
-    if (stepless) {
-      val start = if (s < 0) 0 else s
-      return value(start.toDouble, e.toDouble, n, Scale.LINEAR)
-        .map(t => TimeTick(t.v.toLong, zone, t.major, stepless = true))
-    }
-
+  def time(s: Long, e: Long, zone: ZoneId, n: Int): List[TimeTick] = {
     // To keep even placement of major grid lines the shift amount for the timezone is computed
     // based on the start. If there is a change such as DST during the interval, then labels
     // after the change may be on less significant boundaries.
@@ -658,10 +652,25 @@ case class ValueTick(
   def label: String = labelOpt.fold(UnitPrefix.format(v - offset))(v => v)
 }
 
+trait Tick {
+
+  def value: Long
+  def major: Boolean
+  def label: String
+}
+
+case class IntValueTick(
+  value: Long,
+  major: Boolean = true
+) extends Tick {
+
+  def label: String = value.toString
+}
+
 /**
   * Tick mark for the time axis.
   *
-  * @param timestamp
+  * @param value
   *     Time in milliseconds since the epoch.
   * @param zone
   *     Time zone to use for the string label associated with the timestamp.
@@ -672,21 +681,17 @@ case class ValueTick(
   *     will be chosen to try and land on a significant time boundary.
   */
 case class TimeTick(
-  timestamp: Long,
+  value: Long,
   zone: ZoneId,
   major: Boolean = true,
-  formatter: Option[DateTimeFormatter] = None,
-  stepless: Boolean = false
-) {
+  formatter: Option[DateTimeFormatter] = None
+) extends Tick {
 
-  private val datetime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
+  private val datetime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(value), zone)
 
   import Ticks.*
 
   def label: String = {
-    if (stepless) {
-      return timestamp.toString
-    }
     val fmt = formatter.getOrElse {
       timeBoundaries.find(f => datetime.get(f._1) != 0).fold(defaultTimeFmt)(_._2)
     }

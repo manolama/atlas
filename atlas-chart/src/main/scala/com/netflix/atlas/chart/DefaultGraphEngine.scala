@@ -96,10 +96,10 @@ class DefaultGraphEngine extends PngGraphEngine {
             val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
             belowCanvas += Legend(
               gdef,
+              i,
               config.theme.legend,
               plot,
               graph,
-              graph.heatmaps.get(i),
               Some(label),
               showStats,
               entriesPerPlot,
@@ -110,10 +110,10 @@ class DefaultGraphEngine extends PngGraphEngine {
         config.plots.foreach { plot =>
           belowCanvas += Legend(
             gdef,
+            0,
             config.theme.legend,
             plot,
             graph,
-            graph.heatmaps.get(0),
             None,
             showStats,
             entriesPerPlot,

@@ -43,7 +43,7 @@ import scala.collection.immutable.ArraySeq
 case class Heatmap(
   settings: HeatmapDef,
   lines: List[LineDef],
-  xaxis: TimeAxis,
+  xaxis: XAxis,
   yaxis: ValueAxis,
   canvasHeight: Int
 ) {
