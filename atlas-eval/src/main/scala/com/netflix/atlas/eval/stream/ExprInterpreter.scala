@@ -34,11 +34,13 @@ import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.util.HostRewriter
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 
 import scala.util.Success
 
-class ExprInterpreter(config: Config) {
+class ExprInterpreter(config: Config, registry: Registry)(implicit system: ActorSystem) {
 
   import ExprInterpreter.*
 
@@ -55,6 +57,10 @@ class ExprInterpreter(config: Config) {
   private val grapher = Grapher(config)
 
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
+
+  val backfill = new StatefulBackfill(config, registry, system)
+
+  val sys = system
 
   /** Evaluate a normal Atlas Graph URI and produce and graph config. */
   def eval(uri: Uri): GraphConfig = {

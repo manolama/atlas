@@ -15,12 +15,26 @@
  */
 package com.netflix.atlas.core.algorithm
 
+import java.util
+
 /**
   * Represents the current state for an online algorithm. Can be used with `OnlineAlgorithm.apply`
   * to create a new instance with the same state. This state object is reliably serializable with
   * helpers such as the `atlas-json` library so state can be persisted.
   */
 case class AlgoState(algorithm: String, settings: Map[String, Any]) {
+
+  override def toString(): String = {
+    val map = settings.map {
+      case (k, v) =>
+        v match {
+            case a: Array[Double] => s"$k=[${util.Arrays.toString(a)}]"
+            case _ => s"$k=$v"
+        }
+    }.mkString(", ")
+    s"AlgoState($algorithm, $map)"
+
+  }
 
   private def get[T](key: String): T = settings(key).asInstanceOf[T]
 

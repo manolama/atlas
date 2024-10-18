@@ -138,6 +138,23 @@ class RefIntHashMap[T <: AnyRef](capacity: Int = 10) {
     }
   }
 
+  def incrementAndGet(k: T, amount: Int): Int = {
+    if (used >= cutoff) resize()
+    var pos = Hash.absOrZero(k.hashCode()) % keys.length
+    while (true) {
+      val prev = keys(pos)
+      if (prev == null || prev == k) {
+        keys(pos) = k
+        values(pos) += amount
+        if (prev == null) used += 1
+        return values(pos)
+      }
+      pos = (pos + 1) % keys.length
+    }
+    // TODO - shouldn't happen
+    -1
+  }
+
   /** Execute `f` for each item in the set. */
   def foreach(f: (T, Int) => Unit): Unit = {
     var i = 0

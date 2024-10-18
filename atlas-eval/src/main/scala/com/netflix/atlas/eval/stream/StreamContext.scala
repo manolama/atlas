@@ -101,7 +101,7 @@ private[stream] class StreamContext(
   // Maximum allowed step size for a stream
   private val maxStep = config.getDuration("limits.max-step")
 
-  val interpreter = new ExprInterpreter(rootConfig)
+  val interpreter = new ExprInterpreter(rootConfig, registry)(materializer.system)
 
   def findBackendForUri(uri: Uri): Backend = {
     if (uri.isRelative || uri.scheme == "file")

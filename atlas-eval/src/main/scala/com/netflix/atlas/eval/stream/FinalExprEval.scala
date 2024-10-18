@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
+import com.netflix.atlas.core.algorithm.AlgoState
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.Uri
 import org.apache.pekko.stream.Attributes
@@ -26,21 +27,21 @@ import org.apache.pekko.stream.stage.GraphStage
 import org.apache.pekko.stream.stage.GraphStageLogic
 import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.EvalContext
-import com.netflix.atlas.core.model.StatefulExpr
-import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.model.{DataExpr, EvalContext, Expr, ItemId, StatefulExpr, StyleExpr, TimeSeries}
 import com.netflix.atlas.core.util.IdentityMap
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeGroupsTuple
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
+import com.netflix.atlas.eval.stream.FinalExprEval.maxInterval
 import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.PekkoHttpClient
 import com.typesafe.scalalogging.StrictLogging
 
+import java.time.Instant
 import scala.collection.mutable
 
 /**
@@ -66,7 +67,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
       // Maintains the state for each expression we need to evaluate. TODO: implement
       // limits to sanity check against running of our memory
       private val states =
-        scala.collection.mutable.AnyRefMap.empty[StyleExpr, Map[StatefulExpr, Any]]
+        scala.collection.mutable.AnyRefMap.empty[StyleExpr, StateWrapper]
 
       // Step size for datapoints flowing through, it will be determined by the first data
       // sources message that arrives and should be consistent for the life of this stage
@@ -117,7 +118,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
                     } else {
                       None
                     }
-                  previous.getOrElse(e, e) -> ExprInfo(s.id, paletteName)
+                  previous.getOrElse(e, e) -> ExprInfo(s.id, paletteName, s)
                 }
               }
             } catch {
@@ -205,13 +206,61 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
             val ids = infos.map(_.id)
             // Use an identity map for the state to ensure that multiple equivalent stateful
             // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
-            val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
-            val context = EvalContext(timestamp, timestamp + step, step, state)
-            try {
-              val result = styleExpr.expr.eval(context, dataExprToDatapoints)
-              states(styleExpr) = result.state
-              val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
+            val state = states.getOrElseUpdate(styleExpr, StateWrapper(styleExpr))
 
+            try {
+              val context = EvalContext(timestamp, timestamp + step, step, state.state)
+              val result =
+                if (
+                  state.intervals > 0 &&
+                  state.intervalCount < 2 /* TODO - get the delay */
+                ) {
+                  // TODO - watch out when querying! If there isn't a buffer of two or more windows, Atlas is
+                  // unlikely to have the data.
+                  val count: Int = state.intervals
+
+                  // TODO - query Atlas!!!
+                  val ds = infos.head.ds
+                  val res: Map[DataExpr, List[TimeSeries]] = exprInterpreter.backfill.backfill(
+                    PekkoHttpClient.create("foo", exprInterpreter.sys),
+                    ds,
+                    timestamp,
+                    count,
+                    dataExprToDatapoints.keys.toList
+                  ).map { tuple =>
+                    val (k, v) = tuple
+                    k -> v.map(ts => ts.withTags(ts.tags - "atlas.offset"))
+                  }
+
+                  // ALWAYS flush the state when we're backfilling
+                  state.state = Map.empty[StatefulExpr, Any]
+                  val s = timestamp - (step * count)
+                  val e = timestamp + step
+                  System.err.println("Backfill: " + res.head._2.head.label + " => " + res.head._2.head.tags)
+                  System.err.println(
+                    s"Backfill from ${Instant.ofEpochMilli(s)} to ${Instant.ofEpochMilli(e)}"
+                  )
+                  val bfCtxt = EvalContext(s, e, step, state.state)
+                  state.lastTs = timestamp // TODO only on success
+
+                  // TODO - so when we switch over to the stream, the data expression states fail to match
+                  // as their identity is different. So we get two entries in the state map. Blarg.
+                  styleExpr.expr.eval(bfCtxt, res)
+                } else {
+                  styleExpr.expr.eval(context, dataExprToDatapoints)
+                }
+              // TODO - may want to move this around since we could retry a failed initial backfill
+              state.intervalCount += 1
+              state.state = result.state
+
+              val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
+              val now = System.currentTimeMillis()
+              val delta = now - timestamp
+              System.err.println("OG: " + dataExprToDatapoints.head._2.head.label + " => " + dataExprToDatapoints.head._2.head.tags)
+              System.err.println(s"OG: @${Instant.ofEpochMilli(timestamp)}: " + dataExprToDatapoints.head._2.map(_.data.apply(timestamp)))
+              System.err.println("State: " + state)
+              System.err.println(s"FINAL Data [delta ${delta}]: " + data.map(_.data))
+              System.err.println("-------------------------------------------------------------")
               // Collect final data size per DataSource
               ids.foreach(rateCollector.incrementOutput(_, data.size))
 
@@ -252,6 +301,8 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
         val msgs = List.newBuilder[MessageEnvelope]
         msgs ++= t.messages
         msgs ++= t.groups.flatMap(handleData)
+        // NOTE: for me, can't push twice, so we have to wait on the results
+        // of a backfill request
         push(out, Source(msgs.result()))
       }
 
@@ -277,7 +328,32 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
   }
 }
 
+case class StateWrapper(expr: StyleExpr) {
+
+  val intervals = maxInterval(expr.expr, 0)
+  var state: Map[StatefulExpr, Any] = Map.empty[StatefulExpr, Any]
+  var intervalCount = 0
+  var lastTs: Long = 0L
+
+  override def toString(): String = {
+    "intervals=" + intervals + ", state=" + state + ", intervalCount=" + intervalCount + ", lastTs=" + lastTs
+  }
+}
+
 object FinalExprEval {
 
-  case class ExprInfo(id: String, palette: Option[String])
+  case class ExprInfo(id: String, palette: Option[String], ds: DataSource)
+
+  def maxInterval(expr: Expr, prevMax: Int): Int = {
+    expr match {
+      case StatefulExpr.RollingCount(e, n)     => maxInterval(e, Math.max(prevMax, n))
+      case StatefulExpr.RollingSum(e, n)       => maxInterval(e, Math.max(prevMax, n))
+      case StatefulExpr.RollingMean(e, _, n)   => maxInterval(e, Math.max(prevMax, n))
+      case StatefulExpr.RollingMin(e, n)       => maxInterval(e, Math.max(prevMax, n))
+      case StatefulExpr.RollingMax(e, n)       => maxInterval(e, Math.max(prevMax, n))
+      case StatefulExpr.Des(e, n, _, _)        => maxInterval(e, Math.max(prevMax, n))
+      case StatefulExpr.SlidingDes(e, n, _, _) => maxInterval(e, Math.max(prevMax, n))
+      case _                                   => prevMax
+    }
+  }
 }
