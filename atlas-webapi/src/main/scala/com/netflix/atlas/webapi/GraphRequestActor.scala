@@ -15,8 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
-import org.apache.pekko.actor.Actor
-import org.apache.pekko.actor.ActorLogging
+import org.apache.pekko.actor.{Actor, ActorLogging, ActorSelection}
 import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
@@ -32,13 +31,13 @@ import com.netflix.spectator.api.Registry
 
 import scala.util.Failure
 
-class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with ActorLogging {
+class GraphRequestActor(grapher: Grapher, registry: Registry, db: ActorSelection = null) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi.*
 
   private val errorId = registry.createId("atlas.graph.errorImages")
 
-  private val dbRef = context.actorSelection("/user/db")
+  private val dbRef = if (db != null) db else context.actorSelection("/user/db")
 
   private var request: GraphConfig = _
   private var graphCtx: ImperativeRequestContext = _

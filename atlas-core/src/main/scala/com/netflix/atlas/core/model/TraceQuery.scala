@@ -69,10 +69,22 @@ object TraceQuery {
   }
 
   /** Time series based on data from a set of matching traces. */
-  case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr {
+  case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends TimeSeriesExpr {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
       Interpreter.append(builder, q, expr, Interpreter.WordToken(":span-time-series"))
+    }
+
+    override def dataExprs: List[DataExpr] = expr.expr.dataExprs
+
+    override def isGrouped: Boolean = expr.expr.isGrouped
+
+    override def groupByKey(tags: Map[String, String]): Option[String] = expr.expr.groupByKey(tags)
+
+    override def finalGrouping: List[String] = expr.expr.finalGrouping
+
+    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      expr.expr.eval(context, data)
     }
   }
 }

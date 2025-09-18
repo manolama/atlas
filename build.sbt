@@ -70,7 +70,11 @@ lazy val `atlas-eval` = project
     Dependencies.equalsVerifier % "test",
     Dependencies.pekkoHttpTestkit % "test",
     Dependencies.pekkoStreamTestkit % "test",
-    Dependencies.pekkoTestkit % "test"
+    Dependencies.pekkoTestkit % "test",
+    Dependencies.slf4jLog4j % "test",
+    Dependencies.log4jApi % "test",
+    Dependencies.log4jCore % "test",
+    Dependencies.log4jSlf4j % "test"
   ))
 
 lazy val `atlas-jmh` = project
