@@ -221,11 +221,11 @@ object AggrDatapoint {
 
     private def newAggregator(datapoint: AggrDatapoint): Aggregator = {
       datapoint.expr match {
-        case GroupBy(af: DataExpr.Sum, _) if datapoint.tags.contains(aggrTagKey) =>
+        case GroupBy(af: DataExpr.Sum, _, _) if datapoint.tags.contains(aggrTagKey) =>
           new GaugeSumAggregator(datapoint, aggrOp(af), settings)
-        case GroupBy(af: DataExpr.Count, _) if datapoint.tags.contains(aggrTagKey) =>
+        case GroupBy(af: DataExpr.Count, _, _) if datapoint.tags.contains(aggrTagKey) =>
           new GaugeSumAggregator(datapoint, aggrOp(af), settings)
-        case GroupBy(af: AggregateFunction, _) =>
+        case GroupBy(af: AggregateFunction, _, _) =>
           new SimpleAggregator(datapoint, aggrOp(af), settings)
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
@@ -300,11 +300,11 @@ object AggrDatapoint {
   /** Return a binary operation that matches the requested aggregate function behavior. */
   @scala.annotation.tailrec
   private def aggrOp(af: AggregateFunction): BinaryOp = af match {
-    case _: DataExpr.Sum              => Math.addNaN
-    case _: DataExpr.Count            => Math.addNaN
-    case _: DataExpr.Min              => Math.minNaN
-    case _: DataExpr.Max              => Math.maxNaN
-    case DataExpr.Consolidation(f, _) => aggrOp(f)
+    case _: DataExpr.Sum                 => Math.addNaN
+    case _: DataExpr.Count               => Math.addNaN
+    case _: DataExpr.Min                 => Math.minNaN
+    case _: DataExpr.Max                 => Math.maxNaN
+    case DataExpr.Consolidation(f, _, _) => aggrOp(f)
   }
 
   /**

@@ -165,7 +165,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     case _: DataExpr.Count             => Block.Count
     case _: DataExpr.Min               => Block.Min
     case _: DataExpr.Max               => Block.Max
-    case DataExpr.Consolidation(af, _) => blockAggr(af)
+    case DataExpr.Consolidation(af, _, _) => blockAggr(af)
   }
 
   private def executeImpl(context: EvalContext, expr: DataExpr): List[TimeSeries] = {

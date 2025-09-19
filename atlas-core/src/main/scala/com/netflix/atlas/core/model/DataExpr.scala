@@ -25,6 +25,8 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def query: Query
 
+  def tq: Option[TraceQuery] // = None
+
   def cf: ConsolidationFunction
 
   def offset: Duration
@@ -117,13 +119,17 @@ object DataExpr {
     Query.allKeys(dataExpr.query) ++ dataExpr.finalGrouping
   }
 
-  case class All(query: Query, offset: Duration = Duration.ZERO) extends DataExpr {
+  case class All(query: Query, offset: Duration = Duration.ZERO, tq: Option[TraceQuery] = None)
+      extends DataExpr {
 
     def cf: ConsolidationFunction = ConsolidationFunction.Sum
 
     override def withOffset(d: Duration): All = copy(offset = d)
 
-    override def exprString: String = s"$query,:all"
+    override def exprString: String = tq match {
+      case Some(traceQuery) => s"$traceQuery,$query,:all"
+      case None             => s"$query,:all"
+    }
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val rs = consolidate(context.step, data.filter(t => query.matches(t.tags)))
@@ -158,7 +164,8 @@ object DataExpr {
   case class Sum(
     query: Query,
     cf: SumOrAvgCf = ConsolidationFunction.Avg,
-    offset: Duration = Duration.ZERO
+    offset: Duration = Duration.ZERO,
+    tq: Option[TraceQuery] = None
   ) extends AggregateFunction {
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = f match {
@@ -171,7 +178,14 @@ object DataExpr {
     override def labelString: String = s"sum(${query.labelString})"
 
     override def exprString: String = {
-      if (cf == ConsolidationFunction.Avg) s"$query,:sum" else s"$query,:sum,$cf"
+      tq match {
+        case Some(traceQuery) =>
+          if (cf == ConsolidationFunction.Avg) s"$traceQuery,$query,:sum"
+          else s"$traceQuery,$query,:sum,$cf"
+        case None =>
+          if (cf == ConsolidationFunction.Avg) s"$query,:sum" else s"$query,:sum,$cf"
+      }
+
     }
 
     override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
@@ -182,7 +196,8 @@ object DataExpr {
   case class Count(
     query: Query,
     cf: SumOrAvgCf = ConsolidationFunction.Avg,
-    offset: Duration = Duration.ZERO
+    offset: Duration = Duration.ZERO,
+    tq: Option[TraceQuery] = None
   ) extends AggregateFunction {
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = f match {
@@ -203,7 +218,8 @@ object DataExpr {
     }
   }
 
-  case class Min(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
+  case class Min(query: Query, offset: Duration = Duration.ZERO, tq: Option[TraceQuery] = None)
+      extends AggregateFunction {
 
     def cf: ConsolidationFunction = ConsolidationFunction.Min
 
@@ -222,7 +238,8 @@ object DataExpr {
     }
   }
 
-  case class Max(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
+  case class Max(query: Query, offset: Duration = Duration.ZERO, tq: Option[TraceQuery] = None)
+      extends AggregateFunction {
 
     def cf: ConsolidationFunction = ConsolidationFunction.Max
 
@@ -241,8 +258,11 @@ object DataExpr {
     }
   }
 
-  case class Consolidation(af: AggregateFunction, cf: ConsolidationFunction)
-      extends AggregateFunction {
+  case class Consolidation(
+    af: AggregateFunction,
+    cf: ConsolidationFunction,
+    tq: Option[TraceQuery] = None
+  ) extends AggregateFunction {
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       af.eval(context, data)
@@ -269,7 +289,8 @@ object DataExpr {
     }
   }
 
-  case class GroupBy(af: AggregateFunction, keys: List[String]) extends DataExpr {
+  case class GroupBy(af: AggregateFunction, keys: List[String], tq: Option[TraceQuery] = None)
+      extends DataExpr {
 
     def query: Query = af.query
 

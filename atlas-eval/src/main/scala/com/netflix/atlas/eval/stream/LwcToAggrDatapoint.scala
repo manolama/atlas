@@ -189,7 +189,7 @@ private[stream] object LwcToAggrDatapoint {
         }
       case ExprType.TRACE_TIME_SERIES =>
         traceInterpreter.execute(input).stack match {
-          case ModelExtractors.TraceTimeSeriesType(tq) :: Nil => tq.expr.expr.dataExprs.head
+          case ModelExtractors.TraceTimeSeriesType(tq) :: Nil => tq.expr.dataExprs.head
           case _ => throw new IllegalArgumentException(s"invalid expr: $input")
         }
       case ExprType.EVENTS =>

@@ -46,13 +46,18 @@ object DataVocabulary extends Vocabulary {
   sealed trait DataWord extends SimpleWord {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ => true
+      case (_: Query) :: (_: TraceQuery) :: _ =>
+        true
+      case (_: Query) :: _ =>
+        true
     }
 
-    def newInstance(q: Query): DataExpr
+    def newInstance(q: Query, tq: Option[TraceQuery]): DataExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: stack => newInstance(q) :: stack
+      case (q: Query) :: (tq: TraceQuery) :: stack =>
+        newInstance(q, Some(tq)) :: stack
+      case (q: Query) :: stack => newInstance(q, None) :: stack
     }
 
     override def signature: String = "Query -- DataExpr"
@@ -64,7 +69,7 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "all"
 
-    def newInstance(q: Query): DataExpr = DataExpr.All(q)
+    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.All(q)
 
     override def summary: String =
       """
@@ -81,7 +86,7 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "sum"
 
-    def newInstance(q: Query): DataExpr = DataExpr.Sum(q)
+    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Sum(q, tq = tq)
 
     override def summary: String =
       """
@@ -102,7 +107,7 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "count"
 
-    def newInstance(q: Query): DataExpr = DataExpr.Count(q)
+    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Count(q)
 
     override def summary: String =
       """
@@ -123,7 +128,7 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "min"
 
-    def newInstance(q: Query): DataExpr = DataExpr.Min(q)
+    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Min(q)
 
     override def summary: String =
       """
@@ -144,7 +149,7 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "max"
 
-    def newInstance(q: Query): DataExpr = DataExpr.Max(q)
+    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Max(q)
 
     override def summary: String =
       """

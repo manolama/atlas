@@ -31,7 +31,7 @@ object AggregateCollector {
     case _: DataExpr.Count             => new SumAggregateCollector
     case _: DataExpr.Min               => new MinAggregateCollector
     case _: DataExpr.Max               => new MaxAggregateCollector
-    case DataExpr.Consolidation(af, _) => apply(af)
+    case DataExpr.Consolidation(af, _, _) => apply(af)
   }
 }
 

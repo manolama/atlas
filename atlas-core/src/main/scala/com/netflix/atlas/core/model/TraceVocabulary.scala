@@ -139,12 +139,13 @@ object TraceVocabulary extends Vocabulary {
     override def name: String = "span-time-series"
 
     override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case PresentationType(_) :: TraceQueryType(_) :: _ => true
+      case DataExprType(_) :: _ => true
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case PresentationType(f: StyleExpr) :: TraceQueryType(q) :: stack =>
-        TraceQuery.SpanTimeSeries(q, f) :: stack
+      case DataExprType(dataExpr) :: stack =>
+        dataExpr.query
+        TraceQuery.SpanTimeSeries(dataExpr.tq.get, dataExpr) :: stack
     }
 
     override def signature: String = "q:TraceQuery f:Query -- SpanFilter"

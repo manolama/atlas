@@ -138,7 +138,7 @@ object ModelExtractors {
     }
 
     private def toTimeSeries(q: TraceQuery): TraceQuery.SpanTimeSeries = {
-      TraceQuery.SpanTimeSeries(q, StyleExpr(DataExpr.Sum(Query.True), Map.empty))
+      TraceQuery.SpanTimeSeries(q, DataExpr.Sum(Query.True))
     }
   }
 }
