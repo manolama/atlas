@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.model.EventQuery.EventTimeSeries
 import com.netflix.atlas.core.model.MathExpr.NamedRewrite
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -46,18 +47,17 @@ object DataVocabulary extends Vocabulary {
   sealed trait DataWord extends SimpleWord {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: (_: TraceQuery) :: _ =>
-        true
-      case (_: Query) :: _ =>
-        true
+      case (_: EventTimeSeries) :: _ => true
+      case (_: Query) :: _           => true
     }
 
-    def newInstance(q: Query, tq: Option[TraceQuery]): DataExpr
+    def newInstance(q: Query): DataExpr
+
+    def newInstance(ets: EventTimeSeries): DataExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: (tq: TraceQuery) :: stack =>
-        newInstance(q, Some(tq)) :: stack
-      case (q: Query) :: stack => newInstance(q, None) :: stack
+      case (ets: EventTimeSeries) :: stack => newInstance(ets) :: stack
+      case (q: Query) :: stack             => newInstance(q) :: stack
     }
 
     override def signature: String = "Query -- DataExpr"
@@ -69,7 +69,10 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "all"
 
-    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.All(q)
+    def newInstance(q: Query): DataExpr = DataExpr.All(q)
+
+    override def newInstance(ets: EventTimeSeries): DataExpr =
+      DataExpr.All(ets.query, ets = Some(ets.eventQuery))
 
     override def summary: String =
       """
@@ -86,7 +89,10 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "sum"
 
-    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Sum(q, tq = tq)
+    def newInstance(q: Query): DataExpr = DataExpr.Sum(q)
+
+    override def newInstance(ets: EventTimeSeries): DataExpr =
+      DataExpr.Sum(ets.query, ets = Some(ets.eventQuery))
 
     override def summary: String =
       """
@@ -107,7 +113,10 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "count"
 
-    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Count(q)
+    def newInstance(q: Query): DataExpr = DataExpr.Count(q)
+
+    override def newInstance(ets: EventTimeSeries): DataExpr =
+      DataExpr.Count(ets.query, ets = Some(ets.eventQuery))
 
     override def summary: String =
       """
@@ -128,7 +137,10 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "min"
 
-    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Min(q)
+    def newInstance(q: Query): DataExpr = DataExpr.Min(q)
+
+    override def newInstance(ets: EventTimeSeries): DataExpr =
+      DataExpr.Min(ets.query, ets = Some(ets.eventQuery))
 
     override def summary: String =
       """
@@ -149,7 +161,10 @@ object DataVocabulary extends Vocabulary {
 
     override def name: String = "max"
 
-    def newInstance(q: Query, tq: Option[TraceQuery] = None): DataExpr = DataExpr.Max(q)
+    def newInstance(q: Query): DataExpr = DataExpr.Max(q)
+
+    override def newInstance(ets: EventTimeSeries): DataExpr =
+      DataExpr.Max(ets.query, ets = Some(ets.eventQuery))
 
     override def summary: String =
       """

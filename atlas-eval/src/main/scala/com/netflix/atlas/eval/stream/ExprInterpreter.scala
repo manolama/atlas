@@ -185,7 +185,7 @@ class ExprInterpreter(config: Config) {
       case ModelExtractors.TraceTimeSeriesType(t) => t
       case value                                  => throw invalidValue(value)
     }
-    exprs.foreach(t => validate(StyleExpr(t.expr, Map.empty)))
+    exprs.foreach(t => validate(t.expr))
     exprs
   }
 

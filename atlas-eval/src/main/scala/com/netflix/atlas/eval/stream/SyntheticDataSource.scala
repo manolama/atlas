@@ -96,7 +96,7 @@ object SyntheticDataSource {
       case ExprType.TRACE_EVENTS =>
         Source.empty
       case ExprType.TRACE_TIME_SERIES =>
-        source(settings, StyleExpr(expr.asInstanceOf[TraceQuery.SpanTimeSeries].expr, Map.empty))
+        source(settings, expr.asInstanceOf[TraceQuery.SpanTimeSeries].expr)
     }
   }
 

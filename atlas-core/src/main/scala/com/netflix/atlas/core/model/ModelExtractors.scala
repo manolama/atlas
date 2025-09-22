@@ -138,7 +138,21 @@ object ModelExtractors {
     }
 
     private def toTimeSeries(q: TraceQuery): TraceQuery.SpanTimeSeries = {
-      TraceQuery.SpanTimeSeries(q, DataExpr.Sum(Query.True))
+      TraceQuery.SpanTimeSeries(q, StyleExpr(DataExpr.Sum(Query.True), Map.empty))
     }
+  }
+
+  case object EventTimeSeriesType {
+
+    def unapply(value: Any): Option[EventQuery.EventTimeSeries] = value match {
+//      case q: EventQuery                 => Some(toTimeSeries(q))
+//      case q: Query                      => Some(toTimeSeries(TraceQuery.Simple(q)))
+      case t: EventQuery.EventTimeSeries => Some(t)
+      case _                             => None
+    }
+
+//    private def toTimeSeries(q: EventQuery): EventQuery.EventTimeSeries = {
+//      EventQuery.EventTimeSeries(q, DataExpr.Sum(Query.True))
+//    }
   }
 }

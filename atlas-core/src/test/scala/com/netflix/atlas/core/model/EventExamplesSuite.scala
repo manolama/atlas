@@ -21,4 +21,34 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 class EventExamplesSuite extends BaseExamplesSuite {
 
   override def vocabulary: Vocabulary = EventVocabulary
+
+  test("event-time-series - table default count") {
+    interpreter.execute("level,ERROR,:eq,(,message,),:table,:event-time-series")
+  }
+
+  test("event-time-series - table explicit column column") {
+    interpreter.execute("level,ERROR,:eq,(,message,),:table,value,foo,:eq,:event-time-series")
+  }
+
+  test("event-time-series - just a query") {
+    interpreter.execute("level,ERROR,:eq,:event-time-series")
+  }
+
+  test("event-time-series - sample direct") {
+    interpreter.execute("level,ERROR,:eq,(,fingerprint,),(,message,),:sample,:event-time-series")
+  }
+
+  test("event-time-series - sample with explicit value") {
+    interpreter.execute(
+      "level,ERROR,:eq,(,fingerprint,),(,message,),:sample,value,event.count,:eq,:event-time-series"
+    )
+  }
+
+  test("event-time-series - sample with value missmatch") {
+    intercept[IllegalArgumentException] {
+      interpreter.execute(
+        "level,ERROR,:eq,(,fingerprint,),(,message,),:sample,value,foo,:eq,:event-time-series"
+      )
+    }
+  }
 }

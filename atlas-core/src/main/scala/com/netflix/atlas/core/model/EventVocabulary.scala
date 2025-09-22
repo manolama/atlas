@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.model.EventExpr.Raw
+import com.netflix.atlas.core.model.TraceQuery.SpanTimeSeries
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
@@ -25,7 +27,7 @@ object EventVocabulary extends Vocabulary {
 
   val dependsOn: List[Vocabulary] = List(QueryVocabulary)
 
-  override def words: List[Word] = List(SampleWord, TableWord)
+  override def words: List[Word] = List(SampleWord, TableWord, EventTimeSeriesWord)
 
   case object TableWord extends SimpleWord {
 
@@ -76,5 +78,51 @@ object EventVocabulary extends Vocabulary {
         |""".stripMargin
 
     override def examples: List[String] = List("level,ERROR,:eq,(,fingerprint,),(,message,)")
+  }
+
+  case object EventTimeSeriesWord extends SimpleWord {
+
+    override def name: String = "event-time-series"
+
+    override protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: Query) :: (_: SpanTimeSeries) :: _ => false
+      case (_: Query) :: (_: EventQuery) :: _     => true
+      case (_: SpanTimeSeries) :: _               => false
+      case (_: EventQuery) :: _                   => true
+      case (_: Query) :: _                        => true
+    }
+
+    override protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (q: Query) :: (e: EventExpr.Sample) :: stack =>
+        // the value has to be `event.count` as aggregating on a field from a sample per
+        // period is meaningless
+        if (q != Query.Equal("value", "event.count"))
+          throw new IllegalArgumentException(
+            s"when using :event-time-series with :sample, query has to be value,event.count"
+          )
+        EventQuery.EventTimeSeries(e, q) :: stack
+
+      case (q: Query) :: (e: EventQuery) :: stack =>
+        EventQuery.EventTimeSeries(e, q) :: stack
+
+      case (e: EventQuery) :: stack =>
+        // default to count
+        EventQuery.EventTimeSeries(e, Query.Equal("value", "event.count")) :: stack
+
+      case (q: Query) :: stack =>
+        // default to count
+        EventQuery.EventTimeSeries(Raw(q), Query.Equal("value", "event.count")) :: stack
+    }
+
+    override def signature: String = "EventQuery Query -- EventTimeSeries"
+
+    override def summary: String =
+      """
+            |TODO.
+            |""".stripMargin
+
+    override def examples: List[String] = List(
+      "level,ERROR,:eq,(,fingerprint,),(,message,),:sample,value,event.count,:eq"
+    )
   }
 }

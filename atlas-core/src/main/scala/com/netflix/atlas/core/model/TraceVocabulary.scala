@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+//import com.netflix.atlas.core.model.EventVocabulary.EventTimeSeriesWord
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
@@ -33,7 +34,7 @@ object TraceVocabulary extends Vocabulary {
     SpanFilterWord,
     SpanTimeSeriesWord,
     ChildWord
-  )
+  ) ++ EventVocabulary.words
 
   case object SpanAndWord extends SimpleWord {
 
@@ -139,13 +140,12 @@ object TraceVocabulary extends Vocabulary {
     override def name: String = "span-time-series"
 
     override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DataExprType(_) :: _ => true
+      case PresentationType(_) :: TraceQueryType(_) :: _ => true
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DataExprType(dataExpr) :: stack =>
-        dataExpr.query
-        TraceQuery.SpanTimeSeries(dataExpr.tq.get, dataExpr) :: stack
+      case PresentationType(f: StyleExpr) :: TraceQueryType(q) :: stack =>
+        TraceQuery.SpanTimeSeries(q, f) :: stack
     }
 
     override def signature: String = "q:TraceQuery f:Query -- SpanFilter"

@@ -18,7 +18,7 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.stacklang.Interpreter
 
 /** Base type for event expressions. */
-sealed trait EventExpr extends Expr {
+sealed trait EventExpr extends EventQuery {
 
   /** Query to determine if an event should be matched. */
   def query: Query

@@ -21,4 +21,52 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 class TraceExamplesSuite extends BaseExamplesSuite {
 
   override def vocabulary: Vocabulary = TraceVocabulary
+
+  test("event-time-series - child default count") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:child,:event-time-series")
+  }
+
+  test("event-time-series - child explicit value") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:child,value,baz,:eq,:event-time-series")
+  }
+
+  test("event-time-series - span-and default count") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:span-and,:event-time-series")
+  }
+
+  test("event-time-series - span-and explicit value") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:span-and,value,baz,:eq,:event-time-series")
+  }
+
+  test("event-time-series - span-or default count") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:span-or,:event-time-series")
+  }
+
+  test("event-time-series - span-or explicit value") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:span-or,value,baz,:eq,:event-time-series")
+  }
+
+  test("event-time-series - span-filter default count") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:span-filter,:event-time-series")
+  }
+
+  test("event-time-series - span-filter explicit value") {
+    interpreter.execute("app,foo,:eq,app,bar,:eq,:span-filter,value,baz,:eq,:event-time-series")
+  }
+
+  test("event-time-series - fail on span-time-series, default count") {
+    intercept[IllegalStateException] {
+      interpreter.execute(
+        "app,foo,:eq,app,bar,:eq,:span-filter,value,count,:span-time-series,:event-time-series"
+      )
+    }
+  }
+
+  test("event-time-series - fail on span-time-series, explicit value") {
+    intercept[IllegalStateException] {
+      interpreter.execute(
+        "app,foo,:eq,app,bar,:eq,:span-filter,value,count,:span-time-series,value,baz,:eq,:event-time-series"
+      )
+    }
+  }
 }

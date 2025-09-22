@@ -18,7 +18,7 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.stacklang.Interpreter
 
 /** Base type for a query to match a trace. */
-sealed trait TraceQuery extends Expr
+sealed trait TraceQuery extends EventQuery
 
 object TraceQuery {
 
@@ -61,7 +61,7 @@ object TraceQuery {
   }
 
   /** Filter to select the set of spans from a trace to forward as events. */
-  case class SpanFilter(q: TraceQuery, f: Query) extends Expr {
+  case class SpanFilter(q: TraceQuery, f: Query) extends EventQuery {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
       Interpreter.append(builder, q, f, Interpreter.WordToken(":span-filter"))
@@ -69,22 +69,11 @@ object TraceQuery {
   }
 
   /** Time series based on data from a set of matching traces. */
-  case class SpanTimeSeries(q: TraceQuery, expr: DataExpr) extends TimeSeriesExpr {
+  case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
       Interpreter.append(builder, q, expr, Interpreter.WordToken(":span-time-series"))
     }
 
-    override def dataExprs: List[DataExpr] = expr.dataExprs
-
-    override def isGrouped: Boolean = expr.isGrouped
-
-    override def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    override def finalGrouping: List[String] = expr.finalGrouping
-
-    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      expr.eval(context, data)
-    }
   }
 }
